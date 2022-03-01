@@ -50,7 +50,6 @@ void handle_escape_chars(std::string &str, std::string &debug){
 				default :
 					debug.append((yytext+i-1),2);
 					debug.append(", ");
-					std::cout << debug + "\n";
 					str.at(j++) = yytext[i-1];
 					str.at(j) = yytext[i];
 			}
@@ -155,7 +154,9 @@ void print_vector(const char* tok_types[]){
 		 		<< "\t" << t.tok_val << "\t" << tok_types[t.tok_type]
 				<< std::endl;
 		if(!t.tok_debug.empty()){
-			std::cout << "Warning: Bad escape characters --> " << t.tok_debug << std::endl;
+			std::cout << "\033[33m" << "WARNING-->";
+			std::cout << "\033[37m";
+			std::cout << "Bad escape characters --> " << t.tok_debug << std::endl;
 		}
 	}
 }
