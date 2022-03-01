@@ -44,10 +44,13 @@ void handle_escape_chars(std::string &str, std::string &debug){
 				case '\\':
 					str.at(j) = '\\';
 					break;
+				case 'v':
+					str.at(j) = '\v';
+					break;
 				default :
-					debug;
-					/* \tReason : Bad escape character %c\n", */
-					/* line_count,yytext[i]); */
+					debug.append((yytext+i-1),2);
+					debug.append(", ");
+					std::cout << debug + "\n";
 					str.at(j++) = yytext[i-1];
 					str.at(j) = yytext[i];
 			}
@@ -86,7 +89,7 @@ mlcomment		"/*".*"*/"
 						line_count,
 						tok_count++,
 						str,
-						NULL,
+						"",
 						KEYWORD,
 					};
 					yylval.push_back(tok);
@@ -96,7 +99,7 @@ mlcomment		"/*".*"*/"
 {integer}		{}
 {real}			{}
 {string}		{
-					std::string str, debug = NULL;
+					std::string str, debug;
 					handle_escape_chars(str, debug);
 					alpha_token_t tok{
 						line_count,
@@ -114,7 +117,7 @@ mlcomment		"/*".*"*/"
 						line_count,
 						tok_count++,
 						str,
-						NULL,
+						"",
 						PUNCTUATION,
 					};
 					yylval.push_back(tok);
@@ -126,7 +129,7 @@ mlcomment		"/*".*"*/"
 						line_count,
 						tok_count++,
 						str,
-						NULL,
+						"",
 						IDENTIFIER,
 					};
 					yylval.push_back(tok);
@@ -151,6 +154,9 @@ void print_vector(const char* tok_types[]){
 	 	std::cout << t.tok_line << ":\t#" << t.tok_num 
 		 		<< "\t" << t.tok_val << "\t" << tok_types[t.tok_type]
 				<< std::endl;
+		if(!t.tok_debug.empty()){
+			std::cout << "Warning: Bad escape characters --> " << t.tok_debug << std::endl;
+		}
 	}
 }
 
