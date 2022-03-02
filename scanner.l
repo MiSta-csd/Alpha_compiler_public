@@ -162,6 +162,7 @@ void print_vector(const char* tok_types[]){
 }
 
 int main(int argc, char** argv) {
+	std::cout << "\033[37m"; // to change the text color to white
     if (argc > 1) {
 		if (!(yyin = fopen(argv[1], "r"))) {
 			fprintf(stderr, "Cannot read file: %s\n", argv[1]);
