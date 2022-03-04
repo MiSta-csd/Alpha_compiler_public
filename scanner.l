@@ -92,7 +92,7 @@ void handle_string(){
 		++i;
 		++j;
 	}
-	if(yytext[i-1] != '\"'){
+	if(yytext[i-2] == '\\'){
 		debug = "string literal is not closing";
 		alpha_token_t tok{
 			line_count,
