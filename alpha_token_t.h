@@ -17,15 +17,17 @@ enum token_t_enum {
 	NESTED_COMMENT  =10
 };
 
+enum tok_error_t {
+	FLAWLESS	=0,
+	ERROR 		=1,
+	WARNING 	=2
+};
 
 typedef struct alpha_token_t {
 	unsigned tok_line;
 	unsigned long tok_num;
 	std::string tok_val;
+	enum tok_error_t tok_err_t;
 	std::string tok_debug; /* added to print various useful messages */
-		/* 	0 -> All is fine
-			1 -> ?
-			2 -> "Invalid escaped charachter detected"
-		*/
 	enum token_t_enum tok_type;
 } alpha_token_t;

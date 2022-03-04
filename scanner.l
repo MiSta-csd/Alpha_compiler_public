@@ -328,19 +328,13 @@ void print_tok_vector(const std::vector<alpha_token_t>& tok_vec){
 		std::cout << t.tok_line << ":\t#" << t.tok_num 
 			<< "\t" << t.tok_val << "\t" << tok_types[t.tok_type] << "\t";
 		if(t.tok_err_t == WARNING) {
-			// std::cout << "\n";
 			std::cout << "\033[33m" << tok_error_t[t.tok_err_t] << ": ";
 			std::cout << "\033[37m";
-			// std::cout  << " Line: " << t.tok_line << ",  Value: " << "\033[33m" << t.tok_val;
-			// std::cout << "\033[37m";
 			std::cout << t.tok_debug;
 		}
 		else if(t.tok_err_t == ERROR) {
-			// std::cout << "\n";
 			std::cout << "\033[31m" << tok_error_t[t.tok_err_t] << ": ";
 			std::cout << "\033[37m";
-			// std::cout << "Line: " << t.tok_line << ",  Value: " << "\033[31m" << t.tok_val;
-			// std::cout << "\033[37m";
 			std::cout << t.tok_debug;
 		}
 		std::cout << std::endl;
