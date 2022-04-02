@@ -1,5 +1,7 @@
-boss = 1;
-kostas = boss;
-if(kostas){
-		kostas = bosss;
-	}
+x = 1;
+y = 0;
+{
+  if(!y){
+     y = x;
+  }
+}
