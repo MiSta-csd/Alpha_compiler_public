@@ -1,0 +1,5 @@
+boss = 1;
+kostas = boss;
+if(kostas){
+		kostas = bosss;
+	}
