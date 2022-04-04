@@ -94,13 +94,12 @@ space			[ \t]*
 {mlcomment}		{
 					std::string str = std::to_string(line_count);
 					str.append(" - ");
-					++tok_count;
-					cmnt_stack.push(tok_count);
+					cmnt_stack.push(tok_count++);
 					BEGIN(MLCOMMENT);
 				}
 
 <MLCOMMENT>"/*"	{
-					cmnt_stack.push(tok_count);
+					cmnt_stack.push(tok_count++);
 				}
 
 <MLCOMMENT>"*/" { 	
