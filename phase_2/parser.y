@@ -2,16 +2,26 @@
 #include <assert.h>
 #include <iostream>
 #include <string>
-#include "scanner.hpp"
+/* #include "scanner.hpp" */
+#include <unordered_map>
 
-int yyerror(char* message);
+int yyerror(std::string message);
 
 extern int yylineno;
 extern char *yytext;
 extern FILE *yyin;
 extern int yylex();
 
+union types{
+	int intConst;
+	double realConst;
+	bool boolConst;
+	void *genPtr;
+	union types (*fpt)(...);
+};
+
 int scope = 0;
+std::unordered_map<std::string, union types> scope0;
 /* typedef struct errorNode{ */
 /* 	char *error; */
 /* 	int line; */
@@ -60,14 +70,6 @@ void print_rules(std::string str) {
 	std::cout << "~ entered rule :\t " << str << std::endl;
 }
 
-/* union ret_types{ */
-/* 	int intConst; */
-/* 	double realConst; */
-/* 	bool boolConst; */
-/* 	void *genPtr; */
-/* 	union ret_types (*fpt)(...); */
-/* }; */
-
 %}
 
 %defines
@@ -81,23 +83,27 @@ void print_rules(std::string str) {
 
 %token<intConst> INTEGER 
 %token<realConst> REAL
-%token<strConst> TRUE FALSE OR LOCAL NIL UMINUS MINUSMINUS STRING ID
-%token<strConst> IF ELSE WHILE FUNCTION FOR RETURN BREAK CONTINUE AND NOT 
-%token<strConst> ASSIGN PLUS MINUS MULT DIVIDE PERCENT NOTEQUAL PLUSPLUS
-%token<strConst> GREATER  LESSER GREATEREQUAL LESSEREQUAL EQUAL
-%token<strConst> LCBRACK RCBRACK LBRACK RBRACK LPAREN RPAREN SEMICOLON COMMA COLON COLONCOLON DOT DOTDOT
-%type<realConst> NUMBER
-%type<strConst> program stmts stmt expr term assignexpr primary
-%type<strConst> member call elist objectdef const returnstmt
+%token<strConst> STRING
+%token TRUE FALSE OR LOCAL NIL UMINUS MINUSMINUS ID
+%token IF ELSE WHILE FUNCTION FOR RETURN BREAK CONTINUE AND NOT 
+%token ASSIGN PLUS MINUS MULT DIVIDE PERCENT NOTEQUAL PLUSPLUS
+%token GREATER  LESSER GREATEREQUAL LESSEREQUAL EQUAL
+%token LCBRACK RCBRACK LBRACK RBRACK LPAREN RPAREN SEMICOLON COMMA COLON COLONCOLON DOT DOTDOT
+%type program stmts stmt expr term assignexpr primary
+%type member call elist objectdef const returnstmt
 %type<strConst> funcdef lvalue // will be actual symTable's type
 
-
-%nonassoc EQUAL NOTEQUAL GREATER  LESSER GREATEREQUAL LESSEREQUAL
-
-%right NOT PLUSPLUS MINUSMINUS UMINUS ASSIGN
-
-%left MULT DIVIDE PERCENT PLUS MINUS OR AND
-%left DOT DOTDOT LBRACK RBRACK LCBRACK RCBRACK LPAREN RPAREN
+%right 		ASSIGN
+%left 		OR
+%left 		AND
+%nonassoc 	EQUAL NOTEQUAL
+%nonassoc 	GREATER  LESSER GREATEREQUAL LESSEREQUAL
+%left 		PLUS MINUS
+%left 		MULT DIVIDE PERCENT
+%right 		NOT PLUSPLUS MINUSMINUS UMINUS
+%left 		DOT DOTDOT
+%left 		LBRACK RBRACK
+%left 		LPAREN RPAREN
 
 %start program
 %expect 1
@@ -281,17 +287,14 @@ funcdef		: FUNCTION //{/*change from here(oldlineno[scope])*/oldlineno[scope] = 
 										}	// reduce/reduce conflict
 			 ;/*change to here(oldlineno[scope])*/
 // Rule 20.
-const		: NUMBER 					{print_rules("20.1 const -> NUMBER");}
+const		: INTEGER 					{print_rules("20.1 const -> INTEGER");}
+	   		| REAL 						{("20.1 const -> REAL");}
 			| STRING 					{print_rules("20.2 const -> STRING");}
 			| NIL 						{print_rules("20.3 const -> NIL");}
 			| TRUE 						{print_rules("20.4 const -> TRUE");}
 			| FALSE						{print_rules("20.5 const -> FALSE");}
 			;
 // Rule 21.
-NUMBER		: REAL 						{print_rules("21.1 NUMBER -> REAL");}
-			| INTEGER					{print_rules("21.2 NUMBER -> INTEGER");$$ = (double) $1;}
-			;
-// Rule 22.
 idlist		: ID 						{
 											/* 	l = lookup((char *)$1, FORMAL_LOC, 0); */
 											/* if(l==ERR) */
@@ -310,36 +313,37 @@ idlist		: ID 						{
 										}
 			|
 			;
-// Rule 23.
+// Rule 22.
 ifstmt		: IF LPAREN expr RPAREN stmt 			
 										{print_rules("23.1 ifstmt -> if ( expr ) stmt");}
 			| IF LPAREN expr RPAREN stmt ELSE stmt
 										{print_rules("23.2 ifstmt -> if ( expr ) stmt else stmt");}
 			;
-// Rule 24.
+// Rule 23.
 whilestmt	: WHILE LPAREN expr RPAREN stmt
 		  								{print_rules("24.1 whilestmt -> while ( expr ) stmt");}
 			;
-// Rule 25.
+// Rule 24.
 forstmt		: FOR LPAREN elist SEMICOLON expr SEMICOLON elist RPAREN stmt 
 										{print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");}
 			;
-// Rule 26.
+// Rule 25.
 returnstmt 	: RETURN SEMICOLON 			{print_rules("26.1 returnstmt -> return ;");}
 			| RETURN expr SEMICOLON 	{print_rules("26.2 returnstmt -> return expr ;");}
 			;
 
 %%
 
-extern int validate_comments();
+extern void validate_comments();
 
-int yyerror(char* message){
-	fprintf(stderr, "%s: at line: %d, before token: %s\nINPUT INVALID\n", message, yylineno, yytext);
+int yyerror(std::string message){
+	std::cout << message << ": at line: " << yylineno << ", before token: " << yytext << std::endl
+	<< "INVALID INPUT\n";
 	return 1;
 }
 
 int main(int argc, char** argv) {
-
+	std::cout << "\033[37m";
     if (argc > 1) {
 		if (!(yyin = fopen(argv[1], "r"))) {
 			fprintf(stderr, "Cannot read file: %s\n", argv[1]);
@@ -350,6 +354,7 @@ int main(int argc, char** argv) {
 	}
 
     while( yyparse() != 0);
+	validate_comments();
 
     return 0;
 }

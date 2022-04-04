@@ -8,100 +8,62 @@
 #include <stdlib.h>
 #include <iostream>
 #include <string>
-/* #include <vector> */
 #include <stack>
-#include <climits> // this is added to allow uns lng cast to int
-/* #include <cassert> */
 #include "parser.hpp"
 
 
-unsigned long tok_count = 1lu;
+unsigned int tok_count = 1u;
 unsigned int line_count = 1u;
-std::stack<unsigned long> cmnt_stack;
+std::stack<unsigned> cmnt_stack;
 
 /*
 	*@brief function for handling escape characters inside strings
 */
-/* void handle_string(){ */
-/* 	assert(yytext); */
-/* 	std::string str, debug; */
-/* 	str.resize(yyleng); */
-/* 	int i = 0, j = 0; */
-/* 	enum tok_error_t flag = FLAWLESS; */
-/* 	while(yytext[i] != 0) { */
-/* 		if(yytext[i] == '\"' && i > 0 && yytext[i-1] != '\\' && j > 0) { */
-/* 			str.at(j) += '\"'; */
-/* 			if(flag == WARNING) { */
-/* 				debug = std::string("Invalid escape characters detected: ") + debug; */
-/* 			} */
-/* 			alpha_token_t tok{ */
-/* 				line_count, */
-/* 				tok_count++, */
-/* 				str.substr(0, j+1), */
-/* 				flag, */
-/* 				debug, */
-/* 				STRINGCONST, */
-/* 			}; */
-/* 			tok_vec.push_back(tok); */
-/* 			flag = FLAWLESS; */
-/* 			str.clear(); */
-/* 			str.resize(yyleng - j); */
-/* 			j = 0; */
-/* 			debug.clear(); */
-/* 			++i; */
-/* 			continue; */
-/* 		} */
-/* 		else if(yytext[i] == '\\') { */
-/* 			++i; */
-/* 			switch(yytext[i]){ */
-/* 				case 'n': */
-/* 					str.at(j) = '\n'; */
-/* 					break; */
-/* 				case 't': */
-/* 					str.at(j) = '\t'; */
-/* 					break; */
-/* 				case 'a': */
-/* 					str.at(j) = '\a'; */
-/* 					break; */
-/* 				case '\"': */
-/* 					str.at(j) = '\"'; */
-/* 					break; */
-/* 				case '\\': */
-/* 					str.at(j) = '\\'; */
-/* 					break; */
-/* 				case 'v': */
-/* 					str.at(j) = '\v'; */
-/* 					break; */
-/* 				case '0': */
-/* 					str.at(j) = '\0'; */
-/* 					break; */
-/* 				default :	// for printing the bad esc chars */
-/* 					debug.append((yytext + i-1), 2); */
-/* 					debug.append("  "); */
-/* 					str.at(j++) = yytext[i-1]; */
-/* 					str.at(j) = yytext[i]; */
-/* 					flag = WARNING; */
-/* 			} */
-/* 		} */
-/* 		else { */
-/* 			str.at(j) = yytext[i]; */
-/* 		} */
-/* 		++i; */
-/* 		++j; */
-/* 	} */
-/* 	if(yytext[i-2] == '\\'){ */
-/* 		debug = "string literal is not closing"; */
-/* 		alpha_token_t tok{ */
-/* 			line_count, */
-/* 			tok_count++, */
-/* 			str.substr(0, j+1), */
-/* 			ERROR, */
-/* 			debug, */
-/* 			STRINGCONST, */
-/* 		}; */
-/* 		tok_vec.push_back(tok); */
-/* 	} */
-/* } */
+std::string* handle_string(){
+	std::string *str = new std::string();
+	str->resize(yyleng);
+	int i = 0, j = 0;
+	while(yytext[i] != 0) {
+		if(yytext[i] == '\\') {
+			++i;
+			switch(yytext[i]){
+				case 'n':
+					str->at(j) = '\n';
+					break;
+				case 't':
+					str->at(j) = '\t';
+					break;
+				case 'a':
+					str->at(j) = '\a';
+					break;
+				case '\"':
+					str->at(j) = '\"';
+					break;
+				case '\\':
+					str->at(j) = '\\';
+					break;
+				case 'v':
+					str->at(j) = '\v';
+					break;
+				case '0':
+					str->at(j) = '\0';
+					break;
+				default :
+					std::cout << "\033[33m" << "WARNING " << "\033[37m"
+					<< "invalid escape character detected\n"
+					<< "in line: " << line_count
+					<< "string = " << yytext << std::endl;
+					str->at(j) = yytext[i];
+			}
+		}
+		else {
+			str->at(j) = yytext[i];
+		}
+		++i;
+		++j;
+	}
+	return str;
+}
 
 %}
 
@@ -113,8 +75,7 @@ std::stack<unsigned long> cmnt_stack;
 keyword			if|else|while|for|function|return|break|continue|and|not|or|local|true|false|nil
 integer			(0[xX][0-9A-Fa-f]+)|([0-9]+)
 real			[0-9]+\.[0-9](e|E)?[0-9]*
-string			\"[^\n]*\"
-/* punctuation		"::"|".."|[\{\}\[\]\(\)\;\,\:\.] */
+string			\"([^\n\"]|"\\\"")*\"
 identifier		[a-zA-Z][a-zA-Z_0-9]*
 slcomment		"//".*
 mlcomment		"/*"
@@ -128,38 +89,35 @@ space			[ \t]*
 \n				{ line_count++; }
 {space}			{;}
 
-{slcomment}		{ 
-				}
+{slcomment}		{ ; }
 
 {mlcomment}		{
 					std::string str = std::to_string(line_count);
 					str.append(" - ");
+					++tok_count;
 					cmnt_stack.push(tok_count);
 					BEGIN(MLCOMMENT);
 				}
 
+<MLCOMMENT>"/*"	{
+					cmnt_stack.push(tok_count);
+				}
+
+<MLCOMMENT>"*/" { 	
+					if(!cmnt_stack.empty()){
+						cmnt_stack.pop();
+						if (cmnt_stack.empty()){
+							BEGIN(INITIAL);
+						}else{
+							BEGIN(MLCOMMENT);
+						}
+					}else {
+						BEGIN(INITIAL);
+					}
+				}
+
 <MLCOMMENT>"\n"	{ line_count++; }
 
-<MLCOMMENT>"/"+"*"	
-				{
-					/* std::string st = std::to_string(line_count); */
-					/* st.append(" - "); */
-					/* cmnt_stack.push(tok_count); */
-				}
-
-<MLCOMMENT>"*"+"/"
-				{ 	
-					/* if (!cmnt_stack.empty()) { */
-					/* 	int indx = cmnt_stack.top() & INT_MAX; */
-					/* 	tok_vec[indx-2].tok_val.append(std::to_string(line_count)); */
-					/* 	cmnt_stack.pop(); */
-					/* 	if (cmnt_stack.empty()){ */
-					/* 		BEGIN(INITIAL); */
-					/* 	}else{ */
-					/* 		BEGIN(MLCOMMENT); */
-					/* 	} */
-					/* } */
-				}
 <MLCOMMENT>.  	{ ; }
 
 
@@ -206,48 +164,47 @@ space			[ \t]*
 ".."		{ return DOTDOT; }
 
 {integer}		{ 
+					yylval.intConst = atoi(yytext);
 					return INTEGER;
 				}
 {real}			{ 
+					yylval.realConst = atof(yytext);
 					return REAL;
 				}
 {string}		{ 
-					/* handle_string(); */
+					yylval.strConst = handle_string();
 					return STRING;
 				}
 
 {identifier}	{ 
+					yylval.strConst = new std::string(yytext);
 					return ID;
 				}
 
 .               { 
-					/* std::string str(yytext), debug; */
-					/* int i = 0; */
-					/* while(isspace(yytext[i])){ */
-					/* 	++i; */
-					/* } */
-					/* enum token_t_enum category = UNDEFINED; */
-					/* if(yytext[i] == '\"'){ */
-					/* 	debug = "string literal is not closing"; */
-						/* category = STRINGCONST; */
-					/* } */
-					/* else{ */
-					/* 	debug = std::string("Undefined character token : ") += yytext[i]; */
-					/* } */
+					std::string str(yytext);
+					std::cout << "\033[31m" << "ERROR :" << "\033[37m";
+					if(yytext[0] == '\"'){
+						std::cout << " in line: " << line_count << ", string literal is not closing\n";
+					}
+					else{
+						std::cout << " in line: " << line_count << ", Undefined character token : " << yytext[0] << std::endl;
+					}
+					// exit(1);?
 				}
 
 <<EOF>>			{ return 0; }
 
 %%
 
-/* int validate_comments() { */
-/* 	 */
-/* 	int indx = 0; */
-/* 	while (!cmnt_stack.empty()) { */
-/* 		indx = cmnt_stack.top() & INT_MAX; */
-/* 		tok_vec[indx-2].tok_err_t = ERROR; */
-/* 		tok_vec[indx-2].tok_debug = "Non-closing comment block."; */
-/* 		cmnt_stack.pop(); */
-/* 	} */
-/* 	return ((indx) ? -1 : 0); */
-/* } */
+void validate_comments() {
+	int indx = 0;
+	while (!cmnt_stack.empty()) {
+		indx = cmnt_stack.top();
+		cmnt_stack.pop();
+	}
+	if (indx){
+		std::cout << "\033[31m" << "ERROR :" << "\033[37m" << 
+		"in line: " << line_count << ", comment is not closing\n";
+	}
+}
