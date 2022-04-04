@@ -26,35 +26,13 @@ std::vector<alpha_token_t> tok_vec;
 	*@brief function for handling escape characters inside strings
 */
 void handle_string(){
-	assert(yytext);
 	std::string str, debug;
+	debug = std::string("Invalid escape characters detected: ");
 	str.resize(yyleng);
 	int i = 0, j = 0;
 	enum tok_error_t flag = FLAWLESS;
 	while(yytext[i] != 0) {
-		if(yytext[i] == '\"' && i > 0 && yytext[i-1] != '\\' && j > 0) {
-			str.at(j) += '\"';
-			if(flag == WARNING) {
-				debug = std::string("Invalid escape characters detected: ") + debug;
-			}
-			alpha_token_t tok{
-				line_count,
-				tok_count++,
-				str.substr(0,j+1),
-				flag,
-				debug,
-				STRINGCONST,
-			};
-			tok_vec.push_back(tok);
-			flag = FLAWLESS;
-			str.clear();
-			str.resize(yyleng - j);
-			j = 0;
-			debug.clear();
-			++i;
-			continue;
-		}
-		else if(yytext[i] == '\\') {
+		if(yytext[i] == '\\') {
 			++i;
 			switch(yytext[i]){
 				case 'n':
@@ -81,9 +59,8 @@ void handle_string(){
 				default :	// for printing the bad esc chars
 					debug.append((yytext+i-1),2);
 					debug.append("  ");
-					str.at(j++) = yytext[i-1];
-					str.at(j) = yytext[i];
 					flag = WARNING;
+					str.at(j) = yytext[i];
 			}
 		}
 		else {
@@ -92,18 +69,27 @@ void handle_string(){
 		++i;
 		++j;
 	}
-	if(yytext[i-2] == '\\'){
-		debug = "string literal is not closing";
-		alpha_token_t tok{
-			line_count,
-			tok_count++,
-			str.substr(0, j+1),
-			ERROR,
-			debug,
-			STRINGCONST,
-		};
-		tok_vec.push_back(tok);
-	}
+	alpha_token_t tok{
+		line_count,
+		tok_count++,
+		str.substr(0,j+1),
+		flag,
+		debug,
+		STRINGCONST,
+	};
+	tok_vec.push_back(tok);
+	/* if(yytext[i-2] == '\\'){ */
+	/* 	debug = "string literal is not closing"; */
+	/* 	alpha_token_t tok{ */
+	/* 		line_count, */
+	/* 		tok_count++, */
+	/* 		str.substr(0, j+1), */
+	/* 		ERROR, */
+	/* 		debug, */
+	/* 		STRINGCONST, */
+	/* 	}; */
+	/* 	tok_vec.push_back(tok); */
+	/* } */
 }
 
 %}
@@ -116,7 +102,7 @@ keyword			if|else|while|for|function|return|break|continue|and|not|or|local|true
 operator		[=\+\-\*\/\%\>\<]|"=="|"!="|"++"|"--"|">="|"<="
 integer			(0[xX][0-9A-Fa-f]+)|([0-9]+)
 real			[0-9]+\.[0-9](e|E)?[0-9]*
-string			\"[^\n]*\"
+string			\"([^\n\"]|"\\\"")*\"
 punctuation		"::"|".."|[\{\}\[\]\(\)\;\,\:\.]
 identifier		[a-zA-Z][a-zA-Z_0-9]*
 slcomment		"//".*
@@ -226,17 +212,13 @@ space			[ \t]*
 				}
 .               { 
 					std::string str(yytext), debug;
-					int i = 0;
-					while(isspace(yytext[i])){
-						++i;
-					}
 					enum token_t_enum category = UNDEFINED;
-					if(yytext[i] == '\"'){
+					if(yytext[0] == '\"'){
 						debug = "string literal is not closing";
 						category = STRINGCONST;
 					}
 					else{
-						debug = std::string("Undefined character token : ") += yytext[i];
+						debug = std::string("Undefined character token : ") += yytext[0];
 					}
 					alpha_token_t tok{
 						line_count,

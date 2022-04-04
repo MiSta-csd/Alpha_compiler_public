@@ -2,13 +2,12 @@
 scanner: lex.yy.c
 	g++ lex.yy.c -o scanner
 
-lex.yy.c:
+lex.yy.c: scanner.l
 	flex scanner.l
 
 clean:
 	rm -f scanner scanner.h lex.yy.c
 
-.SILENT:
 stringTests: stringPassTest stringErrorTest
 stringErrorTest: scanner
 	echo "\n---Running the error string tests---\n" && \
