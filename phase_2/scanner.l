@@ -1,4 +1,5 @@
 %{
+#pragma once
 #if defined(WIN32)
 #define YY_NO_UNISTD_H
 #elif defined(_WIN32_WCE)
@@ -204,6 +205,6 @@ void validate_comments() {
 	}
 	if (indx){
 		std::cout << "\033[31m" << "ERROR :" << "\033[37m" << 
-		"in line: " << line_count << ", comment is not closing\n";
+		" comment is not closing\n";
 	}
 }

@@ -1,9 +1,10 @@
 %{
+#pragma once
 #include <assert.h>
 #include <iostream>
 #include <string>
-/* #include "scanner.hpp" */
 #include <unordered_map>
+#include "symtable.h"
 
 int yyerror(std::string message);
 
@@ -12,59 +13,9 @@ extern char *yytext;
 extern FILE *yyin;
 extern int yylex();
 
-union types{
-	int intConst;
-	double realConst;
-	bool boolConst;
-	void *genPtr;
-	union types (*fpt)(...);
-};
+extern std::vector< std::unordered_map<std::string, st_entry> > symbol_table;
 
 int scope = 0;
-std::unordered_map<std::string, union types> scope0;
-/* typedef struct errorNode{ */
-/* 	char *error; */
-/* 	int line; */
-/* 	struct errorNode *next; */
-/* } errorNode; */
-
-/* typedef struct errorQueue{ */
-/* 	// int num_errors; */
-/* 	struct errorNode *head; */
-/* 	struct errorNode *tail; */
-/* } errorQueue; */
-
-/* errorQueue errorQ; */
-
-/* void printErrors(){ */
-/* 	ErrorNode *temp = errorQ->head; */
-/* 	while(temp){ */
-/* 		printf("At line %d, Error: %s\n",temp->line, temp->error ); */
-/* 		temp=temp->next; */
-/* 	} */
-/* } */
-
-/* void init_error_queue(ErrorNode *queue){ */
-/* 	queue = (errorQueue*) malloc(sizeof(errorQueue)); */
-/* 	assert(queue); */
-/* 	queue->head = queue->tail = NULL; */
-/* } */
-
-/* void insertError(const char *err, int line){ */
-/* 	ErrorNode *temp = errorHead; */
-/* 	ErrorNode *new = (ErrorNode*) malloc(sizeof(struct ErrorNode)); */
-/* 	assert(new); */
-/* 	new->error = strdup(err); */
-/* 	new->line = line; */
-/* 	new->next = NULL; */
-/* 	if(!errorQ->head){ */
-/* 		errorQ->head = errorQ->tail = new; */
-/* 	}else { */
-/* 		errorQ->tail->next = new; */
-/* 		errorQ->tail = new; */
-/* 	} */
-/* } */
-
 
 void print_rules(std::string str) {
 	std::cout << "~ entered rule :\t " << str << std::endl;
@@ -79,6 +30,7 @@ void print_rules(std::string str) {
 	int intConst;
 	double realConst;
 	std::string *strConst;
+
 }
 
 %token<intConst> INTEGER 
