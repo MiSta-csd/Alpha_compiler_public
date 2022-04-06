@@ -1,10 +1,9 @@
 %{
-#pragma once
 #include <assert.h>
 #include <iostream>
 #include <string>
-#include <unordered_map>
 #include "symtable.h"
+
 
 int yyerror(std::string message);
 
@@ -13,12 +12,11 @@ extern char *yytext;
 extern FILE *yyin;
 extern int yylex();
 
-extern std::vector< std::unordered_map<std::string, st_entry> > symbol_table;
-
-int scope = 0;
+/* Auxiliary var */
+st_entry* st_entry_tmp;
 
 void print_rules(std::string str) {
-	std::cout << "~ entered rule :\t " << str << std::endl;
+	 std::cout << "~ entered rule :\t " << str << std::endl;
 }
 
 %}
@@ -30,20 +28,24 @@ void print_rules(std::string str) {
 	int intConst;
 	double realConst;
 	std::string *strConst;
-
+	struct st_entry *entryVal;
+	bool boolean;
 }
 
 %token<intConst> INTEGER 
 %token<realConst> REAL
 %token<strConst> STRING
-%token TRUE FALSE OR LOCAL NIL UMINUS MINUSMINUS ID
+%token<strConst> ID
+%token<boolean> TRUE FALSE
+%token OR LOCAL NIL UMINUS MINUSMINUS
 %token IF ELSE WHILE FUNCTION FOR RETURN BREAK CONTINUE AND NOT 
 %token ASSIGN PLUS MINUS MULT DIVIDE PERCENT NOTEQUAL PLUSPLUS
 %token GREATER  LESSER GREATEREQUAL LESSEREQUAL EQUAL
 %token LCBRACK RCBRACK LBRACK RBRACK LPAREN RPAREN SEMICOLON COMMA COLON COLONCOLON DOT DOTDOT
 %type program stmts stmt expr term assignexpr primary
 %type member call elist objectdef const returnstmt
-%type<strConst> funcdef lvalue // will be actual symTable's type
+%type<entryVal> funcdef lvalue
+%type idlist
 
 %right 		ASSIGN
 %left 		OR
@@ -111,8 +113,8 @@ term		: LPAREN expr RPAREN		{print_rules("5.1 term -> ( expr )");}
 			;
 // Rule 6.
 assignexpr	: lvalue ASSIGN expr		{
-		   							/* 		if($1.type==LIBFUNC || $1.type==USERFUNC) */
-												/* insertError("invalid assignment(lvalue is a function)\n", yylineno); */
+		   							/* 		if($1->type==LIB_FUNC || $1->type==USER_FUNC) */
+												/* yyerror("invalid assignment(lvalue is a function)\n", yylineno); */
 											print_rules("6.1 assignexpr -> lvalue = expr");
 										};
 
@@ -134,6 +136,16 @@ lvalue		: ID						{
 											/* if(l==FOUND_NOTREDIFIN) */
 											/* 	$$ = return_Entry; */
 											print_rules("8.1 lvalue -> ID");
+											st_entry_tmp = st_lookup(*$1);
+											//TODO an mesolavei synarthsh error
+											//TODO 
+											if(st_entry_tmp){
+												;
+											}
+											else{
+												$$ = st_insert(*$1, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR);
+											}
+
 										}
 			| LOCAL ID					{
 											/* l = lookup((char *)$2, LOCAL_LOC, 0); */
@@ -146,7 +158,19 @@ lvalue		: ID						{
 											/* } */
 											/* else if(l==FOUND) */
 											/* 	$$ = return_Entry; */
-											print_rules("8.2 lvalue -> local ID");}
+											print_rules("8.2 lvalue -> local ID");
+
+											// Ean eimaste se function me param idiou name den kanoume tipota
+											// Alliws kanoume insert sto local scope
+											st_entry_tmp = st_lookup(*$2);
+											if(st_entry_tmp){
+												;
+											}
+											else{
+												$$ = st_insert(*$2, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR);
+											}
+
+											}
 			| COLONCOLON ID				{
 											/* l = lookup((char *)$2, GLOBAL_LOC, 0); */
 											/* printf("colon colon %s,enum %d",$2, l); */
@@ -155,8 +179,9 @@ lvalue		: ID						{
 											/* } */
 											/* else if(l==FOUND || l==FOUND_NOTREDIFIN) */
 											/* 	$$ = return_Entry; */
-											/* print_rules("8.3 lvalue -> ::ID"); */
-										}
+											print_rules("8.3 lvalue -> ::ID");
+
+											}
 			| member					{print_rules("8.4 lvalue -> member");}
 			;
 // Rule 9.
@@ -168,8 +193,7 @@ member		: lvalue DOT ID				{print_rules("9.1 member -> lvalue . ID");}
 // Rule 10.
 call		: call LPAREN elist RPAREN	{print_rules("10.1 member -> call ( elist )");}
 			| lvalue callsuffix			{print_rules("10.2 member -> lvalue callsuffix");}
-			| LPAREN funcdef RPAREN LPAREN elist RPAREN
-										{print_rules("10.3 member -> ( funcdef ) ( elist )");}
+			| LPAREN funcdef RPAREN LPAREN elist RPAREN{print_rules("10.3 member -> ( funcdef ) ( elist )");}
 			;
 // Rule 11.
 callsuffix	: normcall					{print_rules("11.1 member -> normcall");}
@@ -179,8 +203,7 @@ callsuffix	: normcall					{print_rules("11.1 member -> normcall");}
 normcall	: LPAREN elist RPAREN		{print_rules("12.1 normcall -> ( elist )");}
 			;
 // Rule 13.
-methodcall	: DOTDOT ID LPAREN elist RPAREN
-		   								{print_rules("13.1 methodcall -> .. ID ( elist )");}
+methodcall	: DOTDOT ID LPAREN elist RPAREN{print_rules("13.1 methodcall -> .. ID ( elist )");}
 			;
 // Rule 14.
 elist		: expr 						{print_rules("14.1 elist -> expr");}
@@ -196,21 +219,21 @@ indexed		: indexedelem 				{print_rules("16.1 indexed -> indexedelem");}
 			| indexed COMMA indexedelem	{print_rules("16.2 indexed ->  indexed , indexedelem");}
 			;
 // Rule 17.
-indexedelem	: LCBRACK expr COLON expr RCBRACK
-										{print_rules("17.1 indexedelem -> { expr : expr }");}
+indexedelem	: LCBRACK expr COLON expr RCBRACK{print_rules("17.1 indexedelem -> { expr : expr }");}
 			;
 // Rule 18.
-block		: LCBRACK //{ increaseScope();}
-	   					stmts RCBRACK 	{
-											/* hide(); decreaseScope(); */
-	   										print_rules("18.1 block -> { stmts }");
+block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
+											st_increase_scope();}
+	   		  stmts RCBRACK 			{
+											st_hide(st_get_scope()); st_decrease_scope();
+	   										
 										}
 			;
 // Rule 19.
-funcdef		: FUNCTION //{/*change from here(oldlineno[scope])*/oldlineno[scope] = yylineno;}
-		 				LPAREN			{scope++;}
-						idlist RPAREN	{
-											scope--;
+funcdef		: FUNCTION 					//{/*change from here(oldlineno[scope])*/oldlineno[scope] = yylineno;}
+			  LPAREN					{st_increase_scope();}
+			  idlist RPAREN				{
+											st_decrease_scope();
 											/* char *tempName = malloc(10); */
 											/* sprintf(tempName, "$f%d", nonos++); */
 											/* swap(&yylineno, &oldlineno[scope]); */
@@ -219,10 +242,14 @@ funcdef		: FUNCTION //{/*change from here(oldlineno[scope])*/oldlineno[scope] = 
 											/* free(tempName);} block {$$ = funcDefs[scope]; */
 											print_rules("19.1 funcdef -> function ( idlist ) block");
 										}
-			/* | FUNCTION 					{oldlineno[scope] = yylineno;} */
-			  ID LPAREN					{scope++;} 
+			  block 					{
+											/* $$ = funcDefs[scope]; */
+											print_rules("19.2 indexed -> function ID ( idlist ) block");
+										}
+			| FUNCTION 				//	{oldlineno[scope] = yylineno;}
+			  ID LPAREN					{st_increase_scope();} 
 			  idlist RPAREN				{
-											scope--;
+											st_decrease_scope();
 											/* l = lookup((char *)$3, NORMAL_LOC, 1); */
 											/* if(l==ERR) */
 											/* 	insertError("a variable or Function was detected in the same scope", yylineno); */
@@ -239,45 +266,61 @@ funcdef		: FUNCTION //{/*change from here(oldlineno[scope])*/oldlineno[scope] = 
 										}	// reduce/reduce conflict
 			 ;/*change to here(oldlineno[scope])*/
 // Rule 20.
-const		: INTEGER 					{print_rules("20.1 const -> INTEGER");}
-	   		| REAL 						{("20.1 const -> REAL");}
-			| STRING 					{print_rules("20.2 const -> STRING");}
-			| NIL 						{print_rules("20.3 const -> NIL");}
-			| TRUE 						{print_rules("20.4 const -> TRUE");}
-			| FALSE						{print_rules("20.5 const -> FALSE");}
+const		: INTEGER 					{print_rules("20.1 const -> INTEGER");}	
+	   		| REAL 						{print_rules("20.2 const -> REAL");}
+			| STRING 					{print_rules("20.3 const -> STRING");}
+			| NIL 						{print_rules("20.4 const -> NIL");}
+			| TRUE 						{print_rules("20.5 const -> TRUE");}
+			| FALSE						{print_rules("20.6 const -> FALSE");}
 			;
 // Rule 21.
 idlist		: ID 						{
+											print_rules("22.1 idlist -> ID");
 											/* 	l = lookup((char *)$1, FORMAL_LOC, 0); */
 											/* if(l==ERR) */
 											/* 	insertError("variable already declared in argument list\n", yylineno); */
 											/* if(l==NOTFOUND) */
 											/* 	insert((char *)$1, FORMALVAR); */
-											print_rules("22.1 idlist -> ID");
+											//(st_entry_tmp = lookup((char *)$1, get_scope())) ? /* ERROR */; : st_insert(st_entry_tmp, FORMAL_ARG);
+											
+											// std::cout << "ID = " << *$1 << std::endl;
+											st_entry_tmp = st_lookup(*$1);
+											if(st_entry_tmp){ // conflict
+												yyerror("Argument name already exists.");
+											}
+											else {
+												st_entry_tmp = st_insert(*$1, FORMAL_ARG);
+												load_2_arglist(st_entry_tmp);
+											}
+											
 										}
 			| idlist COMMA ID 			{
+											print_rules("22.2 idlist -> idlist , ID");
 											/* l = lookup((char *)$3, FORMAL_LOC, 0); */
 											/* if(l==ERR) */
 											/* 	insertError("variable already declared in argument list\n", yylineno); */
 											/* if(l==NOTFOUND) */
 											/* 	insert((char *)$3, FORMALVAR); */
-											print_rules("22.2 idlist -> idlist , ID");
+											st_entry_tmp = st_lookup(*$3);
+											if(st_entry_tmp){ // conflict
+												yyerror("Argument name already exists.");
+											}
+											else {
+												st_entry_tmp = st_insert(*$3, FORMAL_ARG);
+												load_2_arglist(st_entry_tmp);
+											}										
 										}
 			|
 			;
 // Rule 22.
-ifstmt		: IF LPAREN expr RPAREN stmt 			
-										{print_rules("23.1 ifstmt -> if ( expr ) stmt");}
-			| IF LPAREN expr RPAREN stmt ELSE stmt
-										{print_rules("23.2 ifstmt -> if ( expr ) stmt else stmt");}
+ifstmt		: IF LPAREN expr RPAREN stmt{print_rules("23.1 ifstmt -> if ( expr ) stmt");}
+			| IF LPAREN expr RPAREN stmt ELSE stmt{print_rules("23.2 ifstmt -> if ( expr ) stmt else stmt");}
 			;
 // Rule 23.
-whilestmt	: WHILE LPAREN expr RPAREN stmt
-		  								{print_rules("24.1 whilestmt -> while ( expr ) stmt");}
+whilestmt	: WHILE LPAREN expr RPAREN stmt{print_rules("24.1 whilestmt -> while ( expr ) stmt");}
 			;
 // Rule 24.
-forstmt		: FOR LPAREN elist SEMICOLON expr SEMICOLON elist RPAREN stmt 
-										{print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");}
+forstmt		: FOR LPAREN elist SEMICOLON expr SEMICOLON elist RPAREN stmt {print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");}
 			;
 // Rule 25.
 returnstmt 	: RETURN SEMICOLON 			{print_rules("26.1 returnstmt -> return ;");}
@@ -288,9 +331,9 @@ returnstmt 	: RETURN SEMICOLON 			{print_rules("26.1 returnstmt -> return ;");}
 
 extern void validate_comments();
 
-int yyerror(std::string message){
-	std::cout << message << ": at line: " << yylineno << ", before token: " << yytext << std::endl
-	<< "INVALID INPUT\n";
+int yyerror(std:: string err){
+	std::cout << "\033[31m" << "ERROR " << "\033[37m" <<
+	"in line " << yylineno << " : " << err << "\n";
 	return 1;
 }
 
@@ -304,10 +347,10 @@ int main(int argc, char** argv) {
 	} else {
 		yyin = stdin;
 	}
-
+	st_initialize();
     while( yyparse() != 0);
 	validate_comments();
+	st_print_table();
 
     return 0;
 }
-

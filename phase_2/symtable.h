@@ -1,11 +1,20 @@
-#define SYM_T_H
+#ifndef SYMTABLE_H
+#define SYMTABLE_H
+
+
 #include <iostream>
+#include <ostream>
+#include <assert.h>
 #include <vector>
+#include <unordered_map>
+#include <cassert>
+
+
 
 enum st_entry_type {
-	GLOBAL_ARG = 0,
+	GLOBAL_VAR = 0,
 	FORMAL_ARG,
-	LOCAL_ARG,
+	LOCAL_VAR,
 	LIB_FUNC,
 	USER_FUNC
 };
@@ -15,14 +24,49 @@ struct st_entry {
 	bool active;
 	std::string name;
 	enum st_entry_type type;
-	std::vector<st_entry> argList;	// Formal Arguments list
-									// in case of function
+	std::vector<st_entry*> *argList;	// Formal Arguments list
+										// in case of function
 	unsigned int scope;
-	unsigned long line;
+	int line;
 } typedef st_entry;
 
 
-/* TODO */ // insert, lookup, hide
-// struct st_entry create_st_entry(std::string name, enum st_entry_type type){
 
-// }
+/* TODO */ // insert, lookup, hide
+
+st_entry* st_insert(std::string name_input, enum st_entry_type type_input);
+
+/* increases scope */
+void st_increase_scope();
+
+/* decreases scope */
+void st_decrease_scope();
+
+/* self explainatory */
+unsigned int st_get_scope();
+
+/* 	performs search in order:
+	- through locals
+	- through argList buffer
+	- high to low every scope (only non formals)*/
+st_entry* st_lookup(std::string);
+
+
+st_entry* st_lookup(std::string name_input, unsigned int scope_input);
+
+int st_hide(unsigned int scope_input);
+
+int load_2_arglist(struct st_entry* arg);
+
+int offload_arglist(st_entry* func);
+
+void st_initialize();
+
+void st_print_table();
+
+void st_freeAll();
+
+
+#endif
+
+

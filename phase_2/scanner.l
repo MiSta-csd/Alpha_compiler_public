@@ -1,5 +1,4 @@
 %{
-#pragma once
 #if defined(WIN32)
 #define YY_NO_UNISTD_H
 #elif defined(_WIN32_WCE)
@@ -70,7 +69,6 @@ std::string* handle_string(){
 
 %option noyywrap
 %option yylineno
-%option header-file="./scanner.hpp"
 
 
 keyword			if|else|while|for|function|return|break|continue|and|not|or|local|true|false|nil
