@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include "symtable.h"
+#include <unordered_map>
 
 
 int yyerror(std::string message);
@@ -13,7 +14,9 @@ extern FILE *yyin;
 extern int yylex();
 
 /* Auxiliary var */
-st_entry* st_entry_tmp;
+std::unordered_map<std::string, struct st_entry*> st_entry_tmp;
+
+
 
 void print_rules(std::string str) {
 	 std::cout << "~ entered rule :\t " << str << std::endl;
@@ -136,11 +139,15 @@ lvalue		: ID						{
 											/* if(l==FOUND_NOTREDIFIN) */
 											/* 	$$ = return_Entry; */
 											print_rules("8.1 lvalue -> ID");
-											st_entry_tmp = st_lookup(*$1);
-											//TODO an mesolavei synarthsh error
+											st_entry_tmp["r8"] = st_lookup(*$1);
 											//TODO 
-											if(st_entry_tmp){
-												;
+											// an eimaste mesa se function kai yparxei
+											// !local variable! (scope != 0) se scope < current_scope
+											// tote petame error.
+											if(st_entry_tmp["r8"] && (st_entry_tmp["r8"]->scope != 0) && st_get_in_funcdef() 
+													&& (st_entry_tmp["r8"]->scope < st_get_scope())
+													&& (st_entry_tmp["r8"]->active == true)){
+												yyerror("Cannot access local var \""+*$1+"\" inside func scope");
 											}
 											else{
 												$$ = st_insert(*$1, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR);
@@ -160,10 +167,13 @@ lvalue		: ID						{
 											/* 	$$ = return_Entry; */
 											print_rules("8.2 lvalue -> local ID");
 
-											// Ean eimaste se function me param idiou name den kanoume tipota
+											
+											
+											//TODO 
+											// Ean yparxei to ID locally den kanoyme tipota
 											// Alliws kanoume insert sto local scope
-											st_entry_tmp = st_lookup(*$2);
-											if(st_entry_tmp){
+											st_entry_tmp["r8"] = st_lookup(*$2);
+											if(st_entry_tmp["r8"] && (st_entry_tmp["r8"]->scope == st_get_scope()) ){
 												;
 											}
 											else{
@@ -180,8 +190,19 @@ lvalue		: ID						{
 											/* else if(l==FOUND || l==FOUND_NOTREDIFIN) */
 											/* 	$$ = return_Entry; */
 											print_rules("8.3 lvalue -> ::ID");
-
+											//TODO
+											// Psanxoume mono sto scope 0
+											// an den yparxei error
+											// alliws anaferomaste se ayto
+											st_entry_tmp["r8"] = st_lookup(*$2, 0);
+											if(!st_entry_tmp["r8"]){
+												yyerror("Global "+*$2+" undeclared.");
 											}
+											else {
+												$$ = st_entry_tmp["r8"];
+											}
+
+										}
 			| member					{print_rules("8.4 lvalue -> member");}
 			;
 // Rule 9.
@@ -230,9 +251,15 @@ block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 										}
 			;
 // Rule 19.
-funcdef		: FUNCTION 					//{/*change from here(oldlineno[scope])*/oldlineno[scope] = yylineno;}
+funcdef		: FUNCTION 					{	print_rules("19.1 funcdef -> function ( idlist ) block");
+											/*change from here(oldlineno[scope])oldlineno[scope] = yylineno;*/
+											
+										}
 			  LPAREN					{st_increase_scope();}
 			  idlist RPAREN				{
+				  							st_entry_tmp["r19"];
+				  							st_entry_tmp["r19"] = st_insert(st_godfather(), USER_FUNC);
+				  							offload_arglist(st_entry_tmp["r19"]);
 											st_decrease_scope();
 											/* char *tempName = malloc(10); */
 											/* sprintf(tempName, "$f%d", nonos++); */
@@ -240,15 +267,45 @@ funcdef		: FUNCTION 					//{/*change from here(oldlineno[scope])*/oldlineno[scop
 											/* funcDefs[scope]= *insert(tempName,  USERFUNC); */
 											/* swap(&yylineno, &oldlineno[scope]); */
 											/* free(tempName);} block {$$ = funcDefs[scope]; */
-											print_rules("19.1 funcdef -> function ( idlist ) block");
 										}
 			  block 					{
 											/* $$ = funcDefs[scope]; */
-											print_rules("19.2 indexed -> function ID ( idlist ) block");
+											
+
 										}
-			| FUNCTION 				//	{oldlineno[scope] = yylineno;}
-			  ID LPAREN					{st_increase_scope();} 
+			| FUNCTION 					{	print_rules("19.2 funcdef -> function ID ( idlist ) block");}//	{oldlineno[scope] = yylineno;}
+			  ID 						{	//TODO
+			  								// Den prepei na kanei shadow active name
+											// alliws kanoume insert th synarthsh sto local scope
+											st_entry_tmp["r19"] = st_lookup(*$3);
+											if((!st_entry_tmp["r19"]) ||
+												( (st_entry_tmp["r19"]) && 
+												(st_entry_tmp["r19"]->scope < st_get_scope())
+												&& (st_entry_tmp["r19"]->type != LIB_FUNC) ) )
+											{
+												st_entry_tmp["r19"] = st_insert(*$3, USER_FUNC);
+											}
+											else
+											{
+												if(st_entry_tmp["r19"]->type == USER_FUNC)// kseroume oti einai locally defined
+													yyerror("redefinition of user function defined in line "
+													+ std::to_string(st_entry_tmp["r19"]->line));
+												else if(st_entry_tmp["r19"]->type == LIB_FUNC){
+													yyerror("function definition shadows lib function");
+												}
+												else if(st_entry_tmp["r19"]->type == LOCAL_VAR){// einai local variable
+													yyerror("\""+ *$3 + "\" redeclared as different kind symbol");
+												}
+												else{
+													yyerror("UNHANDLED CASE ?!\nonoma: " + st_entry_tmp["r19"]->name +
+													"typos: " + std::to_string(st_entry_tmp["r19"]->type) + 
+													"grammh: " + std::to_string(st_entry_tmp["r19"]->line));
+												}
+											}
+										}
+			  LPAREN					{	st_increase_scope();		} 
 			  idlist RPAREN				{
+											offload_arglist(st_entry_tmp["r19"]);
 											st_decrease_scope();
 											/* l = lookup((char *)$3, NORMAL_LOC, 1); */
 											/* if(l==ERR) */
@@ -262,7 +319,8 @@ funcdef		: FUNCTION 					//{/*change from here(oldlineno[scope])*/oldlineno[scop
 										}
 			 block 						{
 											/* $$ = funcDefs[scope]; */
-											print_rules("19.2 indexed -> function ID ( idlist ) block");
+											/* print_rules("19.2 indexed -> function ID ( idlist ) block"); */
+											print_rules("EXIT OF 19.2 funcdef -> function ID ( idlist ) block");
 										}	// reduce/reduce conflict
 			 ;/*change to here(oldlineno[scope])*/
 // Rule 20.
@@ -284,13 +342,13 @@ idlist		: ID 						{
 											//(st_entry_tmp = lookup((char *)$1, get_scope())) ? /* ERROR */; : st_insert(st_entry_tmp, FORMAL_ARG);
 											
 											// std::cout << "ID = " << *$1 << std::endl;
-											st_entry_tmp = st_lookup(*$1);
-											if(st_entry_tmp){ // conflict
-												yyerror("Argument name already exists.");
+											st_entry_tmp["r21"] = st_lookup(*$1);
+											if(st_entry_tmp["r21"]){ // conflict
+												yyerror("Argument "+ *$1 +" already exists.");
 											}
 											else {
-												st_entry_tmp = st_insert(*$1, FORMAL_ARG);
-												load_2_arglist(st_entry_tmp);
+												st_entry_tmp["r21"] = st_insert(*$1, FORMAL_ARG);
+												load_2_arglist(st_entry_tmp["r21"]);
 											}
 											
 										}
@@ -301,13 +359,13 @@ idlist		: ID 						{
 											/* 	insertError("variable already declared in argument list\n", yylineno); */
 											/* if(l==NOTFOUND) */
 											/* 	insert((char *)$3, FORMALVAR); */
-											st_entry_tmp = st_lookup(*$3);
-											if(st_entry_tmp){ // conflict
-												yyerror("Argument name already exists.");
+											st_entry_tmp["r21"] = st_lookup(*$3);
+											if(st_entry_tmp["r21"]){ // conflict
+												yyerror("Argument "+ *$3 +" already exists.");
 											}
 											else {
-												st_entry_tmp = st_insert(*$3, FORMAL_ARG);
-												load_2_arglist(st_entry_tmp);
+												st_entry_tmp["r21"] = st_insert(*$3, FORMAL_ARG);
+												load_2_arglist(st_entry_tmp["r21"]);
 											}										
 										}
 			|

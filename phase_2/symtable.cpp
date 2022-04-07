@@ -1,6 +1,10 @@
 #include "symtable.h"
 unsigned int scope;
 unsigned int scope_MAX;
+bool in_funcdef;
+unsigned int nonos;
+
+
 
 extern int yylineno;
 
@@ -32,6 +36,12 @@ st_entry* st_insert(std::string name, enum st_entry_type type){
 	return new_entry;
 }
 
+std::string st_godfather(){
+
+    std::string s = "$f_" + nonos++;
+    return s;
+}
+
 void st_increase_scope(){    
     scope++;
 	
@@ -39,7 +49,6 @@ void st_increase_scope(){
 		scope_MAX = scope;
 		symbol_table.push_back(*(new std::vector<st_entry>));
 	}
-    std::cout << "symtable.size = " << symbol_table.size() << std::endl;
 }
 
 void st_decrease_scope(){
@@ -85,7 +94,6 @@ st_entry* st_lookup(std::string name_input){
 st_entry* st_lookup(std::string name_input, unsigned int scope_input){
 
     st_entry* tmp = NULL;
-    std::cout << "scope input = " << scope_input << std::endl;
 
     for (auto v : symbol_table[scope_input]){
         if((v.name == name_input) && (v.active)){
@@ -114,7 +122,9 @@ int load_2_arglist(struct st_entry* arg){
 
 
 int offload_arglist(st_entry* func){
-
+    assert(f_arg_list.size() > 0);
+    std::cout << func->type <<std::endl;
+    assert(func->type == USER_FUNC);
     assert(func->argList);
     *(func->argList) = f_arg_list;
     f_arg_list.clear();
@@ -122,10 +132,19 @@ int offload_arglist(st_entry* func){
     return 0;
 }
 
+void st_set_in_funcdef(bool b){
+    in_funcdef = b;
+}
+
+bool st_get_in_funcdef(){
+    return in_funcdef;
+}
+
 void st_initialize(){
     scope = 0;
     yylineno = 1; /* Maybe unneeded */
     scope_MAX = 0;
+    nonos = 0;
 
     symbol_table.push_back(*(new std::vector<st_entry>));
     st_insert("print", LIB_FUNC);

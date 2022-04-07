@@ -6,7 +6,6 @@
 #include <ostream>
 #include <assert.h>
 #include <vector>
-#include <unordered_map>
 #include <cassert>
 
 
@@ -36,6 +35,8 @@ struct st_entry {
 
 st_entry* st_insert(std::string name_input, enum st_entry_type type_input);
 
+std::string st_godfather();
+
 /* increases scope */
 void st_increase_scope();
 
@@ -59,6 +60,10 @@ int st_hide(unsigned int scope_input);
 int load_2_arglist(struct st_entry* arg);
 
 int offload_arglist(st_entry* func);
+
+void st_set_in_funcdef(bool b);
+
+bool st_get_in_funcdef();
 
 void st_initialize();
 
