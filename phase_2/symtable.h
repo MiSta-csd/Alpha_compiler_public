@@ -7,8 +7,8 @@
 #include <assert.h>
 #include <vector>
 #include <cassert>
-
-
+#include <unordered_map>
+#include <stack>
 
 enum st_entry_type {
 	GLOBAL_VAR = 0,
@@ -17,7 +17,6 @@ enum st_entry_type {
 	LIB_FUNC,
 	USER_FUNC
 };
-
 
 struct st_entry {
 	bool active;
@@ -28,10 +27,6 @@ struct st_entry {
 	unsigned int scope;
 	int line;
 } typedef st_entry;
-
-
-
-/* TODO */ // insert, lookup, hide
 
 st_entry* st_insert(std::string name_input, enum st_entry_type type_input);
 
@@ -61,9 +56,9 @@ int load_2_arglist(struct st_entry* arg);
 
 int offload_arglist(st_entry* func);
 
-void st_set_in_funcdef(bool b);
+void st_set_inloop(bool b);
 
-bool st_get_in_funcdef();
+bool st_get_inloop();
 
 void st_initialize();
 
@@ -71,6 +66,7 @@ void st_print_table();
 
 void st_freeAll();
 
+st_entry *check_arglist(std::string name_input);
 
 #endif
 

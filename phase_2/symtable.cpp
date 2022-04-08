@@ -1,17 +1,20 @@
 #include "symtable.h"
 unsigned int scope;
 unsigned int scope_MAX;
-bool in_funcdef;
+unsigned in_funcdef;
+bool in_loop;
 unsigned int nonos;
 
 
 
 extern int yylineno;
 
-
 std::vector<std::vector<st_entry> > symbol_table;
 
 std::vector<struct st_entry*> f_arg_list;
+
+std::stack<struct st_entry*> func_stack;
+
 
 
 
@@ -38,7 +41,7 @@ st_entry* st_insert(std::string name, enum st_entry_type type){
 
 std::string st_godfather(){
 
-    std::string s = "$f_" + nonos++;
+    std::string s = "_$f" + std::to_string(nonos++);
     return s;
 }
 
@@ -60,33 +63,27 @@ unsigned int st_get_scope(){
     return scope;
 }
 
+st_entry *check_arglist(std::string name_input){
+    /* check argList */
+    for (int i = 0; i < f_arg_list.size(); ++i){
+        if((f_arg_list[i]->name == name_input) && (f_arg_list[i]->active==true)){
+                return f_arg_list[i];
+        }
+    }
+    return NULL;
+}
+
 st_entry* st_lookup(std::string name_input){
 
 	st_entry* tmp = NULL;
-    
-    /* check for locals first */
-    if(tmp = st_lookup(name_input, st_get_scope())){
-            return tmp;
-    }
-
-    /* check argList */
-    for (auto arg : f_arg_list){
-        if((arg->name == name_input) && (arg->active==true)){
-                return arg;
-            }
-    }
-
     /* checking all current and lower scopes */
-    for (int i = (static_cast<int>(st_get_scope())-1); i >= 0; i--){
-        for (auto v : symbol_table[i]){
-            if((v.name == name_input) && (v.active)
-                && (v.type != FORMAL_ARG)){
-                tmp = &v;
-                return tmp;
+    for (int i = (static_cast<int>(st_get_scope())); i >= 0; i--){
+        for (int j = 0; j < symbol_table[i].size(); ++j){
+            if((symbol_table[i][j].name == name_input) && (symbol_table[i][j].active)){
+                    return &symbol_table[i][j];
             }
         }
     }
-	
     return tmp;
 }
 
@@ -95,9 +92,10 @@ st_entry* st_lookup(std::string name_input, unsigned int scope_input){
 
     st_entry* tmp = NULL;
 
-    for (auto v : symbol_table[scope_input]){
-        if((v.name == name_input) && (v.active)){
-            tmp = &v;
+    for (int i = 0; i < symbol_table[scope_input].size(); i++){
+        if((symbol_table[scope_input][i].name == name_input) 
+            && (symbol_table[scope_input][i].active)){
+            tmp = &symbol_table[scope_input][i];
         }
     }
 	return tmp;
@@ -106,10 +104,9 @@ st_entry* st_lookup(std::string name_input, unsigned int scope_input){
 int st_hide(unsigned int scope_input){
 
     assert(scope_input > 0);
-    for (auto v : symbol_table[scope_input]){
-        v.active = false;
+     for (int i = 0; i < symbol_table[scope_input].size(); ++i){
+        symbol_table[scope_input][i].active = false;
     }
-
 	return 0;
 }
 
@@ -120,10 +117,7 @@ int load_2_arglist(struct st_entry* arg){
     return 0;
 }
 
-
 int offload_arglist(st_entry* func){
-    assert(f_arg_list.size() > 0);
-    std::cout << func->type <<std::endl;
     assert(func->type == USER_FUNC);
     assert(func->argList);
     *(func->argList) = f_arg_list;
@@ -132,17 +126,17 @@ int offload_arglist(st_entry* func){
     return 0;
 }
 
-void st_set_in_funcdef(bool b){
-    in_funcdef = b;
+void st_set_inloop(bool b){
+    in_loop = b;
 }
 
-bool st_get_in_funcdef(){
-    return in_funcdef;
+bool st_get_inloop(){
+    return in_loop;
 }
 
 void st_initialize(){
     scope = 0;
-    yylineno = 1; /* Maybe unneeded */
+    yylineno = 1;
     scope_MAX = 0;
     nonos = 0;
 
@@ -174,10 +168,11 @@ void st_print_table(){
             std::cout << "\"" << v2.name << "\" ["
             << st_type_print[v2.type] << "] "
             << "(line " << v2.line << ") (scope "
-            << v2.scope << ") \n";
+            << v2.scope << ")\n";
+            
         }
         std::cout << std::endl;
     }
+    std::cout << " ------------------------------------------- \n";
+    std::cout << "\"name\"  [type]   (line)  (scope)   \n";
 }
-
-

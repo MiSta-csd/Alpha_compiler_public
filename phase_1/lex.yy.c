@@ -659,86 +659,6 @@ std::vector<alpha_token_t> tok_vec;
 /*
 	*@brief function for handling escape characters inside strings
 */
-/* void handle_string(){ */
-/* 	assert(yytext); */
-/* 	std::string str, debug; */
-/* 	str.resize(yyleng); */
-/* 	int i = 0, j = 0; */
-/* 	enum tok_error_t flag = FLAWLESS; */
-/* 	while(yytext[i] != 0) { */
-/* 		if(yytext[i] == '\"' && i > 0 && yytext[i-1] != '\\' && j > 0) { */
-/* 			str.at(j) += '\"'; */
-/* 			if(flag == WARNING) { */
-/* 				debug = std::string("Invalid escape characters detected: ") + debug; */
-/* 			} */
-/* 			alpha_token_t tok{ */
-/* 				line_count, */
-/* 				tok_count++, */
-/* 				str.substr(0,j+1), */
-/* 				flag, */
-/* 				debug, */
-/* 				STRINGCONST, */
-/* 			}; */
-/* 			tok_vec.push_back(tok); */
-/* 			flag = FLAWLESS; */
-/* 			str.clear(); */
-/* 			str.resize(yyleng - j); */
-/* 			j = 0; */
-/* 			debug.clear(); */
-/* 			++i; */
-/* 			continue; */
-/* 		} */
-/* 		else if(yytext[i] == '\\') { */
-/* 			++i; */
-/* 			switch(yytext[i]){ */
-/* 				case 'n': */
-/* 					str.at(j) = '\n'; */
-/* 					break; */
-/* 				case 't': */
-/* 					str.at(j) = '\t'; */
-/* 					break; */
-/* 				case 'a': */
-/* 					str.at(j) = '\a'; */
-/* 					break; */
-/* 				case '\"': */
-/* 					str.at(j) = '\"'; */
-/* 					break; */
-/* 				case '\\': */
-/* 					str.at(j) = '\\'; */
-/* 					break; */
-/* 				case 'v': */
-/* 					str.at(j) = '\v'; */
-/* 					break; */
-/* 				case '0': */
-/* 					str.at(j) = '\0'; */
-/* 					break; */
-/* 				default :	// for printing the bad esc chars */
-/* 					debug.append((yytext+i-1),2); */
-/* 					debug.append("  "); */
-/* 					str.at(j++) = yytext[i-1]; */
-/* 					str.at(j) = yytext[i]; */
-/* 					flag = WARNING; */
-/* 			} */
-/* 		} */
-/* 		else { */
-/* 			str.at(j) = yytext[i]; */
-/* 		} */
-/* 		++i; */
-/* 		++j; */
-/* 	} */
-/* 	if(yytext[i-2] == '\\'){ */
-/* 		debug = "string literal is not closing"; */
-/* 		alpha_token_t tok{ */
-/* 			line_count, */
-/* 			tok_count++, */
-/* 			str.substr(0, j+1), */
-/* 			ERROR, */
-/* 			debug, */
-/* 			STRINGCONST, */
-/* 		}; */
-/* 		tok_vec.push_back(tok); */
-/* 	} */
-/* } */
 void handle_string(){
 	std::string str, debug;
 	debug = std::string("Invalid escape characters detected: ");
@@ -1051,7 +971,7 @@ YY_DECL {
 	/* open scope of user declarationns */
 	{
 /* %% [4.0] user's declarations go here */
-#line 194 "scanner.l"
+#line 114 "scanner.l"
 
 
 
@@ -1161,19 +1081,19 @@ YY_DECL {
 /* rule 1 can match eol */
 YY_RULE_SETUP
 
-#line 196 "scanner.l"
+#line 116 "scanner.l"
 { line_count++; }
 	/*LINTED*/break;
 	case 2:
 YY_RULE_SETUP
 
-#line 197 "scanner.l"
+#line 117 "scanner.l"
 {;}
 	/*LINTED*/break;
 	case 3:
 YY_RULE_SETUP
 
-#line 198 "scanner.l"
+#line 118 "scanner.l"
 { 
 					std::string str(yytext);
 					alpha_token_t tok{
@@ -1191,7 +1111,7 @@ YY_RULE_SETUP
 	case 4:
 YY_RULE_SETUP
 
-#line 211 "scanner.l"
+#line 131 "scanner.l"
 { 
 					std::string str(yytext);
 					alpha_token_t tok{
@@ -1209,7 +1129,7 @@ YY_RULE_SETUP
 	case 5:
 YY_RULE_SETUP
 
-#line 224 "scanner.l"
+#line 144 "scanner.l"
 { 
 					std::string str(yytext);
 					alpha_token_t tok{
@@ -1227,7 +1147,7 @@ YY_RULE_SETUP
 	case 6:
 YY_RULE_SETUP
 
-#line 237 "scanner.l"
+#line 157 "scanner.l"
 { 
 					std::string str(yytext);
 					alpha_token_t tok{
@@ -1245,7 +1165,7 @@ YY_RULE_SETUP
 	case 7:
 YY_RULE_SETUP
 
-#line 250 "scanner.l"
+#line 170 "scanner.l"
 { 
 					handle_string();
 					return 1;
@@ -1254,7 +1174,7 @@ YY_RULE_SETUP
 	case 8:
 YY_RULE_SETUP
 
-#line 255 "scanner.l"
+#line 175 "scanner.l"
 { 
 					std::string str(yytext);
 					alpha_token_t tok{
@@ -1272,7 +1192,7 @@ YY_RULE_SETUP
 	case 9:
 YY_RULE_SETUP
 
-#line 268 "scanner.l"
+#line 188 "scanner.l"
 { 
 					std::string str(yytext);
 					alpha_token_t tok{
@@ -1290,7 +1210,7 @@ YY_RULE_SETUP
 	case 10:
 YY_RULE_SETUP
 
-#line 281 "scanner.l"
+#line 201 "scanner.l"
 { 
 					alpha_token_t tok{
 						line_count,
@@ -1307,7 +1227,7 @@ YY_RULE_SETUP
 	case 11:
 YY_RULE_SETUP
 
-#line 293 "scanner.l"
+#line 213 "scanner.l"
 { 
 					std::string str(yytext), debug;
 					enum token_t_enum category = UNDEFINED;
@@ -1333,7 +1253,7 @@ YY_RULE_SETUP
 	case 12:
 YY_RULE_SETUP
 
-#line 315 "scanner.l"
+#line 235 "scanner.l"
 {
 						std::string str = std::to_string(line_count);
 						str.append(" - ");
@@ -1354,13 +1274,13 @@ YY_RULE_SETUP
 /* rule 13 can match eol */
 YY_RULE_SETUP
 
-#line 331 "scanner.l"
+#line 251 "scanner.l"
 { line_count++; }
 	/*LINTED*/break;
 	case 14:
 YY_RULE_SETUP
 
-#line 333 "scanner.l"
+#line 253 "scanner.l"
 {
 						std::string str = std::to_string(line_count);
 						str.append(" - ");
@@ -1379,7 +1299,7 @@ YY_RULE_SETUP
 	case 15:
 YY_RULE_SETUP
 
-#line 348 "scanner.l"
+#line 268 "scanner.l"
 { 	
 						if (!cmnt_stack.empty()) {
 							int indx = cmnt_stack.top() & INT_MAX;
@@ -1407,18 +1327,18 @@ YY_RULE_SETUP
 	case 16:
 YY_RULE_SETUP
 
-#line 371 "scanner.l"
+#line 291 "scanner.l"
 { ; }
 	/*LINTED*/break;
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(MLCOMMENT):
-#line 373 "scanner.l"
+#line 293 "scanner.l"
 { return 0; }
 	/*LINTED*/break;
 	case 17:
 YY_RULE_SETUP
 
-#line 375 "scanner.l"
+#line 295 "scanner.l"
 yyecho();
 	/*LINTED*/break;
 
@@ -2461,7 +2381,7 @@ void yyfree (void * ptr ) {
 			free( (char *) ptr );	/* see yyrealloc() for (char *) cast */
 }
 
-#line 375 "scanner.l"
+#line 295 "scanner.l"
 
 
 void print_tok_vector(const std::vector<alpha_token_t>& tok_vec){	

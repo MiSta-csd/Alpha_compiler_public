@@ -52,7 +52,7 @@ std::string* handle_string(){
 					std::cout << "\033[33m" << "WARNING " << "\033[37m"
 					<< "invalid escape character detected\n"
 					<< "in line: " << line_count
-					<< "string = " << yytext << std::endl;
+					<< " string = " << yytext << std::endl;
 					str->at(j) = yytext[i];
 			}
 		}
@@ -188,7 +188,6 @@ space			[ \t]*
 					else{
 						std::cout << " in line: " << line_count << ", Undefined character token : " << yytext[0] << std::endl;
 					}
-					// exit(1);?
 				}
 
 <<EOF>>			{ return 0; }
