@@ -195,7 +195,7 @@ lvalue		: ID						{
 											if(st_entry_tmp["r8"] && (st_entry_tmp["r8"]->scope == st_get_scope()) ){
 												$$ = st_entry_tmp["r8"];
 											}
-											else if(st_entry_tmp["r8"]->type == LIB_FUNC){
+											else if(st_entry_tmp["r8"] && st_entry_tmp["r8"]->type == LIB_FUNC){
 												yyerror("variable \'" + *$2 + "\' shadows lib function");
 											}
 											else{
