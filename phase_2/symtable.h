@@ -41,31 +41,33 @@ void st_decrease_scope();
 /* self explainatory */
 unsigned int st_get_scope();
 
-/* 	performs search in order:
-	- through locals
-	- through argList buffer
-	- high to low every scope (only non formals)*/
+/* 	
+*  	performs search in scope order order high to low every scope as long as the stored
+*  	vars are active (active = scope > 0 && not hidden by RCBRACK'}')
+*/
 st_entry* st_lookup(std::string);
 
-
+/* searches for active var_ids in given scope */
 st_entry* st_lookup(std::string name_input, unsigned int scope_input);
 
 int st_hide(unsigned int scope_input);
 
-int load_2_arglist(struct st_entry* arg);
+int load_2_arglist(struct st_entry* arg);// inserts arg to st_entry
 
-int offload_arglist(st_entry* func);
+int offload_arglist(st_entry* func);// gives the arg_list ptr to the func
 
-void st_set_inloop(bool b);
+/* void st_set_inloop(bool b); */
 
-bool st_get_inloop();
+/* bool st_get_inloop(); */
 
-void st_initialize();
+void st_initialize();// also pushes the lib func entries in scope 0 of st
 
 void st_print_table();
 
-void st_freeAll();
+/* void st_freeAll(); */
 
+/* a search to the current arg list while picking the formal arguments to check for
+ * conflicts among the arg list names*/
 st_entry *check_arglist(std::string name_input);
 
 #endif

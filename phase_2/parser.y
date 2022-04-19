@@ -1,15 +1,14 @@
 %{
 
 /* 
-	CS340 - Compilers ~ Project spring 2022
-	University of Crete, Computwer Science Department
+						 CS340 - Compilers ~ Project Spring 2022
+					  Computer Of Crete, Computer Science Department
 
-	Constantine Damaskinakis - csd3755
-	Minos Stavrakakis - csd4120
-	Demetrious Grammenidis - csd3933
+							Constantine Damaskinakis - csd3755
+							   Minos Stavrakakis - csd4120
+							 Demetrious Grammenidis - csd3933
 
  */
-
 
 #include <assert.h>
 #include <iostream>
@@ -25,11 +24,13 @@ extern char *yytext;
 extern FILE *yyin;
 extern int yylex();
 
-/* Auxiliary var */
+/* Auxiliary var for storing each rule's id value (e.g. entry["rule8.1"] = id) returned
+ * from lookup (e.g at $1) */
 std::unordered_map<std::string, struct st_entry*> st_entry_tmp;
+/* In alpha a funcdef can be inside a function's scope so we needed to know if we are
+ * inside a function 
+ */
 extern std::stack<struct st_entry*> func_stack;
-
-
 
 void print_rules(std::string str) {
 	 /* std::cout << "~ entered rule :\t " << str << std::endl; */
@@ -52,7 +53,7 @@ void print_rules(std::string str) {
 %token<realConst> REAL
 %token<strConst> STRING
 %token<strConst> ID
-%token<boolean> TRUE FALSE	/* THis may be unnecessary */
+%token<boolean> TRUE FALSE	/* This may be unnecessary */
 %token OR LOCAL NIL UMINUS MINUSMINUS
 %token IF ELSE WHILE FUNCTION FOR RETURN BREAK CONTINUE AND NOT 
 %token ASSIGN PLUS MINUS MULT DIVIDE PERCENT NOTEQUAL PLUSPLUS
@@ -181,16 +182,13 @@ lvalue		: ID						{
 												yyerror("Cannot access local var \'"+*$1+"\' inside function \'"
 												+func_stack.top()->name + "\'");
 												$$ = NULL;
-												
 											}
 											else{
 												$$ = st_entry_tmp["r8"];
 											}
-											
 										}
 			| LOCAL ID					{
 											print_rules("8.2 lvalue -> local ID");
-
 											st_entry_tmp["r8"] = st_lookup(*$2);
 											if(st_entry_tmp["r8"] && (st_entry_tmp["r8"]->scope == st_get_scope()) ){
 												$$ = st_entry_tmp["r8"];
@@ -201,8 +199,7 @@ lvalue		: ID						{
 											else{
 												$$ = st_insert(*$2, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR);
 											}
-
-											}
+										}
 			| COLONCOLON ID				{
 											print_rules("8.3 lvalue -> ::ID");
 											st_entry_tmp["r8"] = st_lookup(*$2, 0);
@@ -213,7 +210,6 @@ lvalue		: ID						{
 											else {
 												$$ = st_entry_tmp["r8"];
 											}
-
 										}
 			| member					{
 											print_rules("8.4 lvalue -> member");
@@ -241,7 +237,8 @@ member		: lvalue DOT ID				{
 // Rule 10.
 call		: call LPAREN elist RPAREN	{print_rules("10.1 member -> call ( elist )");}
 			| lvalue callsuffix			{print_rules("10.2 member -> lvalue callsuffix");}
-			| LPAREN funcdef RPAREN LPAREN elist RPAREN{print_rules("10.3 member -> ( funcdef ) ( elist )");}
+			| LPAREN funcdef RPAREN LPAREN elist RPAREN
+										{print_rules("10.3 member -> ( funcdef ) ( elist )");}
 			;
 // Rule 11.
 callsuffix	: normcall					{print_rules("11.1 member -> normcall");}
