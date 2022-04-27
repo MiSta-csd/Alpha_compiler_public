@@ -373,8 +373,12 @@ idlist		: ID 						{
 			|
 			;
 // Rule 23.
-ifstmt		: IF LPAREN expr RPAREN stmt{print_rules("23.1 ifstmt -> if ( expr ) stmt");}
-			| IF LPAREN expr RPAREN stmt ELSE stmt{print_rules("23.2 ifstmt -> if ( expr ) stmt else stmt");}
+ifstmt		: IF LPAREN expr RPAREN stmt{
+											print_rules("23.1 ifstmt -> if ( expr ) stmt");
+										}
+			| IF LPAREN expr RPAREN stmt ELSE stmt{
+											print_rules("23.2 ifstmt -> if ( expr ) stmt else stmt");
+										}
 			;
 // Rule 24.
 whilestmt	: WHILE LPAREN expr RPAREN stmt{print_rules("24.1 whilestmt -> while ( expr ) stmt");}
