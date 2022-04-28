@@ -22,7 +22,6 @@ struct st_entry {
 	std::string name;
 	enum st_entry_type type;
 	std::vector<st_entry *> *argList; // Formal Arguments list
-									  // in case of function
 	unsigned int scope;
 	int line;
 } typedef st_entry;

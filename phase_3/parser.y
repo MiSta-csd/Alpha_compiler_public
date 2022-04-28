@@ -381,10 +381,14 @@ ifstmt		: IF LPAREN expr RPAREN stmt{
 										}
 			;
 // Rule 24.
-whilestmt	: WHILE LPAREN expr RPAREN stmt{print_rules("24.1 whilestmt -> while ( expr ) stmt");}
+whilestmt	: WHILE LPAREN expr RPAREN stmt{
+		  									print_rules("24.1 whilestmt -> while ( expr ) stmt");
+										}
 			;
 // Rule 25.
-forstmt		: FOR LPAREN elist SEMICOLON expr SEMICOLON elist RPAREN stmt {print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");}
+forstmt		: FOR LPAREN elist SEMICOLON expr SEMICOLON elist RPAREN stmt {
+		 									print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");
+										}
 			;
 // Rule 26.
 returnstmt 	: RETURN SEMICOLON 			{

@@ -14,8 +14,8 @@ std::stack<struct st_entry *> func_stack;
 st_entry *st_insert(std::string name, enum st_entry_type type) {
 	st_entry *new_entry;
 	assert(new_entry = new st_entry);
-	*new_entry = {true,  name,
-		type,  (type == USER_FUNC) ? new std::vector<st_entry *> : NULL,
+	*new_entry = {true,  name, type,
+		(type == USER_FUNC) ? new std::vector<st_entry *> : NULL,
 		scope, yylineno};
 	symbol_table[scope].push_back(*new_entry);
 	return new_entry;
