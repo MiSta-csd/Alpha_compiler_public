@@ -1,12 +1,11 @@
 %{
 
 /* 
-						 CS340 - Compilers ~ Project Spring 2022
-					  Computer Of Crete, Computer Science Department
-
-							Constantine Damaskinakis - csd3755
-							   Minos Stavrakakis - csd4120
-							 Demetrious Grammenidis - csd3933
+						  Computer Science Department
+					CS340 - Compilers ~ Project Spring 2022
+					   Constantine Damaskinakis - csd3755
+						  Minos Stavrakakis - csd4120
+						Demetrious Grammenidis - csd3933
 
  */
 
@@ -33,7 +32,7 @@ std::unordered_map<std::string, struct st_entry*> st_entry_tmp;
 extern std::stack<struct st_entry*> func_stack;
 
 void print_rules(std::string str) {
-	 /* std::cout << "~ entered rule :\t " << str << std::endl; */
+	 std::cout << "~ entered rule :\t " << str << std::endl;
 }
 
 %}
@@ -46,6 +45,7 @@ void print_rules(std::string str) {
 	double realConst;
 	std::string *strConst;
 	struct st_entry *st_entryVal;
+	struct expr *expr;
 	bool boolean;
 }
 

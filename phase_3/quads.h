@@ -1,4 +1,5 @@
 #include <iostream>
+#include "symtable.h"
 
 enum iopcode {
 	ASSIGN,			ADD,			SUB,
@@ -21,7 +22,7 @@ enum expr_t {
 
 struct expr {
 	expr_t type;
-	// symbol* sym;
+	st_entry *sym;
 	expr *index;
 	double numConst;
 	std::string strConst;
