@@ -13,7 +13,7 @@
 #include <iostream>
 #include <string>
 #include "symtable.h"
-/* #include "quads.h" */
+#include "quads.h"
 #include <unordered_map>
 
 bool member_flag = false;
@@ -126,7 +126,12 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");}
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");}
 			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");}
 			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");}
-			| term						{	print_rules("4.15 expr -> term");}
+			| term						{	
+											if (expr_vec.end().type == CONSTNUM_E){
+												
+											}
+											print_rules("4.15 expr -> term");
+										}
 			;
 // Rule 5.
 term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");}
@@ -206,6 +211,7 @@ lvalue		: ID						{
 												$$ = st_insert(*$2, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR);
 											}
 										}
+
 			| COLONCOLON ID				{
 											print_rules("8.3 lvalue -> ::ID");
 											st_entry_tmp["r8"] = st_lookup(*$2, 0);
@@ -345,7 +351,7 @@ funcdef		: FUNCTION 					{	print_rules("19.1 funcdef -> function ( idlist ) bloc
 			 ;
 // Rule 20.
 const		: INTEGER 					{
-											union values val
+											union values val;
 											val.intConst = $1;
 											new expr(CONSTNUM_E, NULL, NULL, val, NULL);
 											/* TODO */
