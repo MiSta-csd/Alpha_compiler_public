@@ -32,6 +32,8 @@ std::unordered_map<std::string, struct st_entry*> st_entry_tmp;
  */
 extern std::stack<struct st_entry*> func_stack;
 
+std::vector<expr> expr_vec;
+
 
 
 void print_rules(std::string str) {
@@ -126,11 +128,7 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");}
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");}
 			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");}
 			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");}
-			| term						{	
-											if (expr_vec.end().type == CONSTNUM_E){
-												
-											}
-											print_rules("4.15 expr -> term");
+			| term						{	print_rules("4.15 expr -> term");
 										}
 			;
 // Rule 5.
@@ -353,7 +351,7 @@ funcdef		: FUNCTION 					{	print_rules("19.1 funcdef -> function ( idlist ) bloc
 const		: INTEGER 					{
 											union values val;
 											val.intConst = $1;
-											new expr(CONSTNUM_E, NULL, NULL, val, NULL);
+											expr(CONSTNUM_E, NULL, NULL, val, NULL);
 											/* TODO */
 											print_rules("20.1 const -> INTEGER");
 										}	

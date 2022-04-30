@@ -1,6 +1,6 @@
 
 parser: parser.cpp lex.yy.cpp symtable.cpp
-	g++ lex.yy.cpp parser.cpp symtable.cpp -o parser -g
+	g++ lex.yy.cpp parser.cpp symtable.cpp quads.cpp -o parser -g
 
 hashmap_parser: parser.cpp lex.yy.cpp kostas_sym.cpp
 	g++ lex.yy.cpp parser.cpp kostas_sym.cpp -o $@
