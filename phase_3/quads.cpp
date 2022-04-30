@@ -13,3 +13,12 @@ void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 			.label = label,
 			.line = line});
 }
+
+expr::expr(expr_t type, st_entry *sym, expr *index, union values value, expr *next) {
+	this->type = type;
+	this->sym = sym;
+	this->index = index;
+	this->value = value;
+	this->next = next;
+}
+

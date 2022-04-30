@@ -20,14 +20,20 @@ enum expr_t {
 	CONSTBOOL_E,	CONSTSTRING_E,	NIL_E
 };
 
+union values {
+	int intConst;
+	double doubleConst;
+	std::string *strConst;
+	union values (*f)();
+};
+
 struct expr {
 	expr_t type;
 	st_entry *sym;
 	expr *index;
-	double numConst;
-	std::string strConst;
-	unsigned char boolConst;
+	union values value;
 	expr *next;
+	expr(expr_t type, st_entry *sym, expr *index, union values value, expr *next);
 }typedef expr;
 
 typedef struct quad {

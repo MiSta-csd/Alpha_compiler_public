@@ -13,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include "symtable.h"
+/* #include "quads.h" */
 #include <unordered_map>
 
 bool member_flag = false;
@@ -31,6 +32,8 @@ std::unordered_map<std::string, struct st_entry*> st_entry_tmp;
  */
 extern std::stack<struct st_entry*> func_stack;
 
+
+
 void print_rules(std::string str) {
 	 std::cout << "~ entered rule :\t " << str << std::endl;
 }
@@ -39,7 +42,7 @@ void print_rules(std::string str) {
 
 %defines
 %output "parser.cpp"
-
+%define parse.error verbose
 %union{
 	int intConst;
 	double realConst;
@@ -53,7 +56,7 @@ void print_rules(std::string str) {
 %token<realConst> REAL
 %token<strConst> STRING
 %token<strConst> ID
-%token<boolean> TRUE FALSE	/* This may be unnecessary */
+%token<boolean> TRUE FALSE
 %token OR LOCAL NIL UMINUS MINUSMINUS
 %token IF ELSE WHILE FUNCTION FOR RETURN BREAK CONTINUE AND NOT 
 %token ASSIGN PLUS MINUS MULT DIVIDE PERCENT NOTEQUAL PLUSPLUS
@@ -83,49 +86,52 @@ void print_rules(std::string str) {
 %start program
 %expect 1
 
+
 %%
 
-program:	  stmts						{std::cout << "Finished reading statements\n";}
+program:	  stmts						{	std::cout << "Finished reading statements\n";}
 			;
 
 // Rule 2.
-stmts		: stmts stmt 				{print_rules("2.1 stmts -> stmts stmt");}
-			|							{print_rules("2.2 stmts -> ε");}
+stmts		: stmts stmt 				{	
+											print_rules("2.1 stmts -> stmts stmt");
+										}
+			|							{	print_rules("2.2 stmts -> ε");}
 			;
 // Rule 3.
-stmt		: expr SEMICOLON			{print_rules("3.1 stmt -> expr ;");}
-			| ifstmt					{print_rules("3.2 stmt -> ifstmt");}
-			| whilestmt					{print_rules("3.3 stmt -> whilestmt");}
-			| forstmt					{print_rules("3.4 stmt -> forstmt");}
-			| returnstmt				{print_rules("3.5 stmt -> returnstmt");}
-			| BREAK SEMICOLON			{print_rules("3.6 stmt -> BREAK ;");}
-			| CONTINUE SEMICOLON		{print_rules("3.7 stmt -> CONTINUE ;");}
-			| block						{print_rules("3.8 stmt -> block");}
-			| funcdef					{print_rules("3.9 stmt -> funcdef");}
-			| SEMICOLON					{print_rules("3.10 stmt -> ;");}
+stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");}
+			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");}
+			| whilestmt					{	print_rules("3.3 stmt -> whilestmt");}
+			| forstmt					{	print_rules("3.4 stmt -> forstmt");}
+			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");}
+			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");}
+			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");}
+			| block						{	print_rules("3.8 stmt -> block");}
+			| funcdef					{	print_rules("3.9 stmt -> funcdef");}
+			| SEMICOLON					{	print_rules("3.10 stmt -> ;");}
 			;
 
 // Rule 4.
-expr		: assignexpr				{print_rules("4.1 expr -> assignexpr");}
-			| expr PLUS expr			{print_rules("4.2 expr -> expr + expr");}
-			| expr MINUS expr			{print_rules("4.3 expr -> expr - expr");}
-			| expr MULT expr			{print_rules("4.4 expr -> expr * expr");}
-			| expr DIVIDE expr			{print_rules("4.5 expr -> expr / expr");}
-			| expr PERCENT expr			{print_rules("4.6 expr -> expr \% expr");}
-			| expr GREATER expr			{print_rules("4.7 expr -> expr > expr");}
-			| expr GREATEREQUAL expr	{print_rules("4.8 expr -> expr >= expr");}	
-			| expr LESSER expr			{print_rules("4.9 expr -> expr < expr");}
-			| expr LESSEREQUAL expr		{print_rules("4.10 expr -> expr <= expr");}	
-			| expr EQUAL expr			{print_rules("4.11 expr -> expr == expr");}	
-			| expr NOTEQUAL expr		{print_rules("4.12 expr -> expr != expr");}
-			| expr AND expr				{print_rules("4.13 expr -> expr AND expr");}
-			| expr OR expr				{print_rules("4.14 expr -> expr OR expr");}
-			| term						{print_rules("4.15 expr -> term");}
+expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");}
+			| expr PLUS expr			{	print_rules("4.2 expr -> expr + expr");}
+			| expr MINUS expr			{	print_rules("4.3 expr -> expr - expr");}
+			| expr MULT expr			{	print_rules("4.4 expr -> expr * expr");}
+			| expr DIVIDE expr			{	print_rules("4.5 expr -> expr / expr");}
+			| expr PERCENT expr			{	print_rules("4.6 expr -> expr \% expr");}
+			| expr GREATER expr			{	print_rules("4.7 expr -> expr > expr");}
+			| expr GREATEREQUAL expr	{	print_rules("4.8 expr -> expr >= expr");}	
+			| expr LESSER expr			{	print_rules("4.9 expr -> expr < expr");}
+			| expr LESSEREQUAL expr		{	print_rules("4.10 expr -> expr <= expr");}	
+			| expr EQUAL expr			{	print_rules("4.11 expr -> expr == expr");}	
+			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");}
+			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");}
+			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");}
+			| term						{	print_rules("4.15 expr -> term");}
 			;
 // Rule 5.
-term		: LPAREN expr RPAREN		{print_rules("5.1 term -> ( expr )");}
-			| MINUS expr %prec UMINUS	{print_rules("5.2 term -> - expr");}
-			| NOT expr					{print_rules("5.3 term -> NOT expr");}
+term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");}
+			| MINUS expr %prec UMINUS	{	print_rules("5.2 term -> - expr");}
+			| NOT expr					{	print_rules("5.3 term -> NOT expr");}
 			| PLUSPLUS lvalue			{
 											print_rules("5.4 term -> ++ lvalue");
 											if($2->type == USER_FUNC || $2->type == LIB_FUNC){
@@ -150,7 +156,7 @@ term		: LPAREN expr RPAREN		{print_rules("5.1 term -> ( expr )");}
 												yyerror("functions are constant, their value cannot be changed");
 											}
 										}
-			| primary					{print_rules("5.8 term -> primary");}
+			| primary					{	print_rules("5.8 term -> primary");}
 			;
 // Rule 6.
 assignexpr	: lvalue ASSIGN expr		{
@@ -163,11 +169,11 @@ assignexpr	: lvalue ASSIGN expr		{
 			;
 
 // Rule 7.
-primary		: lvalue					{print_rules("7.1 primary -> lvalue");}
-			| call						{print_rules("7.2 primary -> call");}
-			| objectdef					{print_rules("7.3 primary -> objectdef");}
-			| LPAREN funcdef RPAREN		{print_rules("7.4 primary -> ( funcdef )");}
-			| const						{print_rules("7.5 primary -> const");}
+primary		: lvalue					{	 print_rules("7.1 primary -> lvalue");}
+			| call						{	 print_rules("7.2 primary -> call");}
+			| objectdef					{	 print_rules("7.3 primary -> objectdef");}
+			| LPAREN funcdef RPAREN		{	 print_rules("7.4 primary -> ( funcdef )");}
+			| const						{	 print_rules("7.5 primary -> const");}
 			;
 // Rule 8.
 lvalue		: ID						{
@@ -235,37 +241,38 @@ member		: lvalue DOT ID				{
 										}
 			;
 // Rule 10.
-call		: call LPAREN elist RPAREN	{print_rules("10.1 member -> call ( elist )");}
-			| lvalue callsuffix			{print_rules("10.2 member -> lvalue callsuffix");}
-			| LPAREN funcdef RPAREN LPAREN elist RPAREN
-										{print_rules("10.3 member -> ( funcdef ) ( elist )");}
+call		: call LPAREN elist RPAREN	{	print_rules("10.1 member -> call ( elist )");}
+			| lvalue callsuffix			{	print_rules("10.2 member -> lvalue callsuffix");}
+			| LPAREN funcdef RPAREN LPAREN elist RPAREN{
+											print_rules("10.3 member -> ( funcdef ) ( elist )");
+										}
 			;
 // Rule 11.
-callsuffix	: normcall					{print_rules("11.1 member -> normcall");}
-			| methodcall				{print_rules("11.2 member -> methodcall");}
+callsuffix	: normcall					{	print_rules("11.1 member -> normcall");}
+			| methodcall				{	print_rules("11.2 member -> methodcall");}
 			;
 // Rule 12.
-normcall	: LPAREN elist RPAREN		{print_rules("12.1 normcall -> ( elist )");}
+normcall	: LPAREN elist RPAREN		{	print_rules("12.1 normcall -> ( elist )");}
 			;
 // Rule 13.
 methodcall	: DOTDOT ID LPAREN elist RPAREN{print_rules("13.1 methodcall -> .. ID ( elist )");}
 			;
 // Rule 14.
-elist		: expr 						{print_rules("14.1 elist -> expr");}
-			| elist COMMA expr 			{print_rules("14.2 elist -> elist , expr");}
-			| 							{print_rules("14.3 elist -> ε");}
+elist		: expr 						{	print_rules("14.1 elist -> expr");}
+			| elist COMMA expr 			{	print_rules("14.2 elist -> elist , expr");}
+			| 							{	print_rules("14.3 elist -> ε");}
 			;
 // Rule 15.
-objectdef	: LBRACK elist RBRACK 		{print_rules("15.1 objectdef -> [ elist ]");}
-			| LBRACK indexed RBRACK 	{print_rules("15.2 objectdef -> [ indexed ]");}
+objectdef	: LBRACK elist RBRACK 		{	print_rules("15.1 objectdef -> [ elist ]");}
+			| LBRACK indexed RBRACK 	{	print_rules("15.2 objectdef -> [ indexed ]");}
 			;
 // Rule 16.
-indexed		: indexedelem 				{print_rules("16.1 indexed -> indexedelem");}
-			| indexed COMMA indexedelem	{print_rules("16.2 indexed ->  indexed , indexedelem");}
+indexed		: indexedelem 				{	print_rules("16.1 indexed -> indexedelem");}
+			| indexed COMMA indexedelem	{	print_rules("16.2 indexed ->  indexed , indexedelem");}
 			;
 // Rule 17.
 indexedelem	: LCBRACK expr COLON expr 	
-			  RCBRACK					{print_rules("17.1 indexedelem -> { expr : expr }");}
+			  RCBRACK					{	print_rules("17.1 indexedelem -> { expr : expr }");}
 			;
 // Rule 18.
 block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
@@ -279,7 +286,7 @@ funcdef		: FUNCTION 					{	print_rules("19.1 funcdef -> function ( idlist ) bloc
 											st_entry_tmp["r19"] = st_insert(st_godfather(), USER_FUNC);
 											func_stack.push(st_entry_tmp["r19"]);
 										}
-			  LPAREN					{st_increase_scope();}
+			  LPAREN					{	st_increase_scope();}
 			  idlist RPAREN				{
 				  							
 				  							offload_arglist(st_entry_tmp["r19"]);
@@ -337,12 +344,18 @@ funcdef		: FUNCTION 					{	print_rules("19.1 funcdef -> function ( idlist ) bloc
 										}
 			 ;
 // Rule 20.
-const		: INTEGER 					{print_rules("20.1 const -> INTEGER");}	
-	   		| REAL 						{print_rules("20.2 const -> REAL");}
-			| STRING 					{print_rules("20.3 const -> STRING");}
-			| NIL 						{print_rules("20.4 const -> NIL");}
-			| TRUE 						{print_rules("20.5 const -> TRUE");}
-			| FALSE						{print_rules("20.6 const -> FALSE");}
+const		: INTEGER 					{
+											union values val
+											val.intConst = $1;
+											new expr(CONSTNUM_E, NULL, NULL, val, NULL);
+											/* TODO */
+											print_rules("20.1 const -> INTEGER");
+										}	
+	   		| REAL 						{	print_rules("20.2 const -> REAL");}
+			| STRING 					{	print_rules("20.3 const -> STRING");}
+			| NIL 						{	print_rules("20.4 const -> NIL");}
+			| TRUE 						{	print_rules("20.5 const -> TRUE");}
+			| FALSE						{	print_rules("20.6 const -> FALSE");}
 			;
 // Rule 21.
 idlist		: ID 						{
@@ -408,7 +421,7 @@ returnstmt 	: RETURN SEMICOLON 			{
 %%
 
 extern void validate_comments();
-			
+
 int yyerror(std:: string err){
 	std::cout << "\033[31m" << "ERROR " << "\033[37m" <<
 	"in line " << yylineno << " : " << err << "\n";
