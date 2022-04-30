@@ -10,7 +10,7 @@ enum iopcode {
 	IF_GREATER_O,		CALL_O,			PARAM_O,
 	RET_O,			GETRETVAL_O,		FUNCSTART_O,
 	FUNCEND_O,		TABLECREATE_O,	TABLEGETELEM_O,
-	TABLESETELEM_O
+	TABLESETELEM_O,		JUMP_O
 };
 
 enum expr_t {
@@ -47,3 +47,7 @@ typedef struct quad {
 
 void emit(iopcode op, expr *arg1, expr *arg2, expr *result, unsigned label,
 		unsigned line);
+
+void print_quads();
+
+int get_current_quad();

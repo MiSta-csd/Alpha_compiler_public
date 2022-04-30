@@ -32,7 +32,7 @@ std::unordered_map<std::string, struct st_entry*> st_entry_tmp;
  */
 extern std::stack<struct st_entry*> func_stack;
 
-std::vector<expr> expr_vec;
+std::vector<expr*> expr_vec;
 
 
 
@@ -97,6 +97,7 @@ program:	  stmts						{	std::cout << "Finished reading statements\n";}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
+											expr_vec.clear();
 										}
 			|							{	print_rules("2.2 stmts -> ε");}
 			;
@@ -124,7 +125,13 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");}
 			| expr GREATEREQUAL expr	{	print_rules("4.8 expr -> expr >= expr");}	
 			| expr LESSER expr			{	print_rules("4.9 expr -> expr < expr");}
 			| expr LESSEREQUAL expr		{	print_rules("4.10 expr -> expr <= expr");}	
-			| expr EQUAL expr			{	print_rules("4.11 expr -> expr == expr");}	
+			| expr EQUAL expr			{	print_rules("4.11 expr -> expr == expr");
+											emit(IF_GREATER_O, NULL, expr_vec[0], expr_vec[1], get_current_quad() + 2, yylineno);
+											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
+											emit(ASSIGN_O, NULL, NULL, NULL, 0, yylineno);
+											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
+											emit(ASSIGN_O, NULL, NULL, NULL, 0, yylineno);
+			}	
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");}
 			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");}
 			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");}
@@ -351,7 +358,7 @@ funcdef		: FUNCTION 					{	print_rules("19.1 funcdef -> function ( idlist ) bloc
 const		: INTEGER 					{
 											union values val;
 											val.intConst = $1;
-											expr(CONSTNUM_E, NULL, NULL, val, NULL);
+											expr_vec.push_back(new expr(CONSTNUM_E, NULL, NULL, val, NULL));
 											/* TODO */
 											print_rules("20.1 const -> INTEGER");
 										}	
@@ -446,6 +453,7 @@ int main(int argc, char** argv) {
     while( yyparse() != 0);
 	validate_comments();
 	st_print_table();
+	print_quads();
 
     return 0;
 }
