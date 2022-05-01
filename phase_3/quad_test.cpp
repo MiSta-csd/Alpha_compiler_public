@@ -16,8 +16,8 @@ void print_expr(expr *exp) {
 int main(){
 	union values val;
 	val.intConst = 25;
-	expr *tmp_expr = new expr(CONSTNUM_E, NULL, NULL, val, NULL);
-	print_expr(tmp_expr);
+	/* expr *tmp_expr = new expr(CONSTNUM_E, NULL, NULL, val, NULL); */
+	/* print_expr(tmp_expr); */
 	/* print_quads(); */
 	return 0;
 }

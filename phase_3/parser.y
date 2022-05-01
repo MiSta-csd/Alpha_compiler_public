@@ -124,7 +124,14 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");}
 			| expr GREATER expr			{	print_rules("4.7 expr -> expr > expr");}
 			| expr GREATEREQUAL expr	{	print_rules("4.8 expr -> expr >= expr");}	
 			| expr LESSER expr			{	print_rules("4.9 expr -> expr < expr");}
-			| expr LESSEREQUAL expr		{	print_rules("4.10 expr -> expr <= expr");}	
+			| expr LESSEREQUAL expr		{	print_rules("4.10 expr -> expr <= expr");
+											emit(IF_LESSEQ_O, NULL, expr_vec[0], expr_vec[1], get_current_quad() + 2, yylineno);
+											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
+											emit(ASSIGN_O, NULL, NULL, NULL, 0, yylineno);
+											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
+											emit(ASSIGN_O, NULL, NULL, NULL, 0, yylineno);
+
+										}	
 			| expr EQUAL expr			{	print_rules("4.11 expr -> expr == expr");
 											emit(IF_GREATER_O, NULL, expr_vec[0], expr_vec[1], get_current_quad() + 2, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
