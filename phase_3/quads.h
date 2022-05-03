@@ -16,15 +16,17 @@ enum iopcode {
 enum expr_t {
 	VAR_E,			TABLEITEM_E,	PROGRAMFUNC_E,
 	LIBRARYFUNC_E,	ARITHEXPR_E,	BOOLEXPR_E,
-	ASSIGNEXPR_E,	NEWTABLE_E,		CONSTNUM_E,
-	CONSTBOOL_E,	CONSTSTRING_E,	NIL_E
+	ASSIGNEXPR_E,	NEWTABLE_E,		CONSTINT_E,
+	CONSTSTRING_E,	CONSTDOUBLE_E,	NIL_E
 };
 
 union values {
 	int intConst;
 	double doubleConst;
 	std::string *strConst;
+	bool boolConst;
 	union values (*f)();
+	void* NIL;
 };
 
 struct expr {
@@ -40,10 +42,12 @@ typedef struct quad {
 	iopcode op;
 	expr *result;
 	expr *arg1;
-	expr *arg2;
+ 	expr *arg2;
 	unsigned label;
 	unsigned line;
 }quad;
+
+std::string tmp_expr_name();
 
 void emit(iopcode op, expr *arg1, expr *arg2, expr *result, unsigned label,
 		unsigned line);
@@ -51,3 +55,8 @@ void emit(iopcode op, expr *arg1, expr *arg2, expr *result, unsigned label,
 void print_quads();
 
 int get_current_quad();
+
+expr* insert_expr(expr_t expr_t, st_entry *sym, expr *index, union values val, expr *next);
+
+/* after we read a stmt the expr_vec is no longer needed and we truncate it */
+void erase_expressions();
