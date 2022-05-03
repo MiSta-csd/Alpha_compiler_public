@@ -36,7 +36,7 @@ extern std::vector<expr*> expr_vec;
 
 
 void print_rules(std::string str) {
-	 std::cout << "~ entered rule :\t " << str << std::endl;
+	 /* std::cout << "~ entered rule :\t " << str << std::endl; */
 }
 
 %}
@@ -125,86 +125,86 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 			| expr GREATER expr			{	print_rules("4.7 expr -> expr > expr");
 											union values val;
 											expr *expr_pt;
-											st_entry *tmp = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_GREATER_O, NULL, *(expr_vec.end() - 2), *(expr_vec.end() - 1), get_current_quad() + 2, yylineno);
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											emit(IF_GREATER_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
 											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
 											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 										}
 			| expr GREATEREQUAL expr	{	print_rules("4.8 expr -> expr >= expr");
 											union values val;
 											expr *expr_pt;
-											st_entry *tmp = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_GREATEREQ_O, NULL, *(expr_vec.end() - 2), *(expr_vec.end() - 1), get_current_quad() + 2, yylineno);
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											emit(IF_GREATEREQ_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
 											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
 											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 										}	
 			| expr LESSER expr			{	print_rules("4.9 expr -> expr < expr");
 											union values val;
 											expr *expr_pt;
-											st_entry *tmp = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_LESS_O, NULL, *(expr_vec.end() - 2), *(expr_vec.end() - 1), get_current_quad() + 2, yylineno);
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											emit(IF_LESS_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
 											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
 											emit(ASSIGN_O, expr_vec[2], expr_pt, NULL, 0, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
 											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 										}
 			| expr LESSEREQUAL expr		{	print_rules("4.10 expr -> expr <= expr");
 											union values val;
 											expr *expr_pt;
-											st_entry *tmp = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_LESSEQ_O, NULL, *(expr_vec.end() - 2), *(expr_vec.end() - 1), get_current_quad() + 2, yylineno);
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											emit(IF_LESSEQ_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
 											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
 											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 										}	
 			| expr EQUAL expr			{	print_rules("4.11 expr -> expr == expr");
 											union values val;
 											expr *expr_pt;
-											st_entry *tmp = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_EQ_O, NULL, *(expr_vec.end() - 2), *(expr_vec.end() - 1), get_current_quad() + 2, yylineno);
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											emit(IF_EQ_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
 											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
 											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 										}	
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");
 											union values val;
 											expr *expr_pt;
-											st_entry *tmp = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_NOTEQ_O, NULL, *(expr_vec.end() - 2), *(expr_vec.end() - 1), get_current_quad() + 2, yylineno);
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											emit(IF_NOTEQ_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
 											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
 											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, tmp, NULL, val, NULL);
-											emit(ASSIGN_O, *expr_vec.end(), expr_pt, NULL, 0, yylineno);
+											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
 										}
 			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");}
 			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");}
