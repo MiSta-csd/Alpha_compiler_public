@@ -41,13 +41,18 @@ void print_rules(std::string str) {
 }
 
 void expr_compare_expr(enum iopcode opcode) {
-	union values val;
-	expr *expr_pt;
-	st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+	st_entry *st_tmp_entry;
+	std::string tmp_name = tmp_expr_name();// func tmp_name adds a new expr in the vec
+	if(!(st_tmp_entry = st_lookup(tmp_name))) {
+		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+	}
+
 	emit(opcode, NULL, expr_vec[expr_vec.size() - 2],
 	  expr_vec[expr_vec.size() - 1],
 	  get_current_quad() + 2, yylineno);
 	emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
+	union values val;
+	expr *expr_pt;
 	val.boolConst = true;
 	expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
 	emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
@@ -58,20 +63,23 @@ void expr_compare_expr(enum iopcode opcode) {
 }
 
 void expr_action_expr(enum iopcode opcode) {
+	std::string tmp_name = tmp_expr_name();
+	st_entry *st_tmp_entry;
+	if(!(st_tmp_entry = st_lookup(tmp_name))) {
+		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+	}
 	union values val;
 	expr_t type;
-	st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
 	if (expr_vec[expr_vec.size() - 2]->type == CONSTDOUBLE_E){
 		if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E){
 			val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst
 			- expr_vec[expr_vec.size() - 1]->value.doubleConst;
-			type = CONSTDOUBLE_E;
 		}else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E)
 		{
 			val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst
 			- expr_vec[expr_vec.size() - 1]->value.intConst;
-			type = CONSTDOUBLE_E;
 		}
+		type = CONSTDOUBLE_E;
 	}
 	else if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E &&
 	expr_vec[expr_vec.size() - 2]->type == CONSTINT_E){
@@ -89,6 +97,7 @@ void expr_action_expr(enum iopcode opcode) {
 		insert_expr(type, st_tmp_entry, NULL, val, NULL);
 		emit(opcode, expr_vec[expr_vec.size() - 1], expr_vec[expr_vec.size() - 3],
 		expr_vec[expr_vec.size() - 2], 0, yylineno);
+	}else {//TODO error or put a specific error on the above checks
 	}
 }
 
@@ -208,7 +217,6 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");}
 			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");}
 			| term						{	print_rules("4.15 expr -> term");
-											
 										}
 			;
 
@@ -258,7 +266,9 @@ assignexpr	: lvalue ASSIGN expr		{
 
 // Rule 7.
 primary		: lvalue					{	print_rules("7.1 primary -> lvalue");
-		 									
+		 									// TODO have a global flag for errors so i avoid seg fault
+											union values val;
+		 									insert_expr(VAR_E, $1, NULL, val, NULL);
 										}
 			| call						{	print_rules("7.2 primary -> call");}
 			| objectdef					{	print_rules("7.3 primary -> objectdef");}
@@ -268,7 +278,6 @@ primary		: lvalue					{	print_rules("7.1 primary -> lvalue");
 			;
 // Rule 8.
 lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
-											unsigned char error = 0;
 											st_entry_tmp["r8"] = st_lookup(*$1);
 											if(!st_entry_tmp["r8"]){
 												$$ = st_insert(*$1, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR);
@@ -279,14 +288,9 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 												yyerror("Cannot access local var \'"+*$1+"\' inside function \'"
 												+func_stack.top()->name + "\'");
 												$$ = NULL;
-												error = 1;
 											}
 											else{
 												$$ = st_entry_tmp["r8"];
-											}
-											if(!error) {
-												union values val;
-												insert_expr(VAR_E, $$, NULL, val, NULL);
 											}
 										}
 			| LOCAL ID					{

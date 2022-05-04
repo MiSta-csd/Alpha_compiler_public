@@ -49,7 +49,7 @@ typedef struct quad {
 
 std::string tmp_expr_name();
 
-void emit(iopcode op, expr *arg1, expr *arg2, expr *result, unsigned label,
+void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 		unsigned line);
 
 void print_quads();
