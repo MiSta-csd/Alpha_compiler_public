@@ -15,6 +15,7 @@
 #include "symtable.h"
 #include "quads.h"
 #include <unordered_map>
+#include <cmath>
 
 bool member_flag = false;
 int yyerror(std::string message);
@@ -117,11 +118,147 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");}
 expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 	  										
 	  									}
-			| expr PLUS expr			{	print_rules("4.2 expr -> expr + expr");}
-			| expr MINUS expr			{	print_rules("4.3 expr -> expr - expr");}
-			| expr MULT expr			{	print_rules("4.4 expr -> expr * expr");}
-			| expr DIVIDE expr			{	print_rules("4.5 expr -> expr / expr");}
-			| expr PERCENT expr			{	print_rules("4.6 expr -> expr \% expr");}
+			| expr PLUS expr			{	print_rules("4.2 expr -> expr + expr");
+											union values val;
+											expr_t type;
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											
+											if (expr_vec[expr_vec.size() - 2]->type == CONSTDOUBLE_E){
+												if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E){
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst + expr_vec[expr_vec.size() - 1]->value.doubleConst;
+													type = CONSTDOUBLE_E;
+												}else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E)
+												{
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst + expr_vec[expr_vec.size() - 1]->value.intConst;
+													type = CONSTDOUBLE_E;
+												}
+											}
+											else if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E && expr_vec[expr_vec.size() - 2]->type == CONSTINT_E)
+											{
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.intConst + expr_vec[expr_vec.size() - 1]->value.doubleConst;
+													type = CONSTDOUBLE_E;
+											}
+											else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E && expr_vec[expr_vec.size() - 2]->type == CONSTINT_E){
+													val.intConst = expr_vec[expr_vec.size() - 2]->value.intConst + expr_vec[expr_vec.size() - 1]->value.intConst;
+													type = CONSTINT_E;
+											}
+											if (type == CONSTDOUBLE_E || type == CONSTINT_E){
+												insert_expr(type, st_tmp_entry, NULL, val, NULL);
+												emit(ADD_O, expr_vec[expr_vec.size() - 1], expr_vec[expr_vec.size() - 3], expr_vec[expr_vec.size() - 2], 0, yylineno);
+											}
+										}
+			| expr MINUS expr			{	print_rules("4.3 expr -> expr - expr");
+											union values val;
+											expr_t type;
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											if (expr_vec[expr_vec.size() - 2]->type == CONSTDOUBLE_E){
+												if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E){
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst - expr_vec[expr_vec.size() - 1]->value.doubleConst;
+													type = CONSTDOUBLE_E;
+												}else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E)
+												{
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst - expr_vec[expr_vec.size() - 1]->value.intConst;
+													type = CONSTDOUBLE_E;
+												}
+											}
+											else if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E && expr_vec[expr_vec.size() - 2]->type == CONSTINT_E)
+											{
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.intConst - expr_vec[expr_vec.size() - 1]->value.doubleConst;
+													type = CONSTDOUBLE_E;
+											}
+											else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E && expr_vec[expr_vec.size() - 2]->type == CONSTINT_E){
+													val.intConst = expr_vec[expr_vec.size() - 2]->value.intConst - expr_vec[expr_vec.size() - 1]->value.intConst;
+													type = CONSTINT_E;
+											}
+											if (type == CONSTDOUBLE_E || type == CONSTINT_E){
+												insert_expr(type, st_tmp_entry, NULL, val, NULL);
+												emit(SUB_O, expr_vec[expr_vec.size() - 1], expr_vec[expr_vec.size() - 3], expr_vec[expr_vec.size() - 2], 0, yylineno);
+											}
+										}
+			| expr MULT expr			{	print_rules("4.4 expr -> expr * expr");
+											union values val;
+											expr_t type;
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											if (expr_vec[expr_vec.size() - 2]->type == CONSTDOUBLE_E){
+												if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E){
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst * expr_vec[expr_vec.size() - 1]->value.doubleConst;
+													type = CONSTDOUBLE_E;
+												}else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E)
+												{
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst * expr_vec[expr_vec.size() - 1]->value.intConst;
+													type = CONSTDOUBLE_E;
+												}
+											}
+											else if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E && expr_vec[expr_vec.size() - 2]->type == CONSTINT_E)
+											{
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.intConst * expr_vec[expr_vec.size() - 1]->value.doubleConst;
+													type = CONSTDOUBLE_E;
+											}
+											else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E && expr_vec[expr_vec.size() - 2]->type == CONSTINT_E){
+													val.intConst = expr_vec[expr_vec.size() - 2]->value.intConst * expr_vec[expr_vec.size() - 1]->value.intConst;
+													type = CONSTINT_E;
+											}
+											if (type == CONSTDOUBLE_E || type == CONSTINT_E){
+												insert_expr(type, st_tmp_entry, NULL, val, NULL);
+												emit(MUL_O, expr_vec[expr_vec.size() - 1], expr_vec[expr_vec.size() - 3], expr_vec[expr_vec.size() - 2], 0, yylineno);
+											}
+										}
+			| expr DIVIDE expr			{	print_rules("4.5 expr -> expr / expr");
+											union values val;
+											expr_t type;
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											if (expr_vec[expr_vec.size() - 2]->type == CONSTDOUBLE_E){
+												if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E){
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst / expr_vec[expr_vec.size() - 1]->value.doubleConst;
+													type = CONSTDOUBLE_E;
+												}else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E)
+												{
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst / expr_vec[expr_vec.size() - 1]->value.intConst;
+													type = CONSTDOUBLE_E;
+												}
+											}
+											else if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E && expr_vec[expr_vec.size() - 2]->type == CONSTINT_E)
+											{
+													val.doubleConst = expr_vec[expr_vec.size() - 2]->value.intConst / expr_vec[expr_vec.size() - 1]->value.doubleConst;
+													type = CONSTDOUBLE_E;
+											}
+											else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E && expr_vec[expr_vec.size() - 2]->type == CONSTINT_E){
+													val.intConst = expr_vec[expr_vec.size() - 2]->value.intConst / expr_vec[expr_vec.size() - 1]->value.intConst;
+													type = CONSTINT_E;
+											}
+											if (type == CONSTDOUBLE_E || type == CONSTINT_E){
+												insert_expr(type, st_tmp_entry, NULL, val, NULL);
+												emit(DIV_O, expr_vec[expr_vec.size() - 1], expr_vec[expr_vec.size() - 3], expr_vec[expr_vec.size() - 2], 0, yylineno);
+											}
+										}
+			| expr PERCENT expr			{	print_rules("4.6 expr -> expr \% expr");
+											union values val;
+											expr_t type;
+											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+											if (expr_vec[expr_vec.size() - 2]->type == CONSTDOUBLE_E){
+												if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E){
+													val.doubleConst = fmod(expr_vec[expr_vec.size() - 2]->value.doubleConst , expr_vec[expr_vec.size() - 1]->value.doubleConst);
+													type = CONSTDOUBLE_E;
+												}else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E)
+												{
+													val.doubleConst = fmod(expr_vec[expr_vec.size() - 2]->value.doubleConst , expr_vec[expr_vec.size() - 1]->value.intConst);
+													type = CONSTDOUBLE_E;
+												}
+											}
+											else if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E && expr_vec[expr_vec.size() - 2]->type == CONSTINT_E)
+											{
+													val.doubleConst = fmod(expr_vec[expr_vec.size() - 2]->value.intConst , expr_vec[expr_vec.size() - 1]->value.doubleConst);
+													type = CONSTDOUBLE_E;
+											}
+											else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E && expr_vec[expr_vec.size() - 2]->type == CONSTINT_E){
+													val.intConst = expr_vec[expr_vec.size() - 2]->value.intConst % expr_vec[expr_vec.size() - 1]->value.intConst;
+													type = CONSTINT_E;
+											}
+											if (type == CONSTDOUBLE_E || type == CONSTINT_E){
+												insert_expr(type, st_tmp_entry, NULL, val, NULL);
+												emit(MOD_O, expr_vec[expr_vec.size() - 1], expr_vec[expr_vec.size() - 3], expr_vec[expr_vec.size() - 2], 0, yylineno);
+											}
+										}
 			| expr GREATER expr			{	print_rules("4.7 expr -> expr > expr");
 											union values val;
 											expr *expr_pt;
@@ -443,7 +580,6 @@ const		: INTEGER 					{	print_rules("20.1 const -> INTEGER");
 											union values val;
 											val.doubleConst = $1;
 											insert_expr(CONSTDOUBLE_E, NULL, NULL, val, NULL);
-
 										}
 			| STRING 					{	print_rules("20.3 const -> STRING");
 											union values val;
