@@ -35,53 +35,53 @@ void print_quads() {
 	"TABLESETELEM_O", "JUMP_O"};
 	std::cout << " -------------------------------------------\n\n";
 	int i = 1;
-    for (auto v : quad_vec){
-		std::cout << i << ": " << opcodes[v.op] << " ";
-		if (v.result != NULL){
-			std::cout << v.result->sym->name << " ";
+    for (auto quad : quad_vec){
+		std::cout << i << ": " << opcodes[quad.op] << " ";
+		if (quad.result != NULL){
+			std::cout << quad.result->sym->name << " ";
 		}
-		if(v.arg1) {
-			switch (v.arg1->type) {
+		if(quad.arg1) {
+			switch (quad.arg1->type) {
 				case CONSTINT_E:
-					std::cout << v.arg1->value.intConst << " ";
+					std::cout << quad.arg1->value.intConst << " ";
 					break;
 				case CONSTSTRING_E:
-					std::cout << v.arg1->value.strConst << " ";
+					std::cout << quad.arg1->value.strConst << " ";
 					break;
 				case BOOLEXPR_E:
-					std::cout << (v.arg1->value.boolConst == true? "true" : "false") << " ";
+					std::cout << (quad.arg1->value.boolConst == true? "true" : "false") << " ";
 					break;
 				case NIL_E:
 					std::cout << "NIL ";
 					break;
 				default:
-					std::cout << v.arg1->sym->name << " ";
+					std::cout << quad.arg1->sym->name << " ";
 					break;
 			}
 		}
-		if(v.arg2) {
-			switch (v.arg2->type) {
+		if(quad.arg2) {
+			switch (quad.arg2->type) {
 				case CONSTINT_E:
-					std::cout << v.arg2->value.intConst << " ";
+					std::cout << quad.arg2->value.intConst << " ";
 					break;
 				case CONSTSTRING_E:
-					std::cout << v.arg2->value.strConst << " ";
+					std::cout << quad.arg2->value.strConst << " ";
 					break;
 				case BOOLEXPR_E:
-					std::cout << (v.arg2->value.boolConst == true? "true" : "false") << " ";
+					std::cout << (quad.arg2->value.boolConst == true? "true" : "false") << " ";
 					break;
 				case NIL_E:
 					std::cout << "NIL ";
 					break;
 				default:
-					std::cout << v.arg2->sym->name << " ";
+					std::cout << quad.arg2->sym->name << " ";
 					break;
 			}
 		}
-		if (v.label != 0){
-			std::cout << v.label << " ";
+		if (quad.label != 0){
+			std::cout << quad.label << " ";
 		}
-		std::cout << "[line " << v.line << "]\n";
+		std::cout << "[line " << quad.line << "]\n";
 		i++;
     }
     std::cout << " ------------------------------------------- \n";
