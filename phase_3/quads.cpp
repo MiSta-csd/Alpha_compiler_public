@@ -45,14 +45,17 @@ void print_quads() {
 				case CONSTINT_E:
 					std::cout << quad.arg1->value.intConst << " ";
 					break;
+				case CONSTDOUBLE_E:
+					std::cout << quad.arg1->value.doubleConst << " ";
+					break;
 				case CONSTSTRING_E:
 					std::cout << quad.arg1->value.strConst << " ";
 					break;
 				case BOOLEXPR_E:
-					std::cout << (quad.arg1->value.boolConst == true? "true" : "false") << " ";
+					std::cout << (quad.arg1->value.boolConst == true? "'true'" : "'false'") << " ";
 					break;
 				case NIL_E:
-					std::cout << "NIL ";
+					std::cout << "NIL";
 					break;
 				default:
 					std::cout << quad.arg1->sym->name << " ";
@@ -64,11 +67,14 @@ void print_quads() {
 				case CONSTINT_E:
 					std::cout << quad.arg2->value.intConst << " ";
 					break;
+				case CONSTDOUBLE_E:
+					std::cout << quad.arg2->value.doubleConst << " ";
+					break;
 				case CONSTSTRING_E:
 					std::cout << quad.arg2->value.strConst << " ";
 					break;
 				case BOOLEXPR_E:
-					std::cout << (quad.arg2->value.boolConst == true? "true" : "false") << " ";
+					std::cout << (quad.arg2->value.boolConst == true? "'true'" : "'false'") << " ";
 					break;
 				case NIL_E:
 					std::cout << "NIL ";

@@ -140,14 +140,14 @@ space			[ \t]*
 "*"			{ return MULT; }
 "/"			{ return DIVIDE; }
 "%"			{ return PERCENT; }
-"=="		{ return EQUAL; }
-"!="		{ return NOTEQUAL; }
 "++"		{ return PLUSPLUS; }
 "--"		{ return MINUSMINUS; }
 ">"			{ return GREATER; }
 "<"			{ return LESSER; }
 ">="		{ return GREATEREQUAL; }
 "<="		{ return LESSEREQUAL; }
+"=="		{ return EQUAL; }
+"!="		{ return NOTEQUAL; }
 "{"			{ return LCBRACK; }
 "}"			{ return RCBRACK; }
 "["			{ return LBRACK; }

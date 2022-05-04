@@ -15,6 +15,7 @@
 #include "symtable.h"
 #include "quads.h"
 #include <unordered_map>
+#include <cmath>
 
 bool member_flag = false;
 int yyerror(std::string message);
@@ -39,6 +40,58 @@ void print_rules(std::string str) {
 	 /* std::cout << "~ entered rule :\t " << str << std::endl; */
 }
 
+void expr_compare_expr(enum iopcode opcode) {
+	union values val;
+	expr *expr_pt;
+	st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+	emit(opcode, NULL, expr_vec[expr_vec.size() - 2],
+	  expr_vec[expr_vec.size() - 1],
+	  get_current_quad() + 2, yylineno);
+	emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
+	val.boolConst = true;
+	expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+	emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
+	emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
+	val.boolConst = false;
+	expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
+	emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
+}
+
+void expr_action_expr(enum iopcode opcode) {
+	union values val;
+	expr_t type;
+	st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
+	if (expr_vec[expr_vec.size() - 2]->type == CONSTDOUBLE_E){
+		if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E){
+			val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst
+			- expr_vec[expr_vec.size() - 1]->value.doubleConst;
+			type = CONSTDOUBLE_E;
+		}else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E)
+		{
+			val.doubleConst = expr_vec[expr_vec.size() - 2]->value.doubleConst
+			- expr_vec[expr_vec.size() - 1]->value.intConst;
+			type = CONSTDOUBLE_E;
+		}
+	}
+	else if (expr_vec[expr_vec.size() - 1]->type == CONSTDOUBLE_E &&
+	expr_vec[expr_vec.size() - 2]->type == CONSTINT_E){
+			val.doubleConst = expr_vec[expr_vec.size() - 2]->value.intConst
+			- expr_vec[expr_vec.size() - 1]->value.doubleConst;
+			type = CONSTDOUBLE_E;
+	}
+	else if (expr_vec[expr_vec.size() - 1]->type == CONSTINT_E &&
+	expr_vec[expr_vec.size() - 2]->type == CONSTINT_E){
+			val.intConst = expr_vec[expr_vec.size() - 2]->value.intConst
+			- expr_vec[expr_vec.size() - 1]->value.intConst;
+			type = CONSTINT_E;
+	}
+	if (type == CONSTDOUBLE_E || type == CONSTINT_E){
+		insert_expr(type, st_tmp_entry, NULL, val, NULL);
+		emit(opcode, expr_vec[expr_vec.size() - 1], expr_vec[expr_vec.size() - 3],
+		expr_vec[expr_vec.size() - 2], 0, yylineno);
+	}
+}
+
 %}
 
 %defines
@@ -58,20 +111,22 @@ void print_rules(std::string str) {
 %token<strConst> STRING
 %token<strConst> ID
 %token<boolean> TRUE FALSE
+
 %token OR LOCAL NIL UMINUS MINUSMINUS
 %token IF ELSE WHILE FUNCTION FOR RETURN BREAK CONTINUE AND NOT 
 %token ASSIGN PLUS MINUS MULT DIVIDE PERCENT NOTEQUAL PLUSPLUS
-%token GREATER  LESSER GREATEREQUAL LESSEREQUAL EQUAL
+%token GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL
 %token LCBRACK RCBRACK LBRACK RBRACK LPAREN RPAREN SEMICOLON COMMA COLON COLONCOLON DOT DOTDOT
 
-%type program stmts stmt expr term assignexpr primary
+%type<expr>expr
+%type program stmts stmt term assignexpr primary
 %type member call elist objectdef const returnstmt
 %type idlist
 
 %type<st_entryVal> funcdef 
 %type<st_entryVal> lvalue
 
-
+						  // Operator Tokens Hierarchy
 %right 		ASSIGN
 %left 		OR
 %left 		AND
@@ -90,7 +145,7 @@ void print_rules(std::string str) {
 
 %%
 
-program:	  stmts						{	std::cout << "Finished reading statements\n";}
+program		: stmts						{	std::cout << "Finished reading statements\n";}
 			;
 
 // Rule 2.
@@ -117,94 +172,38 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");}
 expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 	  										
 	  									}
-			| expr PLUS expr			{	print_rules("4.2 expr -> expr + expr");}
-			| expr MINUS expr			{	print_rules("4.3 expr -> expr - expr");}
-			| expr MULT expr			{	print_rules("4.4 expr -> expr * expr");}
-			| expr DIVIDE expr			{	print_rules("4.5 expr -> expr / expr");}
-			| expr PERCENT expr			{	print_rules("4.6 expr -> expr \% expr");}
+			| expr PLUS expr			{	print_rules("4.2 expr -> expr + expr");
+											expr_action_expr(ADD_O);
+										}
+			| expr MINUS expr			{	print_rules("4.3 expr -> expr - expr");
+											expr_action_expr(SUB_O);
+										}
+			| expr MULT expr			{	print_rules("4.4 expr -> expr * expr");
+											expr_action_expr(MUL_O);
+										}
+			| expr DIVIDE expr			{	print_rules("4.5 expr -> expr / expr");
+											expr_action_expr(DIV_O);
+										}
+			| expr PERCENT expr			{	print_rules("4.6 expr -> expr \% expr");
+											expr_action_expr(MOD_O);
+										}
 			| expr GREATER expr			{	print_rules("4.7 expr -> expr > expr");
-											union values val;
-											expr *expr_pt;
-											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_GREATER_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
-											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
-											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
+											expr_compare_expr(IF_GREATER_O);
 										}
 			| expr GREATEREQUAL expr	{	print_rules("4.8 expr -> expr >= expr");
-											union values val;
-											expr *expr_pt;
-											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_GREATEREQ_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
-											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
-											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
+											expr_compare_expr(IF_GREATEREQ_O);
 										}	
 			| expr LESSER expr			{	print_rules("4.9 expr -> expr < expr");
-											union values val;
-											expr *expr_pt;
-											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_LESS_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
-											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[2], expr_pt, NULL, 0, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
-											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
+											expr_compare_expr(IF_LESS_O);
 										}
 			| expr LESSEREQUAL expr		{	print_rules("4.10 expr -> expr <= expr");
-											union values val;
-											expr *expr_pt;
-											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_LESSEQ_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
-											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
-											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
+											expr_compare_expr(IF_LESSEQ_O);
 										}	
 			| expr EQUAL expr			{	print_rules("4.11 expr -> expr == expr");
-											union values val;
-											expr *expr_pt;
-											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_EQ_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
-											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
-											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
+											expr_compare_expr(IF_EQ_O);
 										}	
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");
-											union values val;
-											expr *expr_pt;
-											st_entry *st_tmp_entry = st_insert(tmp_expr_name(), LOCAL_VAR);
-											emit(IF_NOTEQ_O, NULL, expr_vec[expr_vec.size() - 2], expr_vec[expr_vec.size() - 1], get_current_quad() + 2, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
-											val.boolConst = true;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
-											emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
-											val.boolConst = false;
-											expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);
-											emit(ASSIGN_O, expr_vec[expr_vec.size() - 1], expr_pt, NULL, 0, yylineno);
+											expr_compare_expr(IF_NOTEQ_O);
 										}
 			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");}
 			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");}
@@ -212,6 +211,7 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 											
 										}
 			;
+
 // Rule 5.
 term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 	  										// TODO insert new tmp st_entry so it can be evaluated for further computation
@@ -257,7 +257,9 @@ assignexpr	: lvalue ASSIGN expr		{
 			;
 
 // Rule 7.
-primary		: lvalue					{	print_rules("7.1 primary -> lvalue");}
+primary		: lvalue					{	print_rules("7.1 primary -> lvalue");
+		 									
+										}
 			| call						{	print_rules("7.2 primary -> call");}
 			| objectdef					{	print_rules("7.3 primary -> objectdef");}
 			| LPAREN funcdef RPAREN		{	print_rules("7.4 primary -> ( funcdef )");}
@@ -265,8 +267,8 @@ primary		: lvalue					{	print_rules("7.1 primary -> lvalue");}
 										}
 			;
 // Rule 8.
-lvalue		: ID						{
-											print_rules("8.1 lvalue -> ID");
+lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
+											unsigned char error = 0;
 											st_entry_tmp["r8"] = st_lookup(*$1);
 											if(!st_entry_tmp["r8"]){
 												$$ = st_insert(*$1, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR);
@@ -277,9 +279,14 @@ lvalue		: ID						{
 												yyerror("Cannot access local var \'"+*$1+"\' inside function \'"
 												+func_stack.top()->name + "\'");
 												$$ = NULL;
+												error = 1;
 											}
 											else{
 												$$ = st_entry_tmp["r8"];
+											}
+											if(!error) {
+												union values val;
+												insert_expr(VAR_E, $$, NULL, val, NULL);
 											}
 										}
 			| LOCAL ID					{
@@ -295,7 +302,6 @@ lvalue		: ID						{
 												$$ = st_insert(*$2, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR);
 											}
 										}
-
 			| COLONCOLON ID				{
 											print_rules("8.3 lvalue -> ::ID");
 											st_entry_tmp["r8"] = st_lookup(*$2, 0);
@@ -309,7 +315,6 @@ lvalue		: ID						{
 										}
 			| member					{
 											print_rules("8.4 lvalue -> member");
-
 										}
 			;
 // Rule 9.
@@ -443,7 +448,6 @@ const		: INTEGER 					{	print_rules("20.1 const -> INTEGER");
 											union values val;
 											val.doubleConst = $1;
 											insert_expr(CONSTDOUBLE_E, NULL, NULL, val, NULL);
-
 										}
 			| STRING 					{	print_rules("20.3 const -> STRING");
 											union values val;
