@@ -51,7 +51,7 @@ void print_quads() {
 				case CONSTSTRING_E:
 					std::cout << quad.arg1->value.strConst << " ";
 					break;
-				case BOOLEXPR_E:
+				case CONSTBOOL_E:
 					std::cout << (quad.arg1->value.boolConst == true? "'true'" : "'false'") << " ";
 					break;
 				case NIL_E:
@@ -73,7 +73,7 @@ void print_quads() {
 				case CONSTSTRING_E:
 					std::cout << quad.arg2->value.strConst << " ";
 					break;
-				case BOOLEXPR_E:
+				case CONSTBOOL_E:
 					std::cout << (quad.arg2->value.boolConst == true? "'true'" : "'false'") << " ";
 					break;
 				case NIL_E:
