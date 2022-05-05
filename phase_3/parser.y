@@ -85,14 +85,17 @@ void expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	expr_t type;
 	if (check_arith(arg1, yytext) && check_arith(arg2, yytext)) {
 		(arg1->type == CONSTDOUBLE_E || arg2->type == CONSTDOUBLE_E)? type = CONSTDOUBLE_E : type = CONSTINT_E;
-		if(opcode == MOD_O && type == CONSTDOUBLE_E) {
+		if(opcode == MOD_O && type == CONSTDOUBLE_E) {// TODO implement assignexpr so we can assign the value of st_entry
 			std::cout << "Ma kala...\n";
+			val.doubleConst = (double)((int)arg1->val) % ((int)arg2->val);
+		}else {
+			val.intConst = arg1->val % arg2->val;
 		}
 		expr* res = insert_expr(type, st_tmp_entry, NULL, val, NULL);
 		emit(opcode, res, arg1, arg2, 0, yylineno);
 	}
 	else {// WHAT TODO in error case???
-		std::cout << "Ma kala...\n";
+		std::cout << "Ma kala...\n";// TODO implement grammar for non arith expr
 	}
 }
 
