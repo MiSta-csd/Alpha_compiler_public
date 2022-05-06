@@ -15,9 +15,8 @@
 #include "symtable.h"
 #include "quads.h"
 #include <unordered_map>
-#define comperror(...) fprintf(stderr,__VA_ARGS__)
 
-bool member_flag = false;
+bool member_flag = false;// why?
 int yyerror(std::string message);
 
 extern int yylineno;
@@ -82,20 +81,32 @@ void expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 	}
 	union values val;
-	expr_t type;
 	if (check_arith(arg1, yytext) && check_arith(arg2, yytext)) {
-		(arg1->type == CONSTDOUBLE_E || arg2->type == CONSTDOUBLE_E)? type = CONSTDOUBLE_E : type = CONSTINT_E;
+		int val_1, val_2;
+		expr_t type = CONSTINT_E;
+		if(arg1->type == CONSTBOOL_E){
+			val_1 = (int)arg1->value.doubleConst;
+			type = CONSTDOUBLE_E;
+		}else {
+			val_1 = arg1->value.intConst;
+		}
+		if(arg2->type == CONSTBOOL_E){
+			val_2 = (int)arg2->value.doubleConst;
+			type = CONSTDOUBLE_E;
+		}else {
+			val_2 = arg2->value.intConst;
+		}
 		if(opcode == MOD_O && type == CONSTDOUBLE_E) {// TODO implement assignexpr so we can assign the value of st_entry
 			std::cout << "Ma kala...\n";
-			val.doubleConst = (double)((int)arg1->val) % ((int)arg2->val);
+			val.doubleConst = (double)(val_1 % val_2);
 		}else {
-			val.intConst = arg1->val % arg2->val;
+			val.intConst = arg1->value.intConst % arg2->value.intConst;
 		}
 		expr* res = insert_expr(type, st_tmp_entry, NULL, val, NULL);
 		emit(opcode, res, arg1, arg2, 0, yylineno);
 	}
 	else {// WHAT TODO in error case???
-		std::cout << "Ma kala...\n";// TODO implement grammar for non arith expr
+		std::cout << "Ma kala...\n";// TODO implement grammar for non arith expr (bool func table)
 	}
 }
 
@@ -125,8 +136,8 @@ void expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 %token GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL
 %token LCBRACK RCBRACK LBRACK RBRACK LPAREN RPAREN SEMICOLON COMMA COLON COLONCOLON DOT DOTDOT
 
-%type<expr_p>expr const
-%type program stmts stmt term assignexpr primary
+%type<expr_p>expr const assignexpr
+%type program stmts stmt term primary
 %type member call elist objectdef returnstmt
 %type idlist
 
@@ -177,7 +188,7 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");}
 
 // Rule 4.
 expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
-	  										
+	  										$$ = $1;
 	  									}
 			| expr PLUS expr			{	print_rules("4.2 expr -> expr + expr");
 											expr_action_expr($1, ADD_O, $3);
@@ -255,10 +266,22 @@ term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 // Rule 6.
 assignexpr	: lvalue ASSIGN expr		{
 											print_rules("6.1 assignexpr -> lvalue = expr");
-		   							 		if(!member_flag && $1 && ($1->type==LIB_FUNC || $1->type==USER_FUNC) ) 
-												 yyerror("invalid assignment (lvalue is a function)");
-											if(member_flag)
+		   							 		if(!member_flag && $1 && ($1->type==LIB_FUNC || $1->type==USER_FUNC) ) {
+												yyerror("invalid assignment (lvalue is a function)");
+											}else {
+												//TODO? if(expr->type == lvalue type??)
+												$$ = insert_expr($3->type, $1, NULL, $3->value, NULL);
+												emit(ASSIGN_O, $$, $3, NULL, 0, yylineno);
+												st_entry *st_tmp_entry;
+												std::string tmp_name = tmp_expr_name();
+												if(!(st_tmp_entry = st_lookup(tmp_name))) {
+													st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+												}
+												emit(ASSIGN_O, new expr($$->type, st_tmp_entry, NULL, $$->value, NULL), $$, NULL, 0, yylineno);
+											}
+											if(member_flag) { // TODO?
 												member_flag = false;
+											}
 										}
 			;
 
