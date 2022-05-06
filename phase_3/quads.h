@@ -36,6 +36,7 @@ struct expr {
 	expr *index;
 	union values value;
 	expr *next;
+	// constructor
 	expr(expr_t type, st_entry *sym, expr *index, union values value, expr *next);
 }typedef expr;
 

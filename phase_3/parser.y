@@ -23,6 +23,7 @@ extern int yylineno;
 extern char *yytext;
 extern FILE *yyin;
 extern int yylex();
+extern unsigned tmp_var_count;
 
 /* Auxiliary var for storing each rule's id value (e.g. entry["rule8.1"] = id) returned
  * from lookup (e.g at $1) */
@@ -54,10 +55,14 @@ bool check_arith (expr* e, std::string context) {
 	return true;
 }
 
-void expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
+expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	st_entry *st_tmp_entry;
-	std::string tmp_name = tmp_expr_name();// func tmp_name adds a new expr in the vec
-	if(!(st_tmp_entry = st_lookup(tmp_name))) {
+	std::string tmp_name;
+	if(tmp_var_count)
+		tmp_name = "^" + std::to_string(tmp_var_count-1);
+	else
+		tmp_name = tmp_expr_name();
+	if(!(st_tmp_entry = st_lookup(tmp_name) )) {
 		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 	}
 
@@ -72,42 +77,104 @@ void expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	val.boolConst = false;
 	expr_pt = insert_expr(CONSTBOOL_E, st_tmp_entry, NULL, val, NULL);
 	emit(ASSIGN_O, expr_pt, expr_pt, NULL, 0, yylineno);
+	expr_pt = insert_expr(VAR_E, st_tmp_entry, NULL, val, NULL);// gtp kavala alla ti na kanoyme prepei na petyxoume ena print
+	return expr_pt;// TODO exei ginei elegxos gia to an ta expr_Values einai sygkrishma??
 }
 
-void expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
-	std::string tmp_name = tmp_expr_name();
+expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	st_entry *st_tmp_entry;
-	if(!(st_tmp_entry = st_lookup(tmp_name))) {
+	expr *res;
+	std::string tmp_name;
+	if(tmp_var_count)
+		tmp_name = "^" + std::to_string(tmp_var_count-1);
+	else
+		tmp_name = tmp_expr_name();
+	if(!(st_tmp_entry = st_lookup(tmp_name) )) {
 		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 	}
 	union values val;
 	if (check_arith(arg1, yytext) && check_arith(arg2, yytext)) {
 		int val_1, val_2;
 		expr_t type = CONSTINT_E;
-		if(arg1->type == CONSTBOOL_E){
+		if(arg1->type == CONSTDOUBLE_E){
 			val_1 = (int)arg1->value.doubleConst;
 			type = CONSTDOUBLE_E;
 		}else {
 			val_1 = arg1->value.intConst;
 		}
-		if(arg2->type == CONSTBOOL_E){
+		if(arg2->type == CONSTDOUBLE_E){
 			val_2 = (int)arg2->value.doubleConst;
 			type = CONSTDOUBLE_E;
 		}else {
 			val_2 = arg2->value.intConst;
 		}
-		if(opcode == MOD_O && type == CONSTDOUBLE_E) {// TODO implement assignexpr so we can assign the value of st_entry
-			std::cout << "Ma kala...\n";
-			val.doubleConst = (double)(val_1 % val_2);
-		}else {
-			val.intConst = arg1->value.intConst % arg2->value.intConst;
+		if(opcode == MOD_O){
+			if(type == CONSTDOUBLE_E) {
+				val.doubleConst = (double)(val_1 % val_2);
+			}else {
+				val.intConst = val_1 % val_2;
+			}
+		}else {// OLOI OI ELEGXOI ME DOUBLE INT EINAI KYRIWS GIA NA PROSDIORISW TON TELIKO TYPO ALLA KAI GIA NA EPITREPSW MOD KAI DIV ME FLOAT
+			switch(opcode){
+				case ADD_O:
+					if(type == CONSTINT_E){
+						val.intConst = val_1 + val_2;
+					}else {
+						if(arg1->type == CONSTINT_E)
+							val.doubleConst = (double)val_1 + arg2->value.doubleConst;
+						else if(arg2->type == CONSTINT_E)
+							val.doubleConst = (double)val_2 + arg1->value.doubleConst;
+						else
+							val.doubleConst = arg1->value.doubleConst + arg2->value.doubleConst;
+					}
+					break;
+				case SUB_O:
+					if(type == CONSTINT_E){
+						val.intConst = val_1 - val_2;
+					}else {
+						if(arg1->type == CONSTINT_E)
+							val.doubleConst = (double)val_1 - arg2->value.doubleConst;
+						else if(arg2->type == CONSTINT_E)
+							val.doubleConst = (double)val_2 - arg1->value.doubleConst;
+						else
+							val.doubleConst = arg1->value.doubleConst - arg2->value.doubleConst;
+					}
+					break;
+				case MUL_O:
+					if(type == CONSTINT_E) {
+						val.intConst = val_1 * val_2;
+					}else {
+						if(arg1->type == CONSTINT_E)
+							val.doubleConst = (double)val_1 * arg2->value.doubleConst;
+						else if(arg2->type == CONSTINT_E)
+							val.doubleConst = (double)val_2 * arg1->value.doubleConst;
+						else
+							val.doubleConst = arg1->value.doubleConst * arg2->value.doubleConst;
+					}
+					break;
+				case DIV_O:
+					if(type == CONSTINT_E){
+						val.intConst = val_1 / val_2;
+					}else {
+						if(arg1->type == CONSTINT_E)
+							val.doubleConst = (double)val_1 / (int)arg2->value.doubleConst;
+						else if(arg2->type == CONSTINT_E)
+							val.doubleConst = (double)val_2 / (int)arg1->value.doubleConst;
+						else
+							val.doubleConst = arg1->value.doubleConst / (int)arg2->value.doubleConst;
+					}
+					break;
+				default :
+					std::cout << "\033[31mError\033[37m:\tCannot work with this opcode " << opcode << std::endl;
+			}
 		}
-		expr* res = insert_expr(type, st_tmp_entry, NULL, val, NULL);
+		res = insert_expr(VAR_E, st_tmp_entry, NULL, val, NULL);// assigning VAR_E so it is printed correctly
 		emit(opcode, res, arg1, arg2, 0, yylineno);
 	}
 	else {// WHAT TODO in error case???
 		std::cout << "Ma kala...\n";// TODO implement grammar for non arith expr (bool func table)
 	}
+	return res;
 }
 
 %}
@@ -191,41 +258,42 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 	  										$$ = $1;
 	  									}
 			| expr PLUS expr			{	print_rules("4.2 expr -> expr + expr");
-											expr_action_expr($1, ADD_O, $3);
+											$$ = expr_action_expr($1, ADD_O, $3);
 										}
 			| expr MINUS expr			{	print_rules("4.3 expr -> expr - expr");
-											expr_action_expr($1, SUB_O, $3);
+											$$ = expr_action_expr($1, SUB_O, $3);
 										}
 			| expr MULT expr			{	print_rules("4.4 expr -> expr * expr");
-											expr_action_expr($1, MUL_O, $3);
+											$$ = expr_action_expr($1, MUL_O, $3);
 										}
 			| expr DIVIDE expr			{	print_rules("4.5 expr -> expr / expr");
-											expr_action_expr($1, DIV_O, $3);
+											$$ = expr_action_expr($1, DIV_O, $3);
 										}
 			| expr PERCENT expr			{	print_rules("4.6 expr -> expr \% expr");
-											expr_action_expr($1, MOD_O, $3);
+											$$ = expr_action_expr($1, MOD_O, $3);
 										}
 			| expr GREATER expr			{	print_rules("4.7 expr -> expr > expr");
-											expr_compare_expr($1, IF_GREATER_O, $3);
+											$$ = expr_compare_expr($1, IF_GREATER_O, $3);
 										}
 			| expr GREATEREQUAL expr	{	print_rules("4.8 expr -> expr >= expr");
-											expr_compare_expr($1, IF_GREATEREQ_O, $3);
+											$$ = expr_compare_expr($1, IF_GREATEREQ_O, $3);
 										}	
 			| expr LESSER expr			{	print_rules("4.9 expr -> expr < expr");
-											expr_compare_expr($1, IF_LESS_O, $3);
+											$$ = expr_compare_expr($1, IF_LESS_O, $3);
 										}
 			| expr LESSEREQUAL expr		{	print_rules("4.10 expr -> expr <= expr");
-											expr_compare_expr($1, IF_LESSEQ_O, $3);
+											$$ = expr_compare_expr($1, IF_LESSEQ_O, $3);
 										}	
 			| expr EQUAL expr			{	print_rules("4.11 expr -> expr == expr");
-											expr_compare_expr($1, IF_EQ_O, $3);
+											$$ = expr_compare_expr($1, IF_EQ_O, $3);
 										}	
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");
-											expr_compare_expr($1, IF_NOTEQ_O, $3);
+											$$ = expr_compare_expr($1, IF_NOTEQ_O, $3);
 										}
 			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");}
 			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");}
 			| term						{	print_rules("4.15 expr -> term");
+											$$ = expr_vec[expr_vec.size()-1];
 										}
 			;
 
@@ -269,8 +337,8 @@ assignexpr	: lvalue ASSIGN expr		{
 		   							 		if(!member_flag && $1 && ($1->type==LIB_FUNC || $1->type==USER_FUNC) ) {
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
-												//TODO? if(expr->type == lvalue type??)
-												$$ = insert_expr($3->type, $1, NULL, $3->value, NULL);
+												//TODO? if(expr->type == lvalue type??) bah
+												$$ = insert_expr($3->type, $1, NULL, $3->value, NULL);// VAR_E to print the name of tmp not the value
 												emit(ASSIGN_O, $$, $3, NULL, 0, yylineno);
 												st_entry *st_tmp_entry;
 												std::string tmp_name = tmp_expr_name();
@@ -580,7 +648,7 @@ int main(int argc, char** argv) {
 	st_initialize();
     while( yyparse() != 0);
 	validate_comments();
-	st_print_table();
+	/* st_print_table(); */
 	print_quads();
 
     return 0;
