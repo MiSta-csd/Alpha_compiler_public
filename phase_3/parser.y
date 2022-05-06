@@ -338,14 +338,14 @@ assignexpr	: lvalue ASSIGN expr		{
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
 												//TODO? if(expr->type == lvalue type??) bah
-												$$ = insert_expr($3->type, $1, NULL, $3->value, NULL);// VAR_E to print the name of tmp not the value
+												$$ = insert_expr(VAR_E, $1, NULL, $3->value, NULL);// VAR_E to print the name of tmp not the value
 												emit(ASSIGN_O, $$, $3, NULL, 0, yylineno);
 												st_entry *st_tmp_entry;
 												std::string tmp_name = tmp_expr_name();
 												if(!(st_tmp_entry = st_lookup(tmp_name))) {
 													st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 												}
-												emit(ASSIGN_O, new expr($$->type, st_tmp_entry, NULL, $$->value, NULL), $$, NULL, 0, yylineno);
+												emit(ASSIGN_O, new expr(VAR_E, st_tmp_entry, NULL, $$->value, NULL), $$, NULL, 0, yylineno);
 											}
 											if(member_flag) { // TODO?
 												member_flag = false;
