@@ -343,11 +343,7 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 												tmp_expr = insert_expr(VAR_E, $1, NULL, $3->value, NULL);
 												emit(ASSIGN_O, tmp_expr, $3, NULL, 0, yylineno);
 												st_entry *st_tmp_entry;
-												std::string tmp_name;
-												if(tmp_var_count)
-													tmp_name = "^" + std::to_string(tmp_var_count-1);
-												else
-													tmp_name = tmp_expr_name();
+												std::string tmp_name = tmp_expr_name();
 												if( !(st_tmp_entry = st_lookup(tmp_name)) ) {
 													st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 												}
