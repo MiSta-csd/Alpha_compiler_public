@@ -35,7 +35,6 @@ extern std::stack<struct st_entry*> func_stack;
 
 extern std::vector<expr*> expr_vec;
 
-
 void print_rules(std::string str) {
 	 /* std::cout << "~ entered rule :\t " << str << std::endl; */
 }
@@ -157,11 +156,11 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 						val.intConst = val_1 / val_2;
 					}else {
 						if(arg1->type == CONSTINT_E)
-							val.doubleConst = (double)val_1 / (int)arg2->value.doubleConst;
+							val.doubleConst = (double)val_1 / arg2->value.doubleConst;
 						else if(arg2->type == CONSTINT_E)
-							val.doubleConst = (double)val_2 / (int)arg1->value.doubleConst;
+							val.doubleConst = (double)val_2 / arg1->value.doubleConst;
 						else
-							val.doubleConst = arg1->value.doubleConst / (int)arg2->value.doubleConst;
+							val.doubleConst = arg1->value.doubleConst / arg2->value.doubleConst;
 					}
 					break;
 				default :
@@ -203,8 +202,8 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 %token GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL
 %token LCBRACK RCBRACK LBRACK RBRACK LPAREN RPAREN SEMICOLON COMMA COLON COLONCOLON DOT DOTDOT
 
-%type<expr_p>expr const assignexpr
-%type program stmts stmt term primary
+%type<expr_p>expr const assignexpr term primary
+%type program stmts stmt
 %type member call elist objectdef returnstmt
 %type idlist
 
@@ -230,7 +229,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 
 %%
 
-program		: stmts						{	std::cout << "Finished reading statements\n";}
+program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 			;
 
 // Rule 2.
@@ -293,59 +292,62 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");}
 			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");}
 			| term						{	print_rules("4.15 expr -> term");
-											$$ = expr_vec[expr_vec.size()-1];
+											$$ = $1;
 										}
 			;
 
 // Rule 5.
 term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 	  										// TODO insert new tmp st_entry so it can be evaluated for further computation
+											$$ = $2;
 	  									}
 			| MINUS expr %prec UMINUS	{	print_rules("5.2 term -> - expr");}
 			| NOT expr					{	print_rules("5.3 term -> NOT expr");}
 			| PLUSPLUS lvalue			{
 											print_rules("5.4 term -> ++ lvalue");
 											if($2->type == USER_FUNC || $2->type == LIB_FUNC){
-												yyerror("functions are constant, their value cannot be changed");
+												yyerror("invalid assignment (lvalue is a function)");
 											}
 										}
 			| lvalue PLUSPLUS			{
 											print_rules("5.5 term -> lvalue ++");
 											if($1->type == USER_FUNC || $1->type == LIB_FUNC){
-												yyerror("functions are constant, their value cannot be changed");
+												yyerror("invalid assignment (lvalue is a function)");
 											}
 										}
 			| MINUSMINUS lvalue			{
 											print_rules("5.6 term -> -- lvalue");
 											if($2->type == USER_FUNC || $2->type == LIB_FUNC){
-												yyerror("functions are constant, their value cannot be changed");
+												yyerror("invalid assignment (lvalue is a function)");
 											}
 										}
 			| lvalue MINUSMINUS			{
 											print_rules("5.7 term ->  lvalue --");
 											if($1->type == USER_FUNC || $1->type == LIB_FUNC){
-												yyerror("functions are constant, their value cannot be changed");
+												yyerror("invalid assignment (lvalue is a function)");
 											}
 										}
 			| primary					{	print_rules("5.8 term -> primary");
 											// since it's a primary it can be immediately evaluated
+											$$ = $1;
 										}
 			;
 // Rule 6.
-assignexpr	: lvalue ASSIGN expr		{
-											print_rules("6.1 assignexpr -> lvalue = expr");
+assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr");
 		   							 		if(!member_flag && $1 && ($1->type==LIB_FUNC || $1->type==USER_FUNC) ) {
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
 												//TODO? if(expr->type == lvalue type??) bah
-												$$ = insert_expr(VAR_E, $1, NULL, $3->value, NULL);// VAR_E to print the name of tmp not the value
+												expr *tmp_expr;
+												tmp_expr = insert_expr(VAR_E, $1, NULL, $3->value, NULL);
 												emit(ASSIGN_O, $$, $3, NULL, 0, yylineno);
 												st_entry *st_tmp_entry;
 												std::string tmp_name = tmp_expr_name();
 												if(!(st_tmp_entry = st_lookup(tmp_name))) {
 													st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 												}
-												emit(ASSIGN_O, new expr(VAR_E, st_tmp_entry, NULL, $$->value, NULL), $$, NULL, 0, yylineno);
+												$$ = insert_expr(VAR_E, st_tmp_entry, NULL, $3->value, NULL);
+												emit(ASSIGN_O, $$, tmp_expr, NULL, 0, yylineno);
 											}
 											if(member_flag) { // TODO?
 												member_flag = false;
@@ -357,12 +359,13 @@ assignexpr	: lvalue ASSIGN expr		{
 primary		: lvalue					{	print_rules("7.1 primary -> lvalue");
 		 									// TODO have a global flag for errors so i avoid seg fault
 											union values val;
-		 									insert_expr(VAR_E, $1, NULL, val, NULL);
+		 									$$ = insert_expr(VAR_E, $1, NULL, val, NULL);
 										}
 			| call						{	print_rules("7.2 primary -> call");}
 			| objectdef					{	print_rules("7.3 primary -> objectdef");}
 			| LPAREN funcdef RPAREN		{	print_rules("7.4 primary -> ( funcdef )");}
 			| const						{	print_rules("7.5 primary -> const");
+											$$ = $1;
 										}
 			;
 // Rule 8.
