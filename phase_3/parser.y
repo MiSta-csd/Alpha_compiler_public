@@ -113,7 +113,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 			}else {
 				val.intConst = val_1 % val_2;
 			}
-		}else {// OLOI OI ELEGXOI ME DOUBLE INT EINAI KYRIWS GIA NA PROSDIORISW TON TELIKO TYPO ALLA KAI GIA NA EPITREPSW MOD KAI DIV ME FLOAT
+		}else {// OLOI OI ELEGXOI ME DOUBLE INT EINAI KYRIWS GIA NA PROSDIORISW TON TELIKO TYPO ALLA KAI GIA NA EPITREPSW MOD ME FLOAT
 			switch(opcode){
 				case ADD_O:
 					if(type == CONSTINT_E){
@@ -164,11 +164,12 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 					}
 					break;
 				default :
-					std::cout << "\033[31mError\033[37m:\tCannot work with this opcode " << opcode << std::endl;
+					std::cout << "\033[31mError\033[37m:\tCannot work with this opcode : " << opcode << std::endl;
 			}
 		}
 		res = insert_expr(VAR_E, st_tmp_entry, NULL, val, NULL);// assigning VAR_E so it is printed correctly
 		emit(opcode, res, arg1, arg2, 0, yylineno);
+
 	}
 	else {// WHAT TODO in error case???
 		std::cout << "Ma kala...\n";// TODO implement grammar for non arith expr (bool func table)
@@ -340,16 +341,20 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 												//TODO? if(expr->type == lvalue type??) bah
 												expr *tmp_expr;
 												tmp_expr = insert_expr(VAR_E, $1, NULL, $3->value, NULL);
-												emit(ASSIGN_O, $$, $3, NULL, 0, yylineno);
+												emit(ASSIGN_O, tmp_expr, $3, NULL, 0, yylineno);
 												st_entry *st_tmp_entry;
-												std::string tmp_name = tmp_expr_name();
-												if(!(st_tmp_entry = st_lookup(tmp_name))) {
+												std::string tmp_name;
+												if(tmp_var_count)
+													tmp_name = "^" + std::to_string(tmp_var_count-1);
+												else
+													tmp_name = tmp_expr_name();
+												if( !(st_tmp_entry = st_lookup(tmp_name)) ) {
 													st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 												}
 												$$ = insert_expr(VAR_E, st_tmp_entry, NULL, $3->value, NULL);
 												emit(ASSIGN_O, $$, tmp_expr, NULL, 0, yylineno);
 											}
-											if(member_flag) { // TODO?
+											if(member_flag) {
 												member_flag = false;
 											}
 										}
@@ -653,6 +658,5 @@ int main(int argc, char** argv) {
 	validate_comments();
 	/* st_print_table(); */
 	print_quads();
-
     return 0;
 }

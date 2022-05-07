@@ -87,8 +87,6 @@ void print_quads() {
 		if (quad.label != 0){
 			std::cout << quad.label << " ";
 		}
-		if(quad.op == JUMP_O)
-			std::cout << "\t";
 		std::cout << "[line " << quad.line << "]\n";
 		i++;
     }
