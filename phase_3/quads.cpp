@@ -41,47 +41,53 @@ void print_quads() {
 			std::cout << quad.result->sym->name << " ";
 		}
 		if(quad.arg1) {
-			switch (quad.arg1->type) {
-				case CONSTINT_E:
-					std::cout << quad.arg1->value.intConst << " ";
-					break;
-				case CONSTDOUBLE_E:
-					std::cout << quad.arg1->value.doubleConst << " ";
-					break;
-				case CONSTSTRING_E:
-					std::cout << quad.arg1->value.strConst << " ";
-					break;
-				case CONSTBOOL_E:
-					std::cout << (quad.arg1->value.boolConst == true? "'true'" : "'false'") << " ";
-					break;
-				case NIL_E:
-					std::cout << "NIL";
-					break;
-				default:
-					std::cout << quad.arg1->sym->name << " ";
-					break;
+			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E) {
+				std::cout << quad.arg1->sym->name << " ";
+			}else {
+				switch (quad.arg1->type) {
+					case CONSTINT_E:
+						std::cout << quad.arg1->value.intConst << " ";
+						break;
+					case CONSTDOUBLE_E:
+						std::cout << quad.arg1->value.doubleConst << " ";
+						break;
+					case CONSTSTRING_E:
+						std::cout << quad.arg1->value.strConst << " ";
+						break;
+					case CONSTBOOL_E:
+						std::cout << (quad.arg1->value.boolConst == true? "'true'" : "'false'") << " ";
+						break;
+					case NIL_E:
+						std::cout << "NIL";
+						break;
+					default:
+						assert(NULL);
+				}
 			}
 		}
 		if(quad.arg2) {
-			switch (quad.arg2->type) {
-				case CONSTINT_E:
-					std::cout << quad.arg2->value.intConst << " ";
-					break;
-				case CONSTDOUBLE_E:
-					std::cout << quad.arg2->value.doubleConst << " ";
-					break;
-				case CONSTSTRING_E:
-					std::cout << quad.arg2->value.strConst << " ";
-					break;
-				case CONSTBOOL_E:
-					std::cout << (quad.arg2->value.boolConst == true? "'true'" : "'false'") << " ";
-					break;
-				case NIL_E:
-					std::cout << "NIL ";
-					break;
-				default:
-					std::cout << quad.arg2->sym->name << " ";
-					break;
+			if(quad.arg2->sym && quad.arg2->type != CONSTBOOL_E) {
+				std::cout << quad.arg2->sym->name << " ";
+			}else {
+				switch (quad.arg2->type) {
+					case CONSTINT_E:
+						std::cout << quad.arg2->value.intConst << " ";
+						break;
+					case CONSTDOUBLE_E:
+						std::cout << quad.arg2->value.doubleConst << " ";
+						break;
+					case CONSTSTRING_E:
+						std::cout << quad.arg2->value.strConst << " ";
+						break;
+					case CONSTBOOL_E:
+						std::cout << (quad.arg2->value.boolConst == true? "'true'" : "'false'") << " ";
+						break;
+					case NIL_E:
+						std::cout << "NIL";
+						break;
+					default:
+						assert(NULL);
+				}
 			}
 		}
 		if (quad.label != 0){
@@ -99,7 +105,7 @@ int get_current_quad() {
 
 expr* insert_expr(expr_t expr_t, st_entry *sym, expr *index, union values val, expr *next) {
 	expr *out = new expr(expr_t, sym, index, val, next);
-	expr_vec.push_back(out);
+	// expr_vec.push_back(out);
 	return out;
 }
 
@@ -107,11 +113,11 @@ void erase_expressions() {
 	// for (unsigned i = 0; i < expr_vec.size(); ++i) {
 	// 	free(expr_vec[i]);
 	// } // den kanoume free giati trwme skato sto print
-	expr_vec.clear();
+	// expr_vec.clear();
 	tmp_var_count = 0;
 }
 
-std::string tmp_expr_name() {
+std::string new_tmp_name() {
 	std::string out = "^" + std::to_string(tmp_var_count++);
 	return out;
 }

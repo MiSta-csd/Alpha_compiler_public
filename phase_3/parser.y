@@ -33,13 +33,13 @@ std::unordered_map<std::string, struct st_entry*> st_entry_tmp;
  */
 extern std::stack<struct st_entry*> func_stack;
 
-extern std::vector<expr*> expr_vec;
+extern std::vector<quad> quad_vec;
 
 void print_rules(std::string str) {
 	 /* std::cout << "~ entered rule :\t " << str << std::endl; */
 }
 
-bool check_arith (expr* e, std::string context) {
+bool check_arith (expr* e, const char* context) {
 	if (e->type == CONSTBOOL_E ||
 		e->type == CONSTSTRING_E ||
 		e->type == NIL_E ||
@@ -60,12 +60,13 @@ expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	if(tmp_var_count)
 		tmp_name = "^" + std::to_string(tmp_var_count-1);
 	else
-		tmp_name = tmp_expr_name();
+		tmp_name = new_tmp_name();
 	if(!(st_tmp_entry = st_lookup(tmp_name) )) {
 		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 	}
 
 	emit(opcode, NULL, arg1, arg2, get_current_quad() + 2, yylineno);
+	//TODO if(!truelist && !falselist)
 	emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
 	union values val;
 	expr *expr_pt;
@@ -76,23 +77,24 @@ expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	val.boolConst = false;
 	expr_pt = insert_expr(CONSTBOOL_E, st_tmp_entry, NULL, val, NULL);
 	emit(ASSIGN_O, expr_pt, expr_pt, NULL, 0, yylineno);
-	expr_pt = insert_expr(VAR_E, st_tmp_entry, NULL, val, NULL);// gtp kavala alla ti na kanoyme prepei na petyxoume ena print
-	return expr_pt;// TODO exei ginei elegxos gia to an ta expr_Values einai sygkrishma??
+	expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);// prepei na petyxoume ena print
+	return expr_pt;
 }
 
 expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
-	st_entry *st_tmp_entry;
 	expr *res;
-	std::string tmp_name;
-	if(tmp_var_count)
-		tmp_name = "^" + std::to_string(tmp_var_count-1);
-	else
-		tmp_name = tmp_expr_name();
-	if(!(st_tmp_entry = st_lookup(tmp_name) )) {
-		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-	}
-	union values val;
-	if (check_arith(arg1, yytext) && check_arith(arg2, yytext)) {
+	bool is_arith = check_arith(arg1, yytext) && check_arith(arg2, yytext);
+	if (is_arith) {
+		st_entry *st_tmp_entry;
+		std::string tmp_name;
+		if(tmp_var_count)
+			tmp_name = "^" + std::to_string(tmp_var_count-1);
+		else
+			tmp_name = new_tmp_name();
+		if(!(st_tmp_entry = st_lookup(tmp_name) )) {
+			st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+		}
+		union values val;
 		int val_1, val_2;
 		expr_t type = CONSTINT_E;
 		if(arg1->type == CONSTDOUBLE_E){
@@ -107,13 +109,25 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 		}else {
 			val_2 = arg2->value.intConst;
 		}
+
+		enum iopcode prev_op;// gia na borei na douleyei h veltistopoihsh swsta
+		if(quad_vec.size()){
+			prev_op = quad_vec[quad_vec.size()-1].op;
+		}else { prev_op = opcode;}
+		
 		if(opcode == MOD_O){
 			if(type == CONSTDOUBLE_E) {
 				val.doubleConst = (double)(val_1 % val_2);
 			}else {
 				val.intConst = val_1 % val_2;
 			}
-		}else {// OLOI OI ELEGXOI ME DOUBLE INT EINAI KYRIWS GIA NA PROSDIORISW TON TELIKO TYPO ALLA KAI GIA NA EPITREPSW MOD ME FLOAT
+			if(prev_op == SUB_O || prev_op == ADD_O) {
+				tmp_name = new_tmp_name();
+				if( !(st_tmp_entry = st_lookup(tmp_name) )) {
+					st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+				}
+			}
+		}else {// OLOI OI ELEGXOI ME DOUBLE INT EINAI KYRIWS GIA NA PROSDIORISW TON TELIKO TYPO sto union ALLA KAI GIA NA EPITREPSW MOD ME FLOAT
 			switch(opcode){
 				case ADD_O:
 					if(type == CONSTINT_E){
@@ -134,7 +148,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 						if(arg1->type == CONSTINT_E)
 							val.doubleConst = (double)val_1 - arg2->value.doubleConst;
 						else if(arg2->type == CONSTINT_E)
-							val.doubleConst = (double)val_2 - arg1->value.doubleConst;
+							val.doubleConst = arg1->value.doubleConst - (double)val_2;
 						else
 							val.doubleConst = arg1->value.doubleConst - arg2->value.doubleConst;
 					}
@@ -150,6 +164,12 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 						else
 							val.doubleConst = arg1->value.doubleConst * arg2->value.doubleConst;
 					}
+					if(prev_op == SUB_O || prev_op == ADD_O) {
+						tmp_name = new_tmp_name();
+						if( !(st_tmp_entry = st_lookup(tmp_name) )) {
+							st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+						}
+					}
 					break;
 				case DIV_O:
 					if(type == CONSTINT_E){
@@ -158,21 +178,34 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 						if(arg1->type == CONSTINT_E)
 							val.doubleConst = (double)val_1 / arg2->value.doubleConst;
 						else if(arg2->type == CONSTINT_E)
-							val.doubleConst = (double)val_2 / arg1->value.doubleConst;
+							val.doubleConst = arg1->value.doubleConst / (double)val_2;
 						else
 							val.doubleConst = arg1->value.doubleConst / arg2->value.doubleConst;
+					}
+					if(prev_op == SUB_O || prev_op == ADD_O) {
+						tmp_name = new_tmp_name();
+						if( !(st_tmp_entry = st_lookup(tmp_name) )) {
+							st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+						}
 					}
 					break;
 				default :
 					std::cout << "\033[31mError\033[37m:\tCannot work with this opcode : " << opcode << std::endl;
+					return NULL;
 			}
 		}
-		res = insert_expr(VAR_E, st_tmp_entry, NULL, val, NULL);// assigning VAR_E so it is printed correctly
+		res = insert_expr(type, st_tmp_entry, NULL, val, NULL);// assigning ARITHEXPR_E so it is printed correctly
+		if(arg1->sym){
+			std::cout << "Quad #" << get_current_quad() << " got arg1 with result_name = " << st_tmp_entry->name <<" and sym_T_name = " << arg1->sym->name << std::endl;
+		}
+		if(arg2->sym){
+			std::cout << "Quad #" << get_current_quad() << " got arg2 with result_name = " << st_tmp_entry->name <<" and sym_T_name = " << arg2->sym->name << std::endl;
+		}
 		emit(opcode, res, arg1, arg2, 0, yylineno);
-
 	}
 	else {// WHAT TODO in error case???
-		std::cout << "Ma kala...\n";// TODO implement grammar for non arith expr (bool func table)
+		std::cout << "Ma kala...\n";
+		return NULL;
 	}
 	return res;
 }
@@ -290,8 +323,16 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");
 											$$ = expr_compare_expr($1, IF_NOTEQ_O, $3);
 										}
-			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");}
-			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");}
+			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");
+											// TODO prepei na ginei error
+											assert($1->type == BOOLEXPR_E && $3->type == BOOLEXPR_E);
+											// TODO if expr@$1 is false jump to the end of falselist
+										}
+			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");
+											// TODO prepei na ginei error
+											assert($1->type == BOOLEXPR_E && $3->type == BOOLEXPR_E);
+											// TODO if expr@$1 is true jump jump to the end of truelist
+										}
 			| term						{	print_rules("4.15 expr -> term");
 											$$ = $1;
 										}
@@ -343,7 +384,7 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 												tmp_expr = insert_expr(VAR_E, $1, NULL, $3->value, NULL);
 												emit(ASSIGN_O, tmp_expr, $3, NULL, 0, yylineno);
 												st_entry *st_tmp_entry;
-												std::string tmp_name = tmp_expr_name();
+												std::string tmp_name = new_tmp_name();
 												if( !(st_tmp_entry = st_lookup(tmp_name)) ) {
 													st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 												}
@@ -475,22 +516,29 @@ block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 										}
 			;
 // Rule 19.
-funcdef		: FUNCTION 					{	print_rules("19.1 funcdef -> function ( idlist ) block");
-											st_entry_tmp["r19"] = st_insert(st_godfather(), USER_FUNC);
-											func_stack.push(st_entry_tmp["r19"]);
-										}
-			  LPAREN					{	st_increase_scope();}
-			  idlist RPAREN				{
-				  							
-				  							offload_arglist(st_entry_tmp["r19"]);
-											st_decrease_scope();
-										}
-			  block 					{
-											func_stack.pop();
+funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function ( idlist ) block");
+                                            st_entry_tmp["r19"] = st_insert(st_godfather(), USER_FUNC);
+                                            func_stack.push(st_entry_tmp["r19"]);
+                                            expr *tmp_expr;
+                                            union values val;
+                                            tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val, NULL);
+                                            emit(FUNCSTART_O, tmp_expr, NULL, NULL, 0, yylineno);
+                                        }
+              LPAREN                    {    st_increase_scope();}
+              idlist RPAREN                {
+
+                                              offload_arglist(st_entry_tmp["r19"]);
+                                            st_decrease_scope();
+                                        }
+              block                     {
+                                            expr *tmp_expr;
+                                            union values val;
+                                            tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val, NULL);
+                                              emit(FUNCEND_O, tmp_expr, NULL, NULL, 0, yylineno);
+                                            func_stack.pop();
 										}
 			| FUNCTION 					{	
 											print_rules("19.2 funcdef -> function ID ( idlist ) block");
-											
 										}
 			  ID 						{	
 											st_entry_tmp["r19"] = st_lookup(*$3);
@@ -523,6 +571,10 @@ funcdef		: FUNCTION 					{	print_rules("19.1 funcdef -> function ( idlist ) bloc
 												}
 												st_entry_tmp["r19"] = NULL;
 											}
+											expr *tmp_expr;
+											union values val;
+											tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val, NULL);
+											emit(FUNCSTART_O, tmp_expr, NULL, NULL, 0, yylineno);
 										}
 			  LPAREN					{	st_increase_scope();		} 
 			  idlist RPAREN				{
@@ -531,11 +583,15 @@ funcdef		: FUNCTION 					{	print_rules("19.1 funcdef -> function ( idlist ) bloc
 											}
 											st_decrease_scope();
 										}
-			 block 						{
+			  block 					{
+				 							expr *tmp_expr;
+											union values val;
+											tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val, NULL);
+				  							emit(FUNCEND_O, tmp_expr, NULL, NULL, 0, yylineno);
 											if(st_entry_tmp["r19"])
 												func_stack.pop();
 										}
-			 ;
+			;
 // Rule 20.
 const		: INTEGER 					{	print_rules("20.1 const -> INTEGER");
 											union values val;
@@ -554,7 +610,6 @@ const		: INTEGER 					{	print_rules("20.1 const -> INTEGER");
 										}
 			| NIL 						{	print_rules("20.4 const -> NIL");
 											union values val;
-											val.NIL = NULL;
 											$$ = insert_expr(NIL_E, NULL, NULL, val, NULL);
 										}
 			| TRUE 						{	print_rules("20.5 const -> TRUE");

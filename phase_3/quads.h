@@ -27,7 +27,6 @@ union values {
 	std::string *strConst;
 	bool boolConst;
 	union values (*f)();
-	void* NIL;
 };
 
 struct expr {
@@ -49,9 +48,9 @@ typedef struct quad {
 	unsigned line;
 }quad;
 
-std::string tmp_expr_name();
+std::string new_tmp_name();
 
-void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
+void emit(iopcode op, expr *arg1, expr *arg2, expr *result, unsigned label,
 		unsigned line);
 
 void print_quads();
