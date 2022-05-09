@@ -1,4 +1,4 @@
-#include <iostream>
+#pragma once
 #include "symtable.h"
 
 enum iopcode {
@@ -29,14 +29,15 @@ union values {
 	union values (*f)();
 };
 
+struct quad;
 struct expr {
 	expr_t type;
 	st_entry *sym;
 	expr *index;
 	union values value;
-	expr *next;
-	// constructor
-	expr(expr_t type, st_entry *sym, expr *index, union values value, expr *next);
+	std::vector<quad*> *truelist;
+	std::vector<quad*> *falselist;
+	expr(expr_t type, st_entry *sym, expr *index, union values value);
 }typedef expr;
 
 typedef struct quad {
@@ -50,14 +51,11 @@ typedef struct quad {
 
 std::string new_tmp_name();
 
-void emit(iopcode op, expr *arg1, expr *arg2, expr *result, unsigned label,
+void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 		unsigned line);
 
 void print_quads();
 
+std::string exp_type_to_string(expr*);
+
 int get_current_quad();
-
-expr* insert_expr(expr_t expr_t, st_entry *sym, expr *index, union values val, expr *next);
-
-/* after we read a stmt the expr_vec is no longer needed and we truncate it */
-void erase_expressions();

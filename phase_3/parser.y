@@ -8,12 +8,12 @@
 						Demetrious Grammenidis - csd3933
 
  */
-
 #include <assert.h>
 #include <iostream>
 #include <string>
 #include "symtable.h"
 #include "quads.h"
+#include "actions.h"
 #include <unordered_map>
 
 bool member_flag = false;// why?
@@ -37,177 +37,6 @@ extern std::vector<quad> quad_vec;
 
 void print_rules(std::string str) {
 	 /* std::cout << "~ entered rule :\t " << str << std::endl; */
-}
-
-bool check_arith (expr* e, const char* context) {
-	if (e->type == CONSTBOOL_E ||
-		e->type == CONSTSTRING_E ||
-		e->type == NIL_E ||
-		e->type == NEWTABLE_E ||
-		e->type == PROGRAMFUNC_E ||
-		e->type == LIBRARYFUNC_E ||
-		e->type == BOOLEXPR_E ) {
-		std::cout << "\033[31m" << "ERROR " << "\033[37m" <<
-		"Illegal expr used in " << context << "!\n";
-		return false;
-	}
-	return true;
-}
-
-expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
-	st_entry *st_tmp_entry;
-	std::string tmp_name;
-	if(tmp_var_count)
-		tmp_name = "^" + std::to_string(tmp_var_count-1);
-	else
-		tmp_name = new_tmp_name();
-	if(!(st_tmp_entry = st_lookup(tmp_name) )) {
-		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-	}
-
-	emit(opcode, NULL, arg1, arg2, get_current_quad() + 2, yylineno);
-	//TODO if(!truelist && !falselist)
-	emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 3, yylineno);
-	union values val;
-	expr *expr_pt;
-	val.boolConst = true;
-	expr_pt = insert_expr(CONSTBOOL_E, st_tmp_entry, NULL, val, NULL);
-	emit(ASSIGN_O, expr_pt, expr_pt, NULL, 0, yylineno);
-	emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
-	val.boolConst = false;
-	expr_pt = insert_expr(CONSTBOOL_E, st_tmp_entry, NULL, val, NULL);
-	emit(ASSIGN_O, expr_pt, expr_pt, NULL, 0, yylineno);
-	expr_pt = insert_expr(BOOLEXPR_E, st_tmp_entry, NULL, val, NULL);// prepei na petyxoume ena print
-	return expr_pt;
-}
-
-expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
-	expr *res;
-	bool is_arith = check_arith(arg1, yytext) && check_arith(arg2, yytext);
-	if (is_arith) {
-		st_entry *st_tmp_entry;
-		std::string tmp_name;
-		if(tmp_var_count)
-			tmp_name = "^" + std::to_string(tmp_var_count-1);
-		else
-			tmp_name = new_tmp_name();
-		if(!(st_tmp_entry = st_lookup(tmp_name) )) {
-			st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-		}
-		union values val;
-		int val_1, val_2;
-		expr_t type = CONSTINT_E;
-		if(arg1->type == CONSTDOUBLE_E){
-			val_1 = (int)arg1->value.doubleConst;
-			type = CONSTDOUBLE_E;
-		}else {
-			val_1 = arg1->value.intConst;
-		}
-		if(arg2->type == CONSTDOUBLE_E){
-			val_2 = (int)arg2->value.doubleConst;
-			type = CONSTDOUBLE_E;
-		}else {
-			val_2 = arg2->value.intConst;
-		}
-
-		enum iopcode prev_op;// gia na borei na douleyei h veltistopoihsh swsta
-		if(quad_vec.size()){
-			prev_op = quad_vec[quad_vec.size()-1].op;
-		}else { prev_op = opcode;}
-		
-		if(opcode == MOD_O){
-			if(type == CONSTDOUBLE_E) {
-				val.doubleConst = (double)(val_1 % val_2);
-			}else {
-				val.intConst = val_1 % val_2;
-			}
-			if(prev_op == SUB_O || prev_op == ADD_O) {
-				tmp_name = new_tmp_name();
-				if( !(st_tmp_entry = st_lookup(tmp_name) )) {
-					st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-				}
-			}
-		}else {// OLOI OI ELEGXOI ME DOUBLE INT EINAI KYRIWS GIA NA PROSDIORISW TON TELIKO TYPO sto union ALLA KAI GIA NA EPITREPSW MOD ME FLOAT
-			switch(opcode){
-				case ADD_O:
-					if(type == CONSTINT_E){
-						val.intConst = val_1 + val_2;
-					}else {
-						if(arg1->type == CONSTINT_E)
-							val.doubleConst = (double)val_1 + arg2->value.doubleConst;
-						else if(arg2->type == CONSTINT_E)
-							val.doubleConst = (double)val_2 + arg1->value.doubleConst;
-						else
-							val.doubleConst = arg1->value.doubleConst + arg2->value.doubleConst;
-					}
-					break;
-				case SUB_O:
-					if(type == CONSTINT_E){
-						val.intConst = val_1 - val_2;
-					}else {
-						if(arg1->type == CONSTINT_E)
-							val.doubleConst = (double)val_1 - arg2->value.doubleConst;
-						else if(arg2->type == CONSTINT_E)
-							val.doubleConst = arg1->value.doubleConst - (double)val_2;
-						else
-							val.doubleConst = arg1->value.doubleConst - arg2->value.doubleConst;
-					}
-					break;
-				case MUL_O:
-					if(type == CONSTINT_E) {
-						val.intConst = val_1 * val_2;
-					}else {
-						if(arg1->type == CONSTINT_E)
-							val.doubleConst = (double)val_1 * arg2->value.doubleConst;
-						else if(arg2->type == CONSTINT_E)
-							val.doubleConst = (double)val_2 * arg1->value.doubleConst;
-						else
-							val.doubleConst = arg1->value.doubleConst * arg2->value.doubleConst;
-					}
-					if(prev_op == SUB_O || prev_op == ADD_O) {
-						tmp_name = new_tmp_name();
-						if( !(st_tmp_entry = st_lookup(tmp_name) )) {
-							st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-						}
-					}
-					break;
-				case DIV_O:
-					if(type == CONSTINT_E){
-						val.intConst = val_1 / val_2;
-					}else {
-						if(arg1->type == CONSTINT_E)
-							val.doubleConst = (double)val_1 / arg2->value.doubleConst;
-						else if(arg2->type == CONSTINT_E)
-							val.doubleConst = arg1->value.doubleConst / (double)val_2;
-						else
-							val.doubleConst = arg1->value.doubleConst / arg2->value.doubleConst;
-					}
-					if(prev_op == SUB_O || prev_op == ADD_O) {
-						tmp_name = new_tmp_name();
-						if( !(st_tmp_entry = st_lookup(tmp_name) )) {
-							st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-						}
-					}
-					break;
-				default :
-					std::cout << "\033[31mError\033[37m:\tCannot work with this opcode : " << opcode << std::endl;
-					return NULL;
-			}
-		}
-		res = insert_expr(type, st_tmp_entry, NULL, val, NULL);// assigning ARITHEXPR_E so it is printed correctly
-		if(arg1->sym){
-			std::cout << "Quad #" << get_current_quad() << " got arg1 with result_name = " << st_tmp_entry->name <<" and sym_T_name = " << arg1->sym->name << std::endl;
-		}
-		if(arg2->sym){
-			std::cout << "Quad #" << get_current_quad() << " got arg2 with result_name = " << st_tmp_entry->name <<" and sym_T_name = " << arg2->sym->name << std::endl;
-		}
-		emit(opcode, res, arg1, arg2, 0, yylineno);
-	}
-	else {// WHAT TODO in error case???
-		std::cout << "Ma kala...\n";
-		return NULL;
-	}
-	return res;
 }
 
 %}
@@ -243,7 +72,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 
 %type<expr_p> funcdef
 %type<st_entryVal> lvalue
-
+%type<intConst> M
 						  // Operator Tokens Hierarchy
 %right 		ASSIGN
 %left 		OR
@@ -269,20 +98,34 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											erase_expressions();
 										}
 			|							{	print_rules("2.2 stmts -> ε");}
 			;
 // Rule 3.
-stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");}
-			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");}
-			| whilestmt					{	print_rules("3.3 stmt -> whilestmt");}
-			| forstmt					{	print_rules("3.4 stmt -> forstmt");}
-			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");}
-			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");}
-			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");}
-			| block						{	print_rules("3.8 stmt -> block");}
-			| funcdef					{	print_rules("3.9 stmt -> funcdef");}
+stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
+											tmp_var_count = 0;
+											if($1->truelist) {
+												backpatch($1->truelist, get_current_quad());
+												backpatch($1->falselist, get_current_quad() + 2);
+												emit_bool_quads($1);
+											}
+	  									}
+			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
+										}
+			| whilestmt					{	print_rules("3.3 stmt -> whilestmt");
+										}
+			| forstmt					{	print_rules("3.4 stmt -> forstmt");
+										}
+			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
+										}
+			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");
+										}
+			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");
+										}
+			| block						{	print_rules("3.8 stmt -> block");
+										}
+			| funcdef					{	print_rules("3.9 stmt -> funcdef");
+										}
 			| SEMICOLON					{	print_rules("3.10 stmt -> ;");}
 			;
 
@@ -291,31 +134,47 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 	  										$$ = $1;
 	  									}
 			| expr PLUS expr			{	print_rules("4.2 expr -> expr + expr");
-											$$ = expr_action_expr($1, ADD_O, $3);
+											$$ = expr_action_expr($1, ADD_O, $3, "expr plus expr");
 										}
 			| expr MINUS expr			{	print_rules("4.3 expr -> expr - expr");
-											$$ = expr_action_expr($1, SUB_O, $3);
+											$$ = expr_action_expr($1, SUB_O, $3, "expr minus expr");
 										}
 			| expr MULT expr			{	print_rules("4.4 expr -> expr * expr");
-											$$ = expr_action_expr($1, MUL_O, $3);
+											$$ = expr_action_expr($1, MUL_O, $3, "expr mult expr");
 										}
 			| expr DIVIDE expr			{	print_rules("4.5 expr -> expr / expr");
-											$$ = expr_action_expr($1, DIV_O, $3);
+											$$ = expr_action_expr($1, DIV_O, $3, "expr div expr");
 										}
 			| expr PERCENT expr			{	print_rules("4.6 expr -> expr \% expr");
-											$$ = expr_action_expr($1, MOD_O, $3);
+											$$ = expr_action_expr($1, MOD_O, $3, "expr mod expr");
 										}
 			| expr GREATER expr			{	print_rules("4.7 expr -> expr > expr");
-											$$ = expr_compare_expr($1, IF_GREATER_O, $3);
+											bool is_arith = check_arith($1, "expr greater expr. Invalid use of comparison operator on non arithmetic type expression")
+											&& check_arith($3, "expr greater expr. Invalid use of comparison operator on non arithmetic type expression");
+											if(is_arith) {
+												$$ = expr_compare_expr($1, IF_GREATER_O, $3);
+											}
 										}
 			| expr GREATEREQUAL expr	{	print_rules("4.8 expr -> expr >= expr");
-											$$ = expr_compare_expr($1, IF_GREATEREQ_O, $3);
+											bool is_arith = check_arith($1, "expr greaterequal expr. Invalid use of comparison operator on non arithmetic type expression")
+											&& check_arith($3, "expr greaterequal expr. Invalid use of comparison operator on non arithmetic type expression");
+											if(is_arith) {
+												$$ = expr_compare_expr($1, IF_GREATER_O, $3);
+											}
 										}	
 			| expr LESSER expr			{	print_rules("4.9 expr -> expr < expr");
-											$$ = expr_compare_expr($1, IF_LESS_O, $3);
+											bool is_arith = check_arith($1, "expr lesser expr. Invalid use of comparison operator on non arithmetic type expression")
+											&& check_arith($3, "expr lesser expr. Invalid use of comparison operator on non arithmetic type expression");
+											if(is_arith) {
+												$$ = expr_compare_expr($1, IF_LESS_O, $3);
+											}
 										}
 			| expr LESSEREQUAL expr		{	print_rules("4.10 expr -> expr <= expr");
-											$$ = expr_compare_expr($1, IF_LESSEQ_O, $3);
+											bool is_arith = check_arith($1, "expr lessereq expr. Invalid use of comparison operator on non arithmetic type expression")
+											&& check_arith($3, "expr lessereq expr. Invalid use of comparison operator on non arithmetic type expression");
+											if(is_arith) {
+												$$ = expr_compare_expr($1, IF_LESSEQ_O, $3);
+											}
 										}	
 			| expr EQUAL expr			{	print_rules("4.11 expr -> expr == expr");
 											$$ = expr_compare_expr($1, IF_EQ_O, $3);
@@ -323,19 +182,22 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");
 											$$ = expr_compare_expr($1, IF_NOTEQ_O, $3);
 										}
-			| expr AND expr				{	print_rules("4.13 expr -> expr AND expr");
-											// TODO prepei na ginei error
-											assert($1->type == BOOLEXPR_E && $3->type == BOOLEXPR_E);
-											// TODO if expr@$1 is false jump to the end of falselist
+			| expr AND M expr			{	print_rules("4.13 expr -> expr AND expr");
+											backpatch($1->truelist, $3);
+											$$->truelist = $4->truelist;
+											$$->falselist = merge($1->falselist, $4->falselist);
 										}
-			| expr OR expr				{	print_rules("4.14 expr -> expr OR expr");
-											// TODO prepei na ginei error
-											assert($1->type == BOOLEXPR_E && $3->type == BOOLEXPR_E);
-											// TODO if expr@$1 is true jump jump to the end of truelist
+			| expr OR M expr			{	print_rules("4.14 expr -> expr OR expr");
+											backpatch($1->falselist, $3);
+											$$->falselist = $4->falselist;
+											$$->truelist = merge($1->truelist, $4->truelist);
 										}
 			| term						{	print_rules("4.15 expr -> term");
 											$$ = $1;
 										}
+			;
+
+M 			:							{	$$ = get_current_quad();}
 			;
 
 // Rule 5.
@@ -344,7 +206,10 @@ term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 											$$ = $2;
 	  									}
 			| MINUS expr %prec UMINUS	{	print_rules("5.2 term -> - expr");}
-			| NOT expr					{	print_rules("5.3 term -> NOT expr");}
+			| NOT expr					{	print_rules("5.3 term -> NOT expr");
+											$$->truelist = $2->falselist;
+											$$->falselist = $2->truelist;
+										}
 			| PLUSPLUS lvalue			{
 											print_rules("5.4 term -> ++ lvalue");
 											if($2->type == USER_FUNC || $2->type == LIB_FUNC){
@@ -379,16 +244,20 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 		   							 		if(!member_flag && $1 && ($1->type==LIB_FUNC || $1->type==USER_FUNC) ) {
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
-												//TODO? if(expr->type == lvalue type??) bah
+												if($3->truelist) {// or falselist
+													backpatch($3->truelist, get_current_quad());
+													backpatch($3->falselist, get_current_quad() + 2);
+													emit_bool_quads($3);
+												}
 												expr *tmp_expr;
-												tmp_expr = insert_expr(VAR_E, $1, NULL, $3->value, NULL);
+												tmp_expr = new expr(VAR_E, $1, NULL, $3->value);
 												emit(ASSIGN_O, tmp_expr, $3, NULL, 0, yylineno);
 												st_entry *st_tmp_entry;
 												std::string tmp_name = new_tmp_name();
 												if( !(st_tmp_entry = st_lookup(tmp_name)) ) {
 													st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 												}
-												$$ = insert_expr(VAR_E, st_tmp_entry, NULL, $3->value, NULL);
+												$$ = new expr(VAR_E, st_tmp_entry, NULL, $3->value);
 												emit(ASSIGN_O, $$, tmp_expr, NULL, 0, yylineno);
 											}
 											if(member_flag) {
@@ -401,7 +270,7 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 primary		: lvalue					{	print_rules("7.1 primary -> lvalue");
 		 									// TODO have a global flag for errors so i avoid seg fault
 											union values val;
-		 									$$ = insert_expr(VAR_E, $1, NULL, val, NULL);
+		 									$$ = new expr(VAR_E, $1, NULL, val);
 										}
 			| call						{	print_rules("7.2 primary -> call");}
 			| objectdef					{	print_rules("7.3 primary -> objectdef");}
@@ -521,7 +390,7 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
                                             func_stack.push(st_entry_tmp["r19"]);
                                             expr *tmp_expr;
                                             union values val;
-                                            tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val, NULL);
+                                            tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
                                             emit(FUNCSTART_O, tmp_expr, NULL, NULL, 0, yylineno);
                                         }
               LPAREN                    {    st_increase_scope();}
@@ -533,7 +402,7 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
               block                     {
                                             expr *tmp_expr;
                                             union values val;
-                                            tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val, NULL);
+                                            tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
                                               emit(FUNCEND_O, tmp_expr, NULL, NULL, 0, yylineno);
                                             func_stack.pop();
 										}
@@ -573,7 +442,7 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 											}
 											expr *tmp_expr;
 											union values val;
-											tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val, NULL);
+											tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
 											emit(FUNCSTART_O, tmp_expr, NULL, NULL, 0, yylineno);
 										}
 			  LPAREN					{	st_increase_scope();		} 
@@ -586,7 +455,7 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 			  block 					{
 				 							expr *tmp_expr;
 											union values val;
-											tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val, NULL);
+											tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
 				  							emit(FUNCEND_O, tmp_expr, NULL, NULL, 0, yylineno);
 											if(st_entry_tmp["r19"])
 												func_stack.pop();
@@ -596,31 +465,31 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 const		: INTEGER 					{	print_rules("20.1 const -> INTEGER");
 											union values val;
 											val.intConst = $1;
-											$$ = insert_expr(CONSTINT_E, NULL, NULL, val, NULL);
+											$$ = new expr(CONSTINT_E, NULL, NULL, val);
 										}	
 	   		| REAL 						{	print_rules("20.2 const -> REAL");
 											union values val;
 											val.doubleConst = $1;
-											$$ = insert_expr(CONSTDOUBLE_E, NULL, NULL, val, NULL);
+											$$ = new expr(CONSTDOUBLE_E, NULL, NULL, val);
 										}
 			| STRING 					{	print_rules("20.3 const -> STRING");
 											union values val;
 											val.strConst = $1;
-											$$ = insert_expr(CONSTSTRING_E, NULL, NULL, val, NULL);	
+											$$ = new expr(CONSTSTRING_E, NULL, NULL, val);	
 										}
 			| NIL 						{	print_rules("20.4 const -> NIL");
 											union values val;
-											$$ = insert_expr(NIL_E, NULL, NULL, val, NULL);
+											$$ = new expr(NIL_E, NULL, NULL, val);
 										}
 			| TRUE 						{	print_rules("20.5 const -> TRUE");
 											union values val;
 											val.boolConst = $1;
-											$$ = insert_expr(CONSTBOOL_E, NULL, NULL, val, NULL);	
+											$$ = new expr(CONSTBOOL_E, NULL, NULL, val);	
 										}
 			| FALSE						{	print_rules("20.6 const -> FALSE");
 											union values val;
 											val.boolConst = $1;
-											$$ = insert_expr(CONSTBOOL_E, NULL, NULL, val, NULL);
+											$$ = new expr(CONSTBOOL_E, NULL, NULL, val);
 										}
 			;
 // Rule 21.

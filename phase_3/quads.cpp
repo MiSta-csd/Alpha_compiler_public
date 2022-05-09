@@ -3,13 +3,14 @@
 #include <assert.h>
 #include <vector>
 
-std::vector<quad> quad_vec;
+std::vector<quad*> quad_vec;
 
 unsigned tmp_var_count = 0;
 
 void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 		unsigned line) {
-	quad_vec.push_back({.op = op,
+
+	quad_vec.push_back(new quad{.op = op,
 			.result = result,
 			.arg1 = arg1,
 			.arg2 = arg2,
@@ -20,12 +21,32 @@ void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 /* auxil vector for storing voithitikes metavlhtes */
 std::vector<expr*> expr_vec;
 
-expr::expr(expr_t type, st_entry *sym, expr *index, union values value, expr *next) {
+expr::expr(expr_t type, st_entry *sym, expr *index, union values value) {
 	this->type = type;
 	this->sym = sym;
 	this->index = index;
 	this->value = value;
-	this->next = next;
+}
+
+std::string exp_type_to_string(expr *ex){
+	switch(ex->type) {
+		case BOOLEXPR_E:
+		case CONSTBOOL_E:
+			return (ex->value.boolConst == true? "'true'" : "'false'");
+		case CONSTINT_E:
+			return std::to_string(ex->value.intConst);
+		case CONSTSTRING_E:
+			return "\"" + *ex->value.strConst + "\"";
+		case NIL_E:
+			return "NIL";
+		case NEWTABLE_E:
+			return "NEWTABLE_E: " + ex->sym->name;
+		case PROGRAMFUNC_E:
+		case LIBRARYFUNC_E:
+			return "function " + ex->sym->name;
+		default:
+			assert(NULL);
+	}
 }
 
 void print_quads() {
@@ -36,26 +57,26 @@ void print_quads() {
 	std::cout << " -------------------------------------------\n\n";
 	int i = 1;
     for (auto quad : quad_vec){
-		std::cout << i << ": " << opcodes[quad.op] << " ";
-		if (quad.result != NULL){
-			std::cout << quad.result->sym->name << " ";
+		std::cout << i << ": " << opcodes[quad->op] << " ";
+		if (quad->result != NULL){
+			std::cout << quad->result->sym->name << " ";
 		}
-		if(quad.arg1) {
-			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E) {
-				std::cout << quad.arg1->sym->name << " ";
+		if(quad->arg1) {
+			if(quad->arg1->sym && quad->arg1->type != CONSTBOOL_E) {
+				std::cout << quad->arg1->sym->name << " ";
 			}else {
-				switch (quad.arg1->type) {
+				switch (quad->arg1->type) {
 					case CONSTINT_E:
-						std::cout << quad.arg1->value.intConst << " ";
+						std::cout << quad->arg1->value.intConst << " ";
 						break;
 					case CONSTDOUBLE_E:
-						std::cout << quad.arg1->value.doubleConst << " ";
+						std::cout << quad->arg1->value.doubleConst << " ";
 						break;
 					case CONSTSTRING_E:
-						std::cout << quad.arg1->value.strConst << " ";
+						std::cout << "\"" << quad->arg1->value.strConst << "\" ";
 						break;
 					case CONSTBOOL_E:
-						std::cout << (quad.arg1->value.boolConst == true? "'true'" : "'false'") << " ";
+						std::cout << (quad->arg1->value.boolConst == true? "'true'" : "'false'") << " ";
 						break;
 					case NIL_E:
 						std::cout << "NIL";
@@ -65,22 +86,22 @@ void print_quads() {
 				}
 			}
 		}
-		if(quad.arg2) {
-			if(quad.arg2->sym && quad.arg2->type != CONSTBOOL_E) {
-				std::cout << quad.arg2->sym->name << " ";
+		if(quad->arg2) {
+			if(quad->arg2->sym && quad->arg2->type != CONSTBOOL_E) {
+				std::cout << quad->arg2->sym->name << " ";
 			}else {
-				switch (quad.arg2->type) {
+				switch (quad->arg2->type) {
 					case CONSTINT_E:
-						std::cout << quad.arg2->value.intConst << " ";
+						std::cout << quad->arg2->value.intConst << " ";
 						break;
 					case CONSTDOUBLE_E:
-						std::cout << quad.arg2->value.doubleConst << " ";
+						std::cout << quad->arg2->value.doubleConst << " ";
 						break;
 					case CONSTSTRING_E:
-						std::cout << quad.arg2->value.strConst << " ";
+						std::cout << quad->arg2->value.strConst << " ";
 						break;
 					case CONSTBOOL_E:
-						std::cout << (quad.arg2->value.boolConst == true? "'true'" : "'false'") << " ";
+						std::cout << (quad->arg2->value.boolConst == true? "'true'" : "'false'") << " ";
 						break;
 					case NIL_E:
 						std::cout << "NIL";
@@ -90,10 +111,10 @@ void print_quads() {
 				}
 			}
 		}
-		if (quad.label != 0){
-			std::cout << quad.label << " ";
+		if (quad->label){
+			std::cout << quad->label << " ";
 		}
-		std::cout << "[line " << quad.line << "]\n";
+		std::cout << "[line " << quad->line << "]\n";
 		i++;
     }
     std::cout << " ------------------------------------------- \n";
@@ -103,8 +124,8 @@ int get_current_quad() {
 	return quad_vec.size() + 1;
 }
 
-expr* insert_expr(expr_t expr_t, st_entry *sym, expr *index, union values val, expr *next) {
-	expr *out = new expr(expr_t, sym, index, val, next);
+expr* insert_expr(expr_t expr_t, st_entry *sym, expr *index, union values val) {
+	expr *out = new expr(expr_t, sym, index, val);
 	// expr_vec.push_back(out);
 	return out;
 }

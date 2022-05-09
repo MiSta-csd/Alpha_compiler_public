@@ -1,9 +1,9 @@
 
-parser: parser.cpp lex.yy.cpp symtable.cpp quads.cpp
-	g++ lex.yy.cpp parser.cpp symtable.cpp quads.cpp -o $@ -g
+parser: parser.cpp lex.yy.cpp symtable.cpp quads.cpp actions.cpp
+	g++ lex.yy.cpp parser.cpp symtable.cpp quads.cpp actions.cpp -o $@ -g
 
-hashmap_parser: parser.cpp lex.yy.cpp kostas_sym.cpp quads.cpp
-	g++ lex.yy.cpp parser.cpp kostas_sym.cpp quads.cpp -o $@
+hashmap_parser: parser.cpp lex.yy.cpp kostas_sym.cpp quads.cpp actions.cpp
+	g++ lex.yy.cpp parser.cpp kostas_sym.cpp quads.cpp actions.cpp -o $@ -g
 
 parser.cpp: parser.y	
 	bison parser.y

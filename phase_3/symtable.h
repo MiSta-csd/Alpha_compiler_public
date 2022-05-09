@@ -1,13 +1,8 @@
-#ifndef SYMTABLE_H
-#define SYMTABLE_H
+#pragma once
 
-#include <assert.h>
-#include <cassert>
 #include <iostream>
-#include <ostream>
-#include <stack>
-#include <unordered_map>
 #include <vector>
+#include <stack>
 
 enum st_entry_type {
 	GLOBAL_VAR = 0,
@@ -68,4 +63,3 @@ void st_print_table();
  * for conflicts among the arg list names*/
 st_entry *check_arglist(std::string name_input);
 
-#endif

@@ -1,4 +1,5 @@
 #include "symtable.h"
+#include <assert.h>
 unsigned int scope;
 unsigned int scope_MAX;
 unsigned in_funcdef;
