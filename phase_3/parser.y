@@ -25,6 +25,9 @@ extern FILE *yyin;
 extern int yylex();
 extern unsigned tmp_var_count;
 
+/* for short circuit eval purpose */
+expr *aux_expr_for_true_test;
+
 /* Auxiliary var for storing each rule's id value (e.g. entry["rule8.1"] = id) returned
  * from lookup (e.g at $1) */
 std::unordered_map<std::string, struct st_entry*> st_entry_tmp;
@@ -182,15 +185,19 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");
 											$$ = expr_compare_expr($1, IF_NOTEQ_O, $3);
 										}
-			| expr AND M expr			{	print_rules("4.13 expr -> expr AND expr");
-											backpatch($1->truelist, $3);
-											$$->truelist = $4->truelist;
-											$$->falselist = merge($1->falselist, $4->falselist);
+			| expr AND {aux_expr_for_true_test = true_test($1);} M expr
+										{	print_rules("4.13 expr -> expr AND expr");
+											expr *expr2 = true_test($5);
+											backpatch(aux_expr_for_true_test->truelist, $4);
+											$$->truelist = expr2->truelist;
+											$$->falselist = merge(aux_expr_for_true_test->falselist, expr2->falselist);
 										}
-			| expr OR M expr			{	print_rules("4.14 expr -> expr OR expr");
-											backpatch($1->falselist, $3);
-											$$->falselist = $4->falselist;
-											$$->truelist = merge($1->truelist, $4->truelist);
+			| expr OR {aux_expr_for_true_test = true_test($1);} M expr
+										{	print_rules("4.14 expr -> expr OR expr");
+											expr *expr2 = true_test($5);
+											backpatch(aux_expr_for_true_test->falselist, $4);
+											$$->falselist = expr2->falselist;
+											$$->truelist = merge(aux_expr_for_true_test->truelist, expr2->truelist);
 										}
 			| term						{	print_rules("4.15 expr -> term");
 											$$ = $1;
@@ -293,8 +300,7 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 												$$ = NULL;
 											}
 											else{
-												/* if(st_entry_tmp["r8"]->type != LIB_FUNC && st_entry_tmp["r8"]->type != USER_FUNC) */
-													$$ = st_entry_tmp["r8"];
+												$$ = st_entry_tmp["r8"];
 											}
 										}
 			| LOCAL ID					{
@@ -381,7 +387,8 @@ indexedelem	: LCBRACK expr COLON expr
 block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 											st_increase_scope();}
 	   		  stmts RCBRACK 			{
-											st_hide(st_get_scope()); st_decrease_scope();
+											st_hide(st_get_scope());
+											st_decrease_scope();
 										}
 			;
 // Rule 19.
@@ -394,9 +401,9 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
                                             emit(FUNCSTART_O, tmp_expr, NULL, NULL, 0, yylineno);
                                         }
               LPAREN                    {    st_increase_scope();}
-              idlist RPAREN                {
+              idlist RPAREN             {
 
-                                              offload_arglist(st_entry_tmp["r19"]);
+                                            offload_arglist(st_entry_tmp["r19"]);
                                             st_decrease_scope();
                                         }
               block                     {
@@ -434,9 +441,10 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 												}
 												else{	/* Exei vre8ei to active token, den einai user i lib func,
 														 den einai active variable  */
-													yyerror("UNHANDLED CASE ?\nonoma: " + st_entry_tmp["r19"]->name +
+													yyerror("UNHANDLED CASE \nonoma: " + st_entry_tmp["r19"]->name +
 													" typos: " + std::to_string(st_entry_tmp["r19"]->type) + 
 													" grammh: " + std::to_string(st_entry_tmp["r19"]->line));
+													assert(false);
 												}
 												st_entry_tmp["r19"] = NULL;
 											}
@@ -483,12 +491,12 @@ const		: INTEGER 					{	print_rules("20.1 const -> INTEGER");
 										}
 			| TRUE 						{	print_rules("20.5 const -> TRUE");
 											union values val;
-											val.boolConst = $1;
+											val.boolConst = true;
 											$$ = new expr(CONSTBOOL_E, NULL, NULL, val);	
 										}
 			| FALSE						{	print_rules("20.6 const -> FALSE");
 											union values val;
-											val.boolConst = $1;
+											val.boolConst = false;
 											$$ = new expr(CONSTBOOL_E, NULL, NULL, val);
 										}
 			;
@@ -499,7 +507,7 @@ idlist		: ID 						{
 											if(st_entry_tmp["r21"] && st_entry_tmp["r21"]->type ==  LIB_FUNC){
 												yyerror("formal argument " + *$1 + " shadows lib func");
 											}
-											else{
+											else {
 												st_entry_tmp["r21"] = st_insert(*$1, FORMAL_ARG);
 												load_2_arglist(st_entry_tmp["r21"]);
 											}

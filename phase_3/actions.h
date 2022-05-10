@@ -12,3 +12,5 @@ void emit_bool_quads(expr* ex);
 void backpatch(std::vector<quad*>*, unsigned label);
 
 std::vector<quad*>* merge(std::vector<quad*>* list1, std::vector<quad*>* list2);
+
+expr* true_test(expr*);

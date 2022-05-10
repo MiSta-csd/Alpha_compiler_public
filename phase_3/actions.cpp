@@ -204,3 +204,61 @@ std::vector<quad*>* merge(std::vector<quad*>* list1, std::vector<quad*>* list2){
 	}
 	return list1;
 }
+
+expr* true_test(expr* ex) {
+	if(ex->type != CONSTBOOL_E && ex->type != BOOLEXPR_E) {
+		union values val;
+		switch(ex->type) {
+			case ARITHEXPR_E:
+			case ASSIGNEXPR_E:
+			case VAR_E:
+				if(ex->index)
+					val.boolConst = false;
+				else
+					val.boolConst = true;
+				break;
+			case TABLEITEM_E:
+				val.boolConst = true;
+				break;
+			case NEWTABLE_E:
+				val.boolConst = true;
+				break;
+			case PROGRAMFUNC_E:
+				val.boolConst = true;
+				break;
+			case CONSTINT_E:
+				if(ex->value.intConst == 0)
+					val.boolConst = false;
+				else
+					val.boolConst = true;
+				break;
+			case CONSTSTRING_E:
+				val.boolConst = true;
+				break;
+			case CONSTDOUBLE_E:
+				if(ex->value.doubleConst == 0.0)
+					val.boolConst = false;
+				else
+					val.boolConst = true;
+				break;
+			case NIL_E:
+				val.boolConst = false;
+				break;
+			default:
+				std::cout << "invalud expr type : " << ex->type << std::endl;
+				assert(false);
+		}
+		expr *expr_pt = new expr(BOOLEXPR_E, ex->sym, NULL, val);
+		expr_pt->truelist = new std::vector<quad*>();
+		expr_pt->falselist = new std::vector<quad*>();
+		union values t_val;
+		t_val.boolConst = true;
+		expr *true_exp = new expr(CONSTBOOL_E, NULL, NULL, t_val);
+		emit(IF_EQ_O, NULL, expr_pt, true_exp, 0, yylineno);
+		expr_pt->truelist->push_back(quad_vec[quad_vec.size()-1]);
+		emit(JUMP_O, NULL, NULL, NULL, 0, yylineno);
+		expr_pt->falselist->push_back(quad_vec[quad_vec.size()-1]);
+		return expr_pt;
+	}
+	return ex;
+}
