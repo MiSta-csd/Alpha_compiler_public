@@ -21,6 +21,13 @@ void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 /* auxil vector for storing voithitikes metavlhtes */
 std::vector<expr*> expr_vec;
 
+expr::expr(expr *ex) {
+	this->type = ex->type;
+	this->sym = ex->sym;
+	this->index = ex;
+	this->value = ex->value;
+}
+
 expr::expr(expr_t type, st_entry *sym, expr *index, union values value) {
 	this->type = type;
 	this->sym = sym;

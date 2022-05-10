@@ -26,7 +26,7 @@ extern int yylex();
 extern unsigned tmp_var_count;
 
 /* for short circuit eval purpose */
-expr *aux_expr_for_true_test;
+static expr *aux_expr_for_true_test;
 
 /* Auxiliary var for storing each rule's id value (e.g. entry["rule8.1"] = id) returned
  * from lookup (e.g at $1) */
@@ -164,7 +164,7 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 											if(is_arith) {
 												$$ = expr_compare_expr($1, IF_GREATER_O, $3);
 											}
-										}	
+										}
 			| expr LESSER expr			{	print_rules("4.9 expr -> expr < expr");
 											bool is_arith = check_arith($1, "expr lesser expr. Invalid use of comparison operator on non arithmetic type expression")
 											&& check_arith($3, "expr lesser expr. Invalid use of comparison operator on non arithmetic type expression");
@@ -189,6 +189,9 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 										{	print_rules("4.13 expr -> expr AND expr");
 											expr *expr2 = true_test($5);
 											backpatch(aux_expr_for_true_test->truelist, $4);
+											union values val;
+											val.boolConst = aux_expr_for_true_test->value.boolConst && expr2->value.boolConst;
+											$$ = new expr(BOOLEXPR_E, expr2->sym, NULL, val);
 											$$->truelist = expr2->truelist;
 											$$->falselist = merge(aux_expr_for_true_test->falselist, expr2->falselist);
 										}
@@ -196,6 +199,9 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 										{	print_rules("4.14 expr -> expr OR expr");
 											expr *expr2 = true_test($5);
 											backpatch(aux_expr_for_true_test->falselist, $4);
+											union values val;
+											val.boolConst = aux_expr_for_true_test->value.boolConst || expr2->value.boolConst;
+											$$ = new expr(BOOLEXPR_E, expr2->sym, NULL, val);
 											$$->falselist = expr2->falselist;
 											$$->truelist = merge(aux_expr_for_true_test->truelist, expr2->truelist);
 										}
@@ -209,13 +215,14 @@ M 			:							{	$$ = get_current_quad();}
 
 // Rule 5.
 term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
-	  										// TODO insert new tmp st_entry so it can be evaluated for further computation
 											$$ = $2;
 	  									}
 			| MINUS expr %prec UMINUS	{	print_rules("5.2 term -> - expr");}
 			| NOT expr					{	print_rules("5.3 term -> NOT expr");
-											$$->truelist = $2->falselist;
-											$$->falselist = $2->truelist;
+											$$ = true_test($2);
+											std::vector<quad*> *tmp = $$->truelist;
+											$$->truelist = $$->falselist;
+											$$->falselist = tmp;
 										}
 			| PLUSPLUS lvalue			{
 											print_rules("5.4 term -> ++ lvalue");
@@ -242,7 +249,6 @@ term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 											}
 										}
 			| primary					{	print_rules("5.8 term -> primary");
-											// since it's a primary it can be immediately evaluated
 											$$ = $1;
 										}
 			;

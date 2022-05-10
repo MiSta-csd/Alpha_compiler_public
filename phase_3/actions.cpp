@@ -213,16 +213,14 @@ expr* true_test(expr* ex) {
 			case ASSIGNEXPR_E:
 			case VAR_E:
 				if(ex->index)
-					val.boolConst = false;
-				else
 					val.boolConst = true;
+				else {
+					val.boolConst = false;
+				}
 				break;
 			case TABLEITEM_E:
-				val.boolConst = true;
-				break;
 			case NEWTABLE_E:
-				val.boolConst = true;
-				break;
+			case LIBRARYFUNC_E:
 			case PROGRAMFUNC_E:
 				val.boolConst = true;
 				break;
@@ -245,15 +243,15 @@ expr* true_test(expr* ex) {
 				val.boolConst = false;
 				break;
 			default:
-				std::cout << "invalud expr type : " << ex->type << std::endl;
+				std::cout << "invalid expr type : " << ex->type << std::endl;
 				assert(false);
 		}
-		expr *expr_pt = new expr(BOOLEXPR_E, ex->sym, NULL, val);
+		expr *expr_pt = new expr(BOOLEXPR_E, ex->sym, ex, val);
 		expr_pt->truelist = new std::vector<quad*>();
 		expr_pt->falselist = new std::vector<quad*>();
 		union values t_val;
 		t_val.boolConst = true;
-		expr *true_exp = new expr(CONSTBOOL_E, NULL, NULL, t_val);
+		expr *true_exp = new expr(CONSTBOOL_E, NULL, expr_pt, t_val);
 		emit(IF_EQ_O, NULL, expr_pt, true_exp, 0, yylineno);
 		expr_pt->truelist->push_back(quad_vec[quad_vec.size()-1]);
 		emit(JUMP_O, NULL, NULL, NULL, 0, yylineno);

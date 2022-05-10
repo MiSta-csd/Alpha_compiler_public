@@ -37,6 +37,7 @@ struct expr {
 	union values value;
 	std::vector<quad*> *truelist;
 	std::vector<quad*> *falselist;
+	expr(expr *ex);
 	expr(expr_t type, st_entry *sym, expr *index, union values value);
 }typedef expr;
 
