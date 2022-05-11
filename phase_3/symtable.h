@@ -19,6 +19,8 @@ struct st_entry {
 	std::vector<st_entry *> *argList; // Formal Arguments list
 	unsigned int scope;
 	int line;
+	int totalLocals;
+	int iaddress;
 } typedef st_entry;
 
 st_entry *st_insert(std::string name_input, enum st_entry_type type_input);
@@ -62,4 +64,8 @@ void st_print_table();
 /* a search to the current arg list while picking the formal arguments to check
  * for conflicts among the arg list names*/
 st_entry *check_arglist(std::string name_input);
+
+void resetformalargsoffset(void);
+
+void resetfunctionlocalsoffset(void);
 

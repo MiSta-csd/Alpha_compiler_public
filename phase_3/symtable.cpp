@@ -5,6 +5,8 @@ unsigned int scope_MAX;
 unsigned in_funcdef;
 bool in_loop;
 unsigned int nonos;
+unsigned int formalArgOffset = 0;
+unsigned int functionLocalOffset = 0;
 
 extern int yylineno;
 
@@ -23,7 +25,7 @@ st_entry *st_insert(std::string name, enum st_entry_type type) {
 }
 
 std::string st_godfather() {
-	std::string s = "_$f" + std::to_string(nonos++);
+	std::string s = "$" + std::to_string(nonos++);
 	return s;
 }
 
@@ -139,4 +141,12 @@ void st_print_table() {
 	}
 	std::cout << " ------------------------------------------- \n";
 	std::cout << "\"name\"  [type]   (line)  (scope)   \n";
+}
+
+void resetformalargsoffset(void){
+	formalArgOffset = 0;
+}
+
+void resetfunctionlocalsoffset(void){
+	functionLocalOffset = 0;
 }

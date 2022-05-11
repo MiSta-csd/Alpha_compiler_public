@@ -412,15 +412,18 @@ block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 // Rule 19.
 funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function ( idlist ) block");
                                             st_entry_tmp["r19"] = st_insert(st_godfather(), USER_FUNC);
+											st_entry_tmp["r19"]->totalLocals = 0;
+											st_entry_tmp["r19"]->iaddress = get_next_quad();
                                             func_stack.push(st_entry_tmp["r19"]);
                                             expr *tmp_expr;
                                             union values val;
                                             tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
                                             emit(FUNCSTART_OP, tmp_expr, NULL, NULL, 0, yylineno);
                                         }
-              LPAREN                    {    st_increase_scope();}
+              LPAREN                    {    
+				  							st_increase_scope();
+			  							}
               idlist RPAREN             {
-
                                             offload_arglist(st_entry_tmp["r19"]);
                                             st_decrease_scope();
                                         }
@@ -457,14 +460,16 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 													yyerror("variable \""+ *$3 + "\" already defined in line "
 													+std::to_string(st_entry_tmp["r19"]->line));
 												}
-												else{
-													yyerror("UNHANDLED CASE\nonoma: " + st_entry_tmp["r19"]->name +
+												else{	/* Exei vre8ei to active token, den einai user i lib func,
+														 den einai active variable  */
+													yyerror("UNHANDLED CASE ?\nonoma: " + st_entry_tmp["r19"]->name +
 													" typos: " + std::to_string(st_entry_tmp["r19"]->type) + 
 													" grammh: " + std::to_string(st_entry_tmp["r19"]->line));
-													assert(false);
 												}
 												st_entry_tmp["r19"] = NULL;
 											}
+											st_entry_tmp["r19"]->totalLocals = 0;
+											st_entry_tmp["r19"]->iaddress = get_next_quad();
 											expr *tmp_expr;
 											union values val;
 											tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
