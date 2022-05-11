@@ -1,5 +1,7 @@
 #include "actions.h"
+#include "quads.h"
 #include <assert.h>
+#include <string>
 
 extern unsigned tmp_var_count;
 extern std::vector<quad*> quad_vec;
@@ -62,7 +64,7 @@ expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	expr_pt->falselist = new std::vector<quad*>();
 	emit(opcode, NULL, arg1, arg2, 0, yylineno);
 	expr_pt->truelist->push_back(quad_vec[quad_vec.size()-1]);
-	emit(JUMP_O, NULL, NULL, NULL, 0, yylineno);
+	emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 	expr_pt->falselist->push_back(quad_vec[quad_vec.size()-1]);
 	return expr_pt;
 }
@@ -101,13 +103,13 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 			prev_op = quad_vec[quad_vec.size()-1]->op;
 		}else { prev_op = opcode;}
 		
-		if(opcode == MOD_O){
+		if(opcode == MOD_OP){
 			if(type == CONSTDOUBLE_E) {
 				val.doubleConst = (double)(val_1 % val_2);
 			}else {
 				val.intConst = val_1 % val_2;
 			}
-			if(prev_op == SUB_O || prev_op == ADD_O) {
+			if(prev_op == SUB_OP || prev_op == ADD_OP) {
 				tmp_name = new_tmp_name();
 				if( !(st_tmp_entry = st_lookup(tmp_name) )) {
 					st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
@@ -115,7 +117,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 			}
 		}else {// OLOI OI ELEGXOI ME DOUBLE INT EINAI KYRIWS GIA NA PROSDIORISW TON TELIKO TYPO sto union ALLA KAI GIA NA EPITREPSW MOD ME FLOAT
 			switch(opcode){
-				case ADD_O:
+				case ADD_OP:
 					if(type == CONSTINT_E){
 						val.intConst = val_1 + val_2;
 					}else {
@@ -127,7 +129,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 							val.doubleConst = arg1->value.doubleConst + arg2->value.doubleConst;
 					}
 					break;
-				case SUB_O:
+				case SUB_OP:
 					if(type == CONSTINT_E){
 						val.intConst = val_1 - val_2;
 					}else {
@@ -139,7 +141,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 							val.doubleConst = arg1->value.doubleConst - arg2->value.doubleConst;
 					}
 					break;
-				case MUL_O:
+				case MUL_OP:
 					if(type == CONSTINT_E) {
 						val.intConst = val_1 * val_2;
 					}else {
@@ -150,14 +152,14 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 						else
 							val.doubleConst = arg1->value.doubleConst * arg2->value.doubleConst;
 					}
-					if(prev_op == SUB_O || prev_op == ADD_O) {
+					if(prev_op == SUB_OP || prev_op == ADD_OP) {
 						tmp_name = new_tmp_name();
 						if( !(st_tmp_entry = st_lookup(tmp_name) )) {
 							st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
 						}
 					}
 					break;
-				case DIV_O:
+				case DIV_OP:
 					if(type == CONSTINT_E){
 						val.intConst = val_1 / val_2;
 					}else {
@@ -168,7 +170,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 						else
 							val.doubleConst = arg1->value.doubleConst / arg2->value.doubleConst;
 					}
-					if(prev_op == SUB_O || prev_op == ADD_O) {
+					if(prev_op == SUB_OP || prev_op == ADD_OP) {
 						tmp_name = new_tmp_name();
 						if( !(st_tmp_entry = st_lookup(tmp_name) )) {
 							st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
@@ -202,18 +204,28 @@ void emit_bool_quads(expr* ex){
 	expr *expr_pt;
 	val.boolConst = true;
 	expr_pt = new expr(CONSTBOOL_E, st_tmp_entry, NULL, val);
-	emit(ASSIGN_O, expr_pt, expr_pt, NULL, 0, yylineno);
-	emit(JUMP_O, NULL, NULL, NULL, get_current_quad() + 2, yylineno);
+	emit(ASSIGN_OP, expr_pt, expr_pt, NULL, 0, yylineno);
+	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
 	val.boolConst = false;
 	expr_pt = new expr(CONSTBOOL_E, st_tmp_entry, NULL, val);
-	emit(ASSIGN_O, expr_pt, expr_pt, NULL, 0, yylineno);
+	emit(ASSIGN_OP, expr_pt, expr_pt, NULL, 0, yylineno);
 }
 
-void backpatch(std::vector<quad*> *vq, unsigned label){
+void patchlabel (unsigned quadNo, unsigned label) {
+	assert(quadNo < get_current_quad() && !quad_vec[quadNo]->label);
+	quad_vec[quadNo]->label = label;
+}
+
+void backpatch(std::vector<quad*> *vq, unsigned label){  
 	for(int i = 0; i < vq->size(); ++i){
 		(*vq)[i]->label = label;
 	}
 }
+
+// expr* newexpr_const (unsigned int b) {
+// 	expr* e = new_expr()
+// 	return e;
+// }
 
 std::vector<quad*>* merge(std::vector<quad*>* list1, std::vector<quad*>* list2){
 	for(int i = 0; i < list2->size(); ++i){
@@ -221,9 +233,9 @@ std::vector<quad*>* merge(std::vector<quad*>* list1, std::vector<quad*>* list2){
 	}
 	return list1;
 }
-
+/*  */
 expr* true_test(expr* ex) {
-	if(ex->type != CONSTBOOL_E && ex->type != BOOLEXPR_E) {
+	if(ex->type != BOOLEXPR_E) {
 		union values val;
 		switch(ex->type) {
 			case ARITHEXPR_E:
@@ -235,6 +247,7 @@ expr* true_test(expr* ex) {
 					val.boolConst = false;
 				}
 				break;
+			case CONSTBOOL_E:
 			case TABLEITEM_E:
 			case NEWTABLE_E:
 			case LIBRARYFUNC_E:
@@ -242,10 +255,7 @@ expr* true_test(expr* ex) {
 				val.boolConst = true;
 				break;
 			case CONSTINT_E:
-				if(ex->value.intConst == 0)
-					val.boolConst = false;
-				else
-					val.boolConst = true;
+				val.boolConst = !!ex->value.intConst;
 				break;
 			case CONSTSTRING_E:
 				val.boolConst = true;
@@ -269,9 +279,9 @@ expr* true_test(expr* ex) {
 		union values t_val;
 		t_val.boolConst = true;
 		expr *true_exp = new expr(CONSTBOOL_E, NULL, expr_pt, t_val);
-		emit(IF_EQ_O, NULL, expr_pt, true_exp, 0, yylineno);
+		emit(IF_EQ_OP, NULL, expr_pt, true_exp, 0, yylineno);
 		expr_pt->truelist->push_back(quad_vec[quad_vec.size()-1]);
-		emit(JUMP_O, NULL, NULL, NULL, 0, yylineno);
+		emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 		expr_pt->falselist->push_back(quad_vec[quad_vec.size()-1]);
 		return expr_pt;
 	}

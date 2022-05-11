@@ -2,15 +2,15 @@
 #include "symtable.h"
 
 enum iopcode {
-	ASSIGN_O,			ADD_O,			SUB_O,
-	MUL_O,				DIV_O,			MOD_O,
-	UMINUS_O,			AND_O,			OR_O,
-	NOT_O,				IF_EQ_O,		IF_NOTEQ_O,
-	IF_LESSEQ_O,		IF_GREATEREQ_O,	IF_LESS_O,
-	IF_GREATER_O,		CALL_O,			PARAM_O,
-	RET_O,				GETRETVAL_O,	FUNCSTART_O,
-	FUNCEND_O,			TABLECREATE_O,	TABLEGETELEM_O,
-	TABLESETELEM_O,		JUMP_O
+	ASSIGN_OP,		ADD_OP,			SUB_OP,
+	MUL_OP,			DIV_OP,			MOD_OP,
+	UMINUS_OP,		AND_OP,			OR_OP,
+	NOT_OP,			IF_EQ_OP,		IF_NOTEQ_OP,
+	IF_LESSEQ_OP,	IF_GREATEREQ_OP,IF_LESS_OP,
+	IF_GREATER_OP,	CALL_OP,		PARAM_OP,
+	RET_OP,			GETRETVAL_OP,	FUNCSTART_OP,
+	FUNCEND_OP,		TABLECREATE_OP,	TABLEGETELEM_OP,
+	TABLESETELEM_OP,JUMP_OP
 };
 
 enum expr_t {
@@ -57,4 +57,7 @@ void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 
 void print_quads();
 
-int get_current_quad();
+unsigned int get_current_quad();
+
+unsigned int get_next_quad();
+

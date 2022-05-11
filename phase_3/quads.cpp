@@ -2,6 +2,7 @@
 #include "symtable.h"
 #include <assert.h>
 #include <vector>
+#include <string>
 
 std::vector<quad*> quad_vec;
 
@@ -9,7 +10,6 @@ unsigned tmp_var_count = 0;
 
 void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 		unsigned line) {
-
 	quad_vec.push_back(new quad{.op = op,
 			.result = result,
 			.arg1 = arg1,
@@ -19,7 +19,6 @@ void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 }
 
 /* auxil vector for storing voithitikes metavlhtes */
-std::vector<expr*> expr_vec;
 
 expr::expr(expr *ex) {
 	this->type = ex->type;
@@ -64,6 +63,9 @@ void print_quads() {
 					case CONSTBOOL_E:
 						std::cout << (quad->arg1->value.boolConst == true? "'true'" : "'false'") << " ";
 						break;
+					case BOOLEXPR_E:
+						std::cout << (quad->arg1->value.boolConst == true? "'true'" : "'false'") << " ";
+						break;
 					case NIL_E:
 						std::cout << "NIL";
 						break;
@@ -106,21 +108,18 @@ void print_quads() {
     std::cout << " ------------------------------------------- \n";
 }
 
-int get_current_quad() {
-	return quad_vec.size() + 1;
+unsigned int get_current_quad() {
+	return quad_vec.size();
 }
 
-expr* insert_expr(expr_t expr_t, st_entry *sym, expr *index, union values val) {
-	expr *out = new expr(expr_t, sym, index, val);
-	// expr_vec.push_back(out);
-	return out;
+unsigned int get_next_quad() {
+	return quad_vec.size() + 1;
 }
 
 void erase_expressions() {
 	// for (unsigned i = 0; i < expr_vec.size(); ++i) {
 	// 	free(expr_vec[i]);
 	// } // den kanoume free giati trwme skato sto print
-	// expr_vec.clear();
 	tmp_var_count = 0;
 }
 
