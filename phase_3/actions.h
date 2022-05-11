@@ -1,6 +1,8 @@
 #pragma once
 #include "quads.h"
 
+std::string exp_type_to_string(expr*);
+
 bool check_arith (expr* e, std::string context);
 
 expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2);

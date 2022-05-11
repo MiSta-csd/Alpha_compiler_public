@@ -57,6 +57,4 @@ void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 
 void print_quads();
 
-std::string exp_type_to_string(expr*);
-
 int get_current_quad();

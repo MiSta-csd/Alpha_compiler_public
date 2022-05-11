@@ -5,7 +5,33 @@ extern unsigned tmp_var_count;
 extern std::vector<quad*> quad_vec;
 extern int yylineno;
 
+std::string exp_type_to_string(expr *ex){
+	switch(ex->type) {
+		case BOOLEXPR_E:
+		case CONSTBOOL_E:
+			return (ex->value.boolConst == true? "'true'" : "'false'");
+		case CONSTDOUBLE_E:
+			return std::to_string(ex->value.doubleConst);
+		case VAR_E:
+			return std::to_string(ex->index->value.intConst);
+		case CONSTINT_E:
+			return std::to_string(ex->value.intConst);
+		case CONSTSTRING_E:
+			return *ex->value.strConst;
+		case NIL_E:
+			return "NIL";
+		case NEWTABLE_E:
+			return "NEWTABLE_E: " + ex->sym->name;
+		case PROGRAMFUNC_E:
+		case LIBRARYFUNC_E:
+			return "function " + ex->sym->name;
+		default:
+			assert(NULL);
+	}
+}
+
 bool check_arith (expr* e, std::string context) {
+	assert(e);
 	if (e->type == CONSTBOOL_E ||
 		e->type == CONSTSTRING_E ||
 		e->type == NIL_E ||
@@ -14,7 +40,7 @@ bool check_arith (expr* e, std::string context) {
 		e->type == LIBRARYFUNC_E ||
 		e->type == BOOLEXPR_E ) {
 		std::cout << "\033[31m" << "ERROR " << "\033[37m" <<
-		"Illegal expr " << exp_type_to_string(e) << " used in " << context << "!\n";
+		"Illegal expr " << exp_type_to_string(e) << " used in " << context << " line " << yylineno << std::endl;
 		return false;
 	}
 	return true;
@@ -156,19 +182,10 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 			}
 		}
 		res = new expr(type, st_tmp_entry, NULL, val);
-		// if(arg1->sym){
-		// 	std::cout << "Quad #" << get_current_quad() << " got arg1 with result_name = " << st_tmp_entry->name <<" and sym_T_name = " << arg1->sym->name << std::endl;
-		// }
-		// if(arg2->sym){
-		// 	std::cout << "Quad #" << get_current_quad() << " got arg2 with result_name = " << st_tmp_entry->name <<" and sym_T_name = " << arg2->sym->name << std::endl;
-		// }
 		emit(opcode, res, arg1, arg2, 0, yylineno);
+		return res;
 	}
-	else {// WHAT TODO in error case???
-		std::cout << "Ma kala...\n";
-		return NULL;
-	}
-	return res;
+	return NULL;
 }
 
 void emit_bool_quads(expr* ex){

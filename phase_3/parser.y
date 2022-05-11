@@ -107,7 +107,7 @@ stmts		: stmts stmt 				{
 // Rule 3.
 stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											tmp_var_count = 0;
-											if($1->truelist) {
+											if($1 && $1->truelist) {
 												backpatch($1->truelist, get_current_quad());
 												backpatch($1->falselist, get_current_quad() + 2);
 												emit_bool_quads($1);
@@ -137,19 +137,29 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 	  										$$ = $1;
 	  									}
 			| expr PLUS expr			{	print_rules("4.2 expr -> expr + expr");
-											$$ = expr_action_expr($1, ADD_O, $3, "expr plus expr");
+											if($1 && $3) {
+												$$ = expr_action_expr($1, ADD_O, $3, exp_type_to_string($1) + " + " + exp_type_to_string($3));
+											}
 										}
 			| expr MINUS expr			{	print_rules("4.3 expr -> expr - expr");
-											$$ = expr_action_expr($1, SUB_O, $3, "expr minus expr");
+											if($1 && $3) {
+												$$ = expr_action_expr($1, SUB_O, $3, exp_type_to_string($1) + " - " + exp_type_to_string($3));
+											}
 										}
 			| expr MULT expr			{	print_rules("4.4 expr -> expr * expr");
-											$$ = expr_action_expr($1, MUL_O, $3, "expr mult expr");
+											if($1 && $3) {
+												$$ = expr_action_expr($1, MUL_O, $3, exp_type_to_string($1) + " * " + exp_type_to_string($3));
+											}
 										}
 			| expr DIVIDE expr			{	print_rules("4.5 expr -> expr / expr");
-											$$ = expr_action_expr($1, DIV_O, $3, "expr div expr");
+											if($1 && $3) {
+												$$ = expr_action_expr($1, DIV_O, $3, exp_type_to_string($1) + " / " + exp_type_to_string($3));
+											}
 										}
 			| expr PERCENT expr			{	print_rules("4.6 expr -> expr \% expr");
-											$$ = expr_action_expr($1, MOD_O, $3, "expr mod expr");
+											if($1 && $3) {
+												$$ = expr_action_expr($1, MOD_O, $3, exp_type_to_string($1) + " % " + exp_type_to_string($3));
+											}
 										}
 			| expr GREATER expr			{	print_rules("4.7 expr -> expr > expr");
 											bool is_arith = check_arith($1, "expr greater expr. Invalid use of comparison operator on non arithmetic type expression")
@@ -257,21 +267,25 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 		   							 		if(!member_flag && $1 && ($1->type==LIB_FUNC || $1->type==USER_FUNC) ) {
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
-												if($3->truelist) {// or falselist
-													backpatch($3->truelist, get_current_quad());
-													backpatch($3->falselist, get_current_quad() + 2);
-													emit_bool_quads($3);
+												if(!$3)
+													$$ = NULL;
+												else {
+													if($3->truelist) {// or falselist
+														backpatch($3->truelist, get_current_quad());
+														backpatch($3->falselist, get_current_quad() + 2);
+														emit_bool_quads($3);
+													}
+													expr *tmp_expr;
+													tmp_expr = new expr(VAR_E, $1, $3, $3->value);
+													emit(ASSIGN_O, tmp_expr, $3, NULL, 0, yylineno);
+													st_entry *st_tmp_entry;
+													std::string tmp_name = new_tmp_name();
+													if( !(st_tmp_entry = st_lookup(tmp_name)) ) {
+														st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+													}
+													$$ = new expr(VAR_E, st_tmp_entry, $3, $3->value);
+													emit(ASSIGN_O, $$, tmp_expr, NULL, 0, yylineno);
 												}
-												expr *tmp_expr;
-												tmp_expr = new expr(VAR_E, $1, NULL, $3->value);
-												emit(ASSIGN_O, tmp_expr, $3, NULL, 0, yylineno);
-												st_entry *st_tmp_entry;
-												std::string tmp_name = new_tmp_name();
-												if( !(st_tmp_entry = st_lookup(tmp_name)) ) {
-													st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-												}
-												$$ = new expr(VAR_E, st_tmp_entry, NULL, $3->value);
-												emit(ASSIGN_O, $$, tmp_expr, NULL, 0, yylineno);
 											}
 											if(member_flag) {
 												member_flag = false;
@@ -447,7 +461,7 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 												}
 												else{	/* Exei vre8ei to active token, den einai user i lib func,
 														 den einai active variable  */
-													yyerror("UNHANDLED CASE \nonoma: " + st_entry_tmp["r19"]->name +
+													yyerror("UNHANDLED CASE\nonoma: " + st_entry_tmp["r19"]->name +
 													" typos: " + std::to_string(st_entry_tmp["r19"]->type) + 
 													" grammh: " + std::to_string(st_entry_tmp["r19"]->line));
 													assert(false);

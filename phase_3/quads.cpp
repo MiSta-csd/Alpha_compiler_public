@@ -35,27 +35,6 @@ expr::expr(expr_t type, st_entry *sym, expr *index, union values value) {
 	this->value = value;
 }
 
-std::string exp_type_to_string(expr *ex){
-	switch(ex->type) {
-		case BOOLEXPR_E:
-		case CONSTBOOL_E:
-			return (ex->value.boolConst == true? "'true'" : "'false'");
-		case CONSTINT_E:
-			return std::to_string(ex->value.intConst);
-		case CONSTSTRING_E:
-			return "\"" + *ex->value.strConst + "\"";
-		case NIL_E:
-			return "NIL";
-		case NEWTABLE_E:
-			return "NEWTABLE_E: " + ex->sym->name;
-		case PROGRAMFUNC_E:
-		case LIBRARYFUNC_E:
-			return "function " + ex->sym->name;
-		default:
-			assert(NULL);
-	}
-}
-
 void print_quads() {
 	std::string opcodes[] = {"ASSIGN_O", "ADD_O", "SUB_O", "MUL_O", "DIV_O", "MOD_O", "UMINUS_O", "AND_O",
 	"OR_O", "NOT_O", "IF_EQ_O", "IF_NOTEQ_O", "IF_LESSEQ_O", "IF_GREATEREQ_O", "IF_LESS_O", "IF_GREATER_O",
