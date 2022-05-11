@@ -67,12 +67,14 @@ void print_rules(std::string str) {
 %token GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL
 %token LCBRACK RCBRACK LBRACK RBRACK LPAREN RPAREN SEMICOLON COMMA COLON COLONCOLON DOT DOTDOT
 
-%type<expr_p>expr const assignexpr term primary
+%type<expr_p>expr const assignexpr term primary ifprefix
 %type program stmts stmt
 %type member call elist objectdef returnstmt
 %type idlist
 
-%type<expr_p> funcdef
+%type<expr_p> funcdef funcprefix
+%type<strConst> funcname
+%type<intConst> funcbody
 %type<st_entryVal> lvalue
 %type<intConst> M
 						  // Operator Tokens Hierarchy
@@ -106,10 +108,10 @@ stmts		: stmts stmt 				{
 // Rule 3.
 stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											tmp_var_count = 0;
-											if($1 && $1->truelist) {
+											if($1->truelist) {
 												backpatch($1->truelist, get_next_quad());
 												backpatch($1->falselist, get_next_quad() + 2);
-												emit_bool_quads($1);
+												emit_branch_quads();
 											}
 	  									}
 			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
@@ -272,7 +274,7 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 													if($3->truelist) {// or falselist
 														backpatch($3->truelist, get_next_quad());
 														backpatch($3->falselist, get_next_quad() + 2);
-														emit_bool_quads($3);
+														emit_branch_quads();
 													}
 													expr *tmp_expr;
 													tmp_expr = new expr(VAR_E, $1, $3, $3->value);
@@ -410,11 +412,28 @@ block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 										}
 			;
 // Rule 19.
+funcname    : ID						{
+											$$ = $1;
+										}
+			|							{
+											$$ = NULL;
+										}
+			;
+
+funcprefix  : FUNCTION funcname			{}
+
+
+
+
+
+funcargs    :							{}
+funcbody    :							{}
 funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function ( idlist ) block");
                                             st_entry_tmp["r19"] = st_insert(st_godfather(), USER_FUNC);
 											st_entry_tmp["r19"]->totalLocals = 0;
 											st_entry_tmp["r19"]->iaddress = get_next_quad();
                                             func_stack.push(st_entry_tmp["r19"]);
+											resetformalargsoffset();
                                             expr *tmp_expr;
                                             union values val;
                                             tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
@@ -425,13 +444,14 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 			  							}
               idlist RPAREN             {
                                             offload_arglist(st_entry_tmp["r19"]);
+											resetfunctionlocalsoffset();
                                             st_decrease_scope();
                                         }
               block                     {
                                             expr *tmp_expr;
                                             union values val;
                                             tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
-                                              emit(FUNCEND_OP, tmp_expr, NULL, NULL, 0, yylineno);
+                                            emit(FUNCEND_OP, tmp_expr, NULL, NULL, 0, yylineno);
                                             func_stack.pop();
 										}
 			| FUNCTION 					{	
@@ -470,6 +490,7 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 											}
 											st_entry_tmp["r19"]->totalLocals = 0;
 											st_entry_tmp["r19"]->iaddress = get_next_quad();
+											resetformalargsoffset();
 											expr *tmp_expr;
 											union values val;
 											tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
@@ -480,6 +501,7 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 				  							if(st_entry_tmp["r19"]){
 												offload_arglist(st_entry_tmp["r19"]);
 											}
+											resetfunctionlocalsoffset();
 											st_decrease_scope();
 										}
 			  block 					{
@@ -554,7 +576,19 @@ idlist		: ID 						{
 // Rule 23.
 ifprefix	: IF LPAREN expr RPAREN		{
 											print_rules("23.1 ifprefix -> if ( expr )");
-
+											$3 = true_test($3);
+											backpatch($3->truelist, get_next_quad());
+											backpatch($3->falselist, get_next_quad() + 2);
+											emit_branch_quads();
+											union values t_val;
+											t_val.boolConst = true;
+											expr *true_exp = new expr(CONSTBOOL_E, NULL, NULL, t_val);
+											expr *result = quad_vec[quad_vec.size()-1]->result;
+											emit(IF_EQ_OP, NULL, result, true_exp, get_next_quad() + 2, yylineno);
+											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+											result->falselist = new std::vector<quad*>();
+											result->falselist->push_back(quad_vec[quad_vec.size()-1]);// pushback the jump so i can backpatch
+											$$ = result;
 										}
 			;
 
@@ -567,7 +601,7 @@ elseprefix	: ELSE						{
 
 ifstmt		: ifprefix stmt				{
 											print_rules("23.3 ifstmt -> ifprefix stmt");
-
+											backpatch($1->falselist, get_next_quad());
 										}
 			| ifprefix stmt elseprefix stmt
 										{

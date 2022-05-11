@@ -61,8 +61,8 @@ void print_quads() {
 						std::cout << "\"" << quad->arg1->value.strConst << "\" ";
 						break;
 					case CONSTBOOL_E:
-						std::cout << (quad->arg1->value.boolConst == true? "'true'" : "'false'") << " ";
-						break;
+						// std::cout << (quad->arg1->value.boolConst == true? "'true'" : "'false'") << " ";
+					// 	break;
 					case BOOLEXPR_E:
 						std::cout << (quad->arg1->value.boolConst == true? "'true'" : "'false'") << " ";
 						break;
