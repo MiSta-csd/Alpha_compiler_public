@@ -150,3 +150,7 @@ void resetformalargsoffset(void){
 void resetfunctionlocalsoffset(void){
 	functionLocalOffset = 0;
 }
+
+int currscopeoffset(void){
+	return functionLocalOffset;
+}

@@ -70,13 +70,15 @@ void print_rules(std::string str) {
 %type<expr_p>expr const assignexpr term primary ifprefix
 %type program stmts stmt
 %type member call elist objectdef returnstmt
-%type idlist
+%type <intConst> idlist
+%type <intConst> funcargs
 
-%type<expr_p> funcdef funcprefix
+%type<st_entryVal> funcdef funcprefix
 %type<strConst> funcname
 %type<intConst> funcbody
 %type<st_entryVal> lvalue
 %type<intConst> M
+%type<expr_p> block
 						  // Operator Tokens Hierarchy
 %right 		ASSIGN
 %left 		OR
@@ -414,56 +416,12 @@ block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 // Rule 19.
 funcname    : ID						{
 											$$ = $1;
-										}
-			|							{
-											$$ = NULL;
-										}
-			;
-
-funcprefix  : FUNCTION funcname			{}
-
-
-
-
-
-funcargs    :							{}
-funcbody    :							{}
-funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function ( idlist ) block");
-                                            st_entry_tmp["r19"] = st_insert(st_godfather(), USER_FUNC);
-											st_entry_tmp["r19"]->totalLocals = 0;
-											st_entry_tmp["r19"]->iaddress = get_next_quad();
-                                            func_stack.push(st_entry_tmp["r19"]);
-											resetformalargsoffset();
-                                            expr *tmp_expr;
-                                            union values val;
-                                            tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
-                                            emit(FUNCSTART_OP, tmp_expr, NULL, NULL, 0, yylineno);
-                                        }
-              LPAREN                    {    
-				  							st_increase_scope();
-			  							}
-              idlist RPAREN             {
-                                            offload_arglist(st_entry_tmp["r19"]);
-											resetfunctionlocalsoffset();
-                                            st_decrease_scope();
-                                        }
-              block                     {
-                                            expr *tmp_expr;
-                                            union values val;
-                                            tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
-                                            emit(FUNCEND_OP, tmp_expr, NULL, NULL, 0, yylineno);
-                                            func_stack.pop();
-										}
-			| FUNCTION 					{	
-											print_rules("19.2 funcdef -> function ID ( idlist ) block");
-										}
-			  ID 						{	
-											st_entry_tmp["r19"] = st_lookup(*$3);
+											st_entry_tmp["r19"] = st_lookup(*$$);
 											if((!st_entry_tmp["r19"]) ||
 												( (st_entry_tmp["r19"]->scope < st_get_scope())
 												&& (st_entry_tmp["r19"]->type != LIB_FUNC) ) )
 											{
-												st_entry_tmp["r19"] = st_insert(*$3, USER_FUNC);
+												st_entry_tmp["r19"] = st_insert(*$$, USER_FUNC);
 												func_stack.push(st_entry_tmp["r19"]);// push to func stack mono an einai valid
 											}
 											else
@@ -477,7 +435,7 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 												else if(st_entry_tmp["r19"]->type == LOCAL_VAR
 														|| st_entry_tmp["r19"]->type == FORMAL_ARG
 														|| st_entry_tmp["r19"]->type == GLOBAL_VAR){
-													yyerror("variable \""+ *$3 + "\" already defined in line "
+													yyerror("variable \""+ *$$ + "\" already defined in line "
 													+std::to_string(st_entry_tmp["r19"]->line));
 												}
 												else{	/* Exei vre8ei to active token, den einai user i lib func,
@@ -488,30 +446,52 @@ funcdef		: FUNCTION                  {   print_rules("19.1 funcdef -> function (
 												}
 												st_entry_tmp["r19"] = NULL;
 											}
-											st_entry_tmp["r19"]->totalLocals = 0;
-											st_entry_tmp["r19"]->iaddress = get_next_quad();
-											resetformalargsoffset();
-											expr *tmp_expr;
-											union values val;
-											tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
-											emit(FUNCSTART_OP, tmp_expr, NULL, NULL, 0, yylineno);
 										}
-			  LPAREN					{	st_increase_scope();		} 
-			  idlist RPAREN				{
-				  							if(st_entry_tmp["r19"]){
+			|							{
+											$$ = new std::string;
+											*$$ = st_godfather();
+										}
+			;
+
+funcprefix  : FUNCTION funcname			{
+											print_rules("19.1 funcdef -> function ( idlist ) block");
+											$$ = st_insert(*$2, USER_FUNC);
+                                            $$->totalLocals = 0;
+											$$->iaddress = get_next_quad();
+											st_entry_tmp["r19"] = $$;
+                                            func_stack.push($$);
+											resetformalargsoffset();
+                                            expr *tmp_expr;
+                                            union values val;
+                                            tmp_expr = new expr(PROGRAMFUNC_E, $$, NULL, val);
+                                            emit(FUNCSTART_OP, tmp_expr, NULL, NULL, 0, yylineno);
+											st_increase_scope();
+										}
+			;
+
+funcargs:   LPAREN idlist RPAREN  		{
+											$$ = $2;										
+											if(st_entry_tmp["r19"]){
 												offload_arglist(st_entry_tmp["r19"]);
 											}
 											resetfunctionlocalsoffset();
 											st_decrease_scope();
+                                		}
+            ;						
+funcbody    : block						{
+										    $$ = currscopeoffset();
 										}
-			  block 					{
-				 							expr *tmp_expr;
-											union values val;
-											tmp_expr = new expr(PROGRAMFUNC_E, st_entry_tmp["r19"], NULL, val);
-				  							emit(FUNCEND_OP, tmp_expr, NULL, NULL, 0, yylineno);
-											if(st_entry_tmp["r19"])
+			;
+funcdef		: funcprefix funcargs funcbody  {
+											$1->totalLocals = $3;
+											$$ = $1;
+											expr *tmp_expr;
+                                            union values val;
+                                            tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, val);
+                                            emit(FUNCEND_OP, tmp_expr, NULL, NULL, 0, yylineno);
+                                            if(st_entry_tmp["r19"])
 												func_stack.pop();
-										}
+                                        	}
 			;
 // Rule 20.
 const		: INTEGER 					{	print_rules("20.1 const -> INTEGER");

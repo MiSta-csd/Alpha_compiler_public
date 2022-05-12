@@ -69,3 +69,6 @@ void resetformalargsoffset(void);
 
 void resetfunctionlocalsoffset(void);
 
+int currscopeoffset(void);
+
+
