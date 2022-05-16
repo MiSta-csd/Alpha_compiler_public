@@ -17,10 +17,11 @@ struct st_entry {
 	std::string name;
 	enum st_entry_type type;
 	std::vector<st_entry *> *argList; // Formal Arguments list
-	unsigned int scope;
-	int line;
-	int totalLocals;
-	int iaddress;
+	unsigned scope;
+	unsigned line;
+	unsigned totalLocals;
+	unsigned iaddress;
+	struct quad *jump_quad;
 } typedef st_entry;
 
 st_entry *st_insert(std::string name_input, enum st_entry_type type_input);

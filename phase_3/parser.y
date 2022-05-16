@@ -438,8 +438,7 @@ funcname    : ID						{
 													yyerror("variable \""+ *$$ + "\" already defined in line "
 													+std::to_string(st_entry_tmp["r19"]->line));
 												}
-												else{	/* Exei vre8ei to active token, den einai user i lib func,
-														 den einai active variable  */
+												else {
 													yyerror("UNHANDLED CASE ?\nonoma: " + st_entry_tmp["r19"]->name +
 													" typos: " + std::to_string(st_entry_tmp["r19"]->type) + 
 													" grammh: " + std::to_string(st_entry_tmp["r19"]->line));
@@ -448,21 +447,26 @@ funcname    : ID						{
 											}
 										}
 			|							{
-											$$ = new std::string;
+											$$ = new std::string();
 											*$$ = st_godfather();
+											st_insert(*$$, USER_FUNC);
 										}
 			;
 
 funcprefix  : FUNCTION funcname			{
 											print_rules("19.1 funcdef -> function ( idlist ) block");
-											$$ = st_insert(*$2, USER_FUNC);
+											$$ = st_lookup(*$2);
+											assert($$);
                                             $$->totalLocals = 0;
 											$$->iaddress = get_next_quad();
 											st_entry_tmp["r19"] = $$;
                                             func_stack.push($$);
+											/* std::cout << "func_stack scope = " << func_stack.top()->scope << ", top el = " << func_stack.top()->name << std::endl; */
 											resetformalargsoffset();
                                             expr *tmp_expr;
                                             union values val;
+											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+											$$->jump_quad = quad_vec.back();
                                             tmp_expr = new expr(PROGRAMFUNC_E, $$, NULL, val);
                                             emit(FUNCSTART_OP, tmp_expr, NULL, NULL, 0, yylineno);
 											st_increase_scope();
@@ -483,14 +487,17 @@ funcbody    : block						{
 										}
 			;
 funcdef		: funcprefix funcargs funcbody  {
-											$1->totalLocals = $3;
-											$$ = $1;
-											expr *tmp_expr;
-                                            union values val;
-                                            tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, val);
-                                            emit(FUNCEND_OP, tmp_expr, NULL, NULL, 0, yylineno);
-                                            if(st_entry_tmp["r19"])
-												func_stack.pop();
+												$1->totalLocals = $3;
+												$$ = $1;
+
+												expr *tmp_expr;
+												union values val;
+												tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, val);
+												emit(FUNCEND_OP, tmp_expr, NULL, NULL, 0, yylineno);
+												if(st_entry_tmp["r19"]) {
+													func_stack.pop();
+												}
+												$1->jump_quad->label = get_next_quad();
                                         	}
 			;
 // Rule 20.
@@ -535,9 +542,10 @@ idlist		: ID 						{
 												st_entry_tmp["r21"] = st_insert(*$1, FORMAL_ARG);
 												load_2_arglist(st_entry_tmp["r21"]);
 											}
+											$$ = currscopeoffset();
 										}
 			| idlist COMMA ID 			{
-											print_rules("22.2 idlist -> idlist , ID");
+											print_rules("21.2 idlist -> idlist , ID");
 											st_entry_tmp["r21"] = st_lookup(*$3);
 											if(st_entry_tmp["r21"] && (st_entry_tmp["r21"]->type == FORMAL_ARG)){ // conflict
 												yyerror("Argument "+ *$3 +" already exists.");
@@ -548,9 +556,12 @@ idlist		: ID 						{
 											else{
 												st_entry_tmp["r21"] = st_insert(*$3, FORMAL_ARG);
 												load_2_arglist(st_entry_tmp["r21"]);
-											}										
+											}
+											$$ = currscopeoffset();
 										}
-			|
+			|							{print_rules("21.3 empty id_list");
+											
+										}
 			;
 
 // Rule 23.
@@ -605,13 +616,19 @@ returnstmt 	: RETURN SEMICOLON 			{
 											print_rules("26.1 returnstmt -> return ;");
 											if (func_stack.empty()){
 												yyerror("Use of 'return' while not in a function\n");
+											}else {
+												emit(RET_OP, NULL, NULL, NULL, 0, yylineno);
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
 										}
 			| RETURN expr SEMICOLON 	{
 											print_rules("26.2 returnstmt -> return expr ;");
 											if (func_stack.empty()){
 												yyerror("Use of 'return' while not in a function\n");
+											}else {
+												emit(RET_OP, $2, NULL, NULL, 0, yylineno);
 											}
+											/* emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno); */
 										}
 			;
 

@@ -19,7 +19,7 @@ st_entry *st_insert(std::string name, enum st_entry_type type) {
 	assert(new_entry = new st_entry);
 	*new_entry = {true,  name, type,
 		(type == USER_FUNC) ? new std::vector<st_entry *> : NULL,
-		scope, yylineno};
+		scope, (unsigned)yylineno};
 	symbol_table[scope].push_back(*new_entry);
 	return new_entry;
 }
@@ -152,5 +152,5 @@ void resetfunctionlocalsoffset(void){
 }
 
 int currscopeoffset(void){
-	return functionLocalOffset;
+	return func_stack.size();
 }

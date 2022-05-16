@@ -15,7 +15,7 @@ std::string exp_type_to_string(expr *ex){
 		case CONSTDOUBLE_E:
 			return std::to_string(ex->value.doubleConst);
 		case VAR_E:
-			return std::to_string(ex->index->value.intConst);
+			return ex->sym->name;
 		case CONSTINT_E:
 			return std::to_string(ex->value.intConst);
 		case CONSTSTRING_E:

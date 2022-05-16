@@ -33,6 +33,9 @@ std::string* handle_string(){
 				case 't':
 					str->at(j) = '\t';
 					break;
+				case 'r':
+					str->at(j) = '\r';
+					break;
 				case 'a':
 					str->at(j) = '\a';
 					break;
