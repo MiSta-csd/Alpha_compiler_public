@@ -113,6 +113,9 @@ expr * newexpr_conststring (std::string s) {
 	return e;
 }
 
+/*
+ *@brief if expr is a tableitem make quad tablegetelem else return expr
+*/
 expr * emit_iftableitem (expr *e) {
 	expr* result;
 	if (e->type != TABLEITEM_E)
@@ -132,6 +135,9 @@ expr * emit_iftableitem (expr *e) {
 	}
 }
 
+/*
+ *@brief makes new member item expression
+*/
 expr * member_item (expr* lv, std::string name) {
 
 	lv = emit_iftableitem(lv);
