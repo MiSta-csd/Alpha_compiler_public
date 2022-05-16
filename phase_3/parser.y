@@ -67,7 +67,8 @@ void print_rules(std::string str) {
 %token GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL
 %token LCBRACK RCBRACK LBRACK RBRACK LPAREN RPAREN SEMICOLON COMMA COLON COLONCOLON DOT DOTDOT
 
-%type<expr_p>expr const assignexpr term primary ifprefix
+%type<expr_p> expr const assignexpr term primary ifprefix
+%type<intConst> elseprefix
 %type program stmts stmt
 %type member call elist objectdef returnstmt
 %type <intConst> idlist
@@ -76,7 +77,7 @@ void print_rules(std::string str) {
 %type<st_entryVal> funcdef funcprefix
 %type<strConst> funcname
 %type<intConst> funcbody
-%type<st_entryVal> lvalue
+%type<expr_p> lvalue
 %type<intConst> M
 %type<expr_p> block
 						  // Operator Tokens Hierarchy
@@ -109,7 +110,7 @@ stmts		: stmts stmt 				{
 			;
 // Rule 3.
 stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
-											tmp_var_count = 0;
+											resettemp();
 											if($1->truelist) {
 												backpatch($1->truelist, get_next_quad());
 												backpatch($1->falselist, get_next_quad() + 2);
@@ -239,25 +240,25 @@ term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 										}
 			| PLUSPLUS lvalue			{
 											print_rules("5.4 term -> ++ lvalue");
-											if($2->type == USER_FUNC || $2->type == LIB_FUNC){
+											if($2->sym->type == USER_FUNC || $2->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
 											}
 										}
 			| lvalue PLUSPLUS			{
 											print_rules("5.5 term -> lvalue ++");
-											if($1->type == USER_FUNC || $1->type == LIB_FUNC){
+											if($1->sym->type == USER_FUNC || $1->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
 											}
 										}
 			| MINUSMINUS lvalue			{
 											print_rules("5.6 term -> -- lvalue");
-											if($2->type == USER_FUNC || $2->type == LIB_FUNC){
+											if($2->sym->type == USER_FUNC || $2->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
 											}
 										}
 			| lvalue MINUSMINUS			{
 											print_rules("5.7 term ->  lvalue --");
-											if($1->type == USER_FUNC || $1->type == LIB_FUNC){
+											if($1->sym->type == USER_FUNC || $1->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
 											}
 										}
@@ -267,7 +268,7 @@ term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 			;
 // Rule 6.
 assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr");
-		   							 		if(!member_flag && $1 && ($1->type==LIB_FUNC || $1->type==USER_FUNC) ) {
+		   							 		if(!member_flag && $1->sym && ($1->sym->type==LIB_FUNC || $1->sym->type==USER_FUNC) ) {
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
 												if(!$3)
@@ -278,16 +279,12 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 														backpatch($3->falselist, get_next_quad() + 2);
 														emit_branch_quads();
 													}
-													expr *tmp_expr;
-													tmp_expr = new expr(VAR_E, $1, $3, $3->value);
-													emit(ASSIGN_OP, tmp_expr, $3, NULL, 0, yylineno);
-													st_entry *st_tmp_entry;
-													std::string tmp_name = new_tmp_name();
-													if( !(st_tmp_entry = st_lookup(tmp_name)) ) {
-														st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-													}
+													/* expr *tmp_expr;
+													tmp_expr = new expr(VAR_E, $1, $3, $3->value); */
+													emit(ASSIGN_OP, $1, $3, NULL, 0, yylineno);
+													st_entry *st_tmp_entry = newtemp();
 													$$ = new expr(VAR_E, st_tmp_entry, $3, $3->value);
-													emit(ASSIGN_OP, $$, tmp_expr, NULL, 0, yylineno);
+													emit(ASSIGN_OP, $$, $1, NULL, 0, yylineno);
 												}
 											}
 											if(member_flag) {
@@ -298,8 +295,9 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 
 // Rule 7.
 primary		: lvalue					{	print_rules("7.1 primary -> lvalue");
-											union values val;
-		 									$$ = new expr(VAR_E, $1, NULL, val);
+											/* union values val;
+		 									$$ = new expr(VAR_E, $1, NULL, val); */
+											$$ = $1;
 										}
 			| call						{	print_rules("7.2 primary -> call");}
 			| objectdef					{	print_rules("7.3 primary -> objectdef");}
@@ -312,7 +310,12 @@ primary		: lvalue					{	print_rules("7.1 primary -> lvalue");
 lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 											st_entry_tmp["r8"] = st_lookup(*$1);
 											if(!st_entry_tmp["r8"]){
-												$$ = st_insert(*$1, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR);
+												$$ = lvalue_expr (st_insert(*$1, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR));
+												if (scopeOffsetStackEmpty()){
+															incprogramVarOffset();
+														}else{
+															incfunctionLocalOffset();
+														}
 											}
 											else if( (st_entry_tmp["r8"]->scope != 0) && st_entry_tmp["r8"]->type != USER_FUNC
 													&& !func_stack.empty() && 
@@ -322,20 +325,25 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 												$$ = NULL;
 											}
 											else{
-												$$ = st_entry_tmp["r8"];
+												$$ = lvalue_expr (st_entry_tmp["r8"]);
 											}
 										}
 			| LOCAL ID					{
 											print_rules("8.2 lvalue -> local ID");
 											st_entry_tmp["r8"] = st_lookup(*$2);
 											if(st_entry_tmp["r8"] && (st_entry_tmp["r8"]->scope == st_get_scope()) ){
-												$$ = st_entry_tmp["r8"];
+												$$ = lvalue_expr (st_entry_tmp["r8"]);
 											}
 											else if(st_entry_tmp["r8"] && st_entry_tmp["r8"]->type == LIB_FUNC){
 												yyerror("variable \'" + *$2 + "\' shadows lib function");
 											}
 											else{
-												$$ = st_insert(*$2, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR);
+												$$ = lvalue_expr (st_insert(*$2, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR));
+												if (scopeOffsetStackEmpty()){
+															incprogramVarOffset();
+														}else{
+															incfunctionLocalOffset();
+														}
 											}
 										}
 			| COLONCOLON ID				{
@@ -346,7 +354,7 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 												$$ = NULL;
 											}
 											else {
-												$$ = st_entry_tmp["r8"];
+												$$ = lvalue_expr (st_entry_tmp["r8"]);
 											}
 										}
 			| member					{
@@ -461,15 +469,17 @@ funcprefix  : FUNCTION funcname			{
 											$$->iaddress = get_next_quad();
 											st_entry_tmp["r19"] = $$;
                                             func_stack.push($$);
-											/* std::cout << "func_stack scope = " << func_stack.top()->scope << ", top el = " << func_stack.top()->name << std::endl; */
-											resetformalargsoffset();
+											/* std::cout << "func_stack scope = " << func_stack.top()->scope << ", top el = " << func_stack.top()->name << std::endl; */	
                                             expr *tmp_expr;
                                             union values val;
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											$$->jump_quad = quad_vec.back();
                                             tmp_expr = new expr(PROGRAMFUNC_E, $$, NULL, val);
                                             emit(FUNCSTART_OP, tmp_expr, NULL, NULL, 0, yylineno);
+											pushscopeoffsetstack(currscopeoffset());
 											st_increase_scope();
+											enterscopespace();
+											resetformalargsoffset();
 										}
 			;
 
@@ -478,18 +488,22 @@ funcargs:   LPAREN idlist RPAREN  		{
 											if(st_entry_tmp["r19"]){
 												offload_arglist(st_entry_tmp["r19"]);
 											}
+											enterscopespace();
 											resetfunctionlocalsoffset();
 											st_decrease_scope();
                                 		}
             ;						
 funcbody    : block						{
 										    $$ = currscopeoffset();
+											exitscopespace();
 										}
 			;
-funcdef		: funcprefix funcargs funcbody  {
+funcdef		: funcprefix funcargs funcbody  {	
+												exitscopespace();
 												$1->totalLocals = $3;
+												int offset = popscopeoffsetstack();
+												restorecurrscopeoffset(offset);
 												$$ = $1;
-
 												expr *tmp_expr;
 												union values val;
 												tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, val);
@@ -542,6 +556,7 @@ idlist		: ID 						{
 												st_entry_tmp["r21"] = st_insert(*$1, FORMAL_ARG);
 												load_2_arglist(st_entry_tmp["r21"]);
 											}
+											incformalArgOffset();
 											$$ = currscopeoffset();
 										}
 			| idlist COMMA ID 			{
@@ -557,6 +572,7 @@ idlist		: ID 						{
 												st_entry_tmp["r21"] = st_insert(*$3, FORMAL_ARG);
 												load_2_arglist(st_entry_tmp["r21"]);
 											}
+											incformalArgOffset();
 											$$ = currscopeoffset();
 										}
 			|							{print_rules("21.3 empty id_list");
@@ -585,8 +601,8 @@ ifprefix	: IF LPAREN expr RPAREN		{
 
 elseprefix	: ELSE						{
 											print_rules("23.2 elseprefix -> else");
-
-
+											$$ = get_next_quad();
+											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			;
 
@@ -597,7 +613,8 @@ ifstmt		: ifprefix stmt				{
 			| ifprefix stmt elseprefix stmt
 										{
 											print_rules("23.4 ifstmt -> ifstmt -> ifprefix stmt elseprefix stmt");
-											
+											backpatch($1->falselist, $3+1);// arithmetics work that way.........................
+											quad_vec[$3-1]->label = get_next_quad();
 										}
 			;
 			

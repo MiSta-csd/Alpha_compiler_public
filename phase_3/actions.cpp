@@ -1,5 +1,6 @@
 #include "actions.h"
 #include "quads.h"
+#include "symtable.h"
 #include <assert.h>
 #include <string>
 
@@ -7,9 +8,35 @@ extern unsigned tmp_var_count;
 extern std::vector<quad*> quad_vec;
 extern int yylineno;
 
+st_entry* newtemp() {
+	st_entry *st_tmp_entry;
+	std::string tmp_name;
+	if(tmp_var_count)
+		tmp_name = "^" + std::to_string(tmp_var_count-1);
+	else
+		tmp_name = newtempname();
+	if(!(st_tmp_entry = st_lookup(tmp_name) )) {
+		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+	}
+	return st_tmp_entry;
+}
+
+std::string newtempname() {
+	std::string out = "^" + std::to_string(tmp_var_count++);
+	return out;
+}
+
+void resettemp() {
+	tmp_var_count = 0;
+}
+
 std::string exp_type_to_string(expr *ex){
+	
+	std::string ret;
+	
 	switch(ex->type) {
 		case BOOLEXPR_E:
+			return (ex->sym->name);
 		case CONSTBOOL_E:
 			return (ex->value.boolConst == true? "'true'" : "'false'");
 		case CONSTDOUBLE_E:
@@ -30,6 +57,8 @@ std::string exp_type_to_string(expr *ex){
 		default:
 			assert(NULL);
 	}
+
+	return ret;
 }
 
 bool check_arith (expr* e, std::string context) {
@@ -48,16 +77,85 @@ bool check_arith (expr* e, std::string context) {
 	return true;
 }
 
-expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
-	st_entry *st_tmp_entry;
-	std::string tmp_name;
-	if(tmp_var_count)
-		tmp_name = "^" + std::to_string(tmp_var_count-1);
-	else
-		tmp_name = new_tmp_name();
-	if(!(st_tmp_entry = st_lookup(tmp_name) )) {
-		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+expr * lvalue_expr (st_entry *sym) {
+
+	assert(sym);
+	expr *e = new expr();
+	/* memset(e, 0, sizeof(expr)); */ // mporei na xreiastei..
+
+	/* e->next = (expr*) 0; */
+	e->sym = sym;
+	switch (sym->type) {
+		case GLOBAL_VAR			:
+		case FORMAL_ARG			:
+		case LOCAL_VAR			: 	e->type = VAR_E; break;
+		case USER_FUNC			:	e->type = PROGRAMFUNC_E; break;
+		case LIB_FUNC			:	e->type = LIBRARYFUNC_E; break;
+		default: assert(0);
+			
 	}
+
+	return e;	
+}
+
+expr * newexpr (expr_t t) {
+	
+	expr* e = new expr();
+	/* memset(e, 0, sizeof(expr)); */ // Mporei na xreiastei..
+	e->type = t;
+	return e;
+}
+
+expr * newexpr_conststring (std::string s) {
+
+	expr* e = newexpr(CONSTSTRING_E);
+	e->value.strConst = new std::string(s);
+	return e;
+}
+
+expr * emit_iftableitem (expr *e) {
+	expr* result;
+	if (e->type != TABLEITEM_E)
+		return e;
+	else {
+		result = newexpr(VAR_E);
+		result->sym = newtemp();
+		emit(
+			TABLEGETELEM_OP,
+			e,
+			e->index,
+			result,
+			0, /* nextquadlabel() */
+			yylineno
+			);
+		return result;
+	}
+}
+
+expr * member_item (expr* lv, std::string name) {
+
+	lv = emit_iftableitem(lv);
+	expr* ti = newexpr(TABLEITEM_E);
+	ti->sym		= lv->sym;
+	ti->index 	= newexpr_conststring(name);
+	return ti;
+
+}
+
+// expr * make_call (expr* lv, expr * reversed_elist) {
+
+// 	expr * func = emit_iftableitem(lv);
+// 	while (reversed_elist) {
+// 		emit(
+// 			PARAM_OP,
+			
+// 		)
+// 	}
+// }
+
+
+expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
+	st_entry *st_tmp_entry = newtemp();
 	union values val;
 	expr *expr_pt = new expr(BOOLEXPR_E, st_tmp_entry, NULL, val);
 	expr_pt->truelist = new std::vector<quad*>();
@@ -73,15 +171,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 	expr *res;
 	bool is_arith = check_arith(arg1, context) && check_arith(arg2, context);
 	if (is_arith) {
-		st_entry *st_tmp_entry;
-		std::string tmp_name;
-		if(tmp_var_count)
-			tmp_name = "^" + std::to_string(tmp_var_count-1);
-		else
-			tmp_name = new_tmp_name();
-		if(!(st_tmp_entry = st_lookup(tmp_name) )) {
-			st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-		}
+		st_entry *st_tmp_entry = newtemp();
 		union values val;
 		int val_1, val_2;
 		expr_t type = CONSTINT_E;
@@ -191,24 +281,17 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 }
 
 void emit_branch_quads(){
-	st_entry *st_tmp_entry;
-	std::string tmp_name;
-	if(tmp_var_count)
-		tmp_name = "^" + std::to_string(tmp_var_count-1);
-	else
-		tmp_name = new_tmp_name();
-	if(!(st_tmp_entry = st_lookup(tmp_name) )) {
-		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-	}
+	st_entry *st_tmp_entry = newtemp();
 	union values val;
-	expr *expr_pt;
+	expr *expr_pt, *bool_expr_tmp;
 	val.boolConst = true;
-	expr_pt = new expr(CONSTBOOL_E, st_tmp_entry, NULL, val);
-	emit(ASSIGN_OP, expr_pt, expr_pt, NULL, 0, yylineno);
+	expr_pt = new expr(BOOLEXPR_E, st_tmp_entry, NULL, val);
+	bool_expr_tmp = new expr(CONSTBOOL_E, NULL, NULL, val);
+	emit(ASSIGN_OP, expr_pt, bool_expr_tmp, NULL, 0, yylineno);
 	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
 	val.boolConst = false;
-	expr_pt = new expr(CONSTBOOL_E, st_tmp_entry, NULL, val);
-	emit(ASSIGN_OP, expr_pt, expr_pt, NULL, 0, yylineno);
+	bool_expr_tmp = new expr(CONSTBOOL_E, NULL, NULL, val);
+	emit(ASSIGN_OP, expr_pt, bool_expr_tmp, NULL, 0, yylineno);
 }
 
 void patchlabel (unsigned quadNo, unsigned label) {

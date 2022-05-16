@@ -18,13 +18,8 @@ void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 			.line = line});
 }
 
-/* auxil vector for storing voithitikes metavlhtes */
+expr::expr() {
 
-expr::expr(expr *ex) {
-	this->type = ex->type;
-	this->sym = ex->sym;
-	this->index = ex;
-	this->value = ex->value;
 }
 
 expr::expr(expr_t type, st_entry *sym, expr *index, union values value) {
@@ -121,9 +116,4 @@ void erase_expressions() {
 	// 	free(expr_vec[i]);
 	// } // den kanoume free giati trwme skato sto print
 	tmp_var_count = 0;
-}
-
-std::string new_tmp_name() {
-	std::string out = "^" + std::to_string(tmp_var_count++);
-	return out;
 }
