@@ -260,7 +260,11 @@ M 			:							{	$$ = get_next_quad();}
 term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 											$$ = $2;
 	  									}
-			| MINUS expr %prec UMINUS	{	print_rules("5.2 term -> - expr");}
+			| MINUS expr %prec UMINUS	{	
+											print_rules("5.2 term -> - expr");
+			
+										}
+
 			| NOT expr					{	print_rules("5.3 term -> NOT expr");
 											$$ = true_test($2);
 											std::vector<quad*> *tmp = $$->truelist;
@@ -453,8 +457,8 @@ member		: tableitem					{
 											$$ = e;
 										}
 			;
-// Rule 10.
-call		: call LPAREN elist RPAREN	{	print_rules("10.1 member -> call ( elist )");
+// Rule 10.				
+call		: call normcall				{	print_rules("10.1 member -> call ( elist )");
 											//$1 = make_call($1, $3);
 										}
 			| lvalue callsuffix			{	print_rules("10.2 member -> lvalue callsuffix");
@@ -466,7 +470,8 @@ call		: call LPAREN elist RPAREN	{	print_rules("10.1 member -> call ( elist )");
 											}
 											//$$ = make_call($1, $2->elist);
 										}
-			| LPAREN funcdef RPAREN LPAREN elist RPAREN{
+			| LPAREN funcdef RPAREN LPAREN elist RPAREN
+										{
 											print_rules("10.3 member -> ( funcdef ) ( elist )");
 											expr* func = newexpr(PROGRAMFUNC_E);
 											func->sym = $2;
@@ -487,9 +492,14 @@ normcall	: LPAREN elist RPAREN		{	print_rules("12.1 normcall -> ( elist )");
 											$$->method = 0;
 											//$$->name = NULL;
 									    }
+/* 			| LPAREN RPAREN				{
+											print_rules("12.2 normcall -> ( )");
+										} */
 			;
 // Rule 13.
-methodcall	: DOTDOT ID LPAREN elist RPAREN{print_rules("13.1 methodcall -> .. ID ( elist )");
+methodcall	: DOTDOT ID LPAREN elist RPAREN
+										{
+											//$$ = call()
 											//$$->elist = $4
 											//$$->method = 1;
 											//$$->name = $2;
@@ -678,8 +688,7 @@ idlist		: ID 						{
 ifprefix	: IF LPAREN expr RPAREN		{
 											print_rules("23.1 ifprefix -> if ( expr )");
 											$3 = true_test($3);
-											emit_ifbool($3);
-											union values t_val;
+											$3 = emit_ifbool($3);
 											expr *result = quad_vec.back()->result;
 											emit(IF_EQ_OP, NULL, result, newexpr_constbool(true), get_next_quad() + 2, yylineno);
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
@@ -713,6 +722,7 @@ whilestart	: WHILE						{	++loopcounter;	$$ = get_next_quad();}
 		   	;
 whilesecond	: LPAREN expr RPAREN		{
 											$2 = true_test($2);
+											emit_ifbool($2);
 											emit(IF_EQ_OP, $2, newexpr_constbool(true), NULL, get_next_quad()+2, yylineno);
 											$$ = get_next_quad();
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);

@@ -31,6 +31,12 @@ expr::expr(expr_t type, st_entry *sym, expr *index, union values value) {
 	this->value = value;
 }
 
+call::call(std::string name, unsigned char method) {
+	this->elist = new std::vector<expr*>;
+	this->name = new std::string(name);
+	this->method = method;
+}
+
 void print_quads() {
 	std::string opcodes[] = {"ASSIGN_OP", "ADD_OP", "SUB_OP", "MUL_OP", "DIV_OP", "MOD_OP", "UMINUS_OP", "AND_OP",
 	"OR_OP", "NOT_OP", "IF_EQ_OP", "IF_NOTEQ_OP", "IF_LESSEQ_OP", "IF_GREATEREQ_OP", "IF_LESS_OP", "IF_GREATER_OP",
@@ -40,7 +46,7 @@ void print_quads() {
 	int i = 1;
     for (auto quad : quad_vec){
 		std::cout << i << ": " << opcodes[quad->op] << " ";
-		if (quad->result != NULL){
+		if (quad->result != NULL) {
 			std::cout << quad->result->sym->name << " ";
 		}
 		if(quad->arg1) {

@@ -106,7 +106,7 @@ expr * lvalue_expr (st_entry *sym) {
 }
 
 expr * newexpr (expr_t t) {
-	expr* e = new expr();
+	expr* e = new expr();// makes all the pointers NULL
 	/* memset(e, 0, sizeof(expr)); */ // Mporei na xreiastei..
 	e->type = t;
 	return e;
@@ -159,21 +159,18 @@ expr * emit_iftableitem (expr *e) {
 }
 
 
-expr * emit_ifbool(expr *operand) {
-	assert(operand);
-	expr *e = operand;
-	if(operand->type == BOOLEXPR_E) {
-		e = newexpr(BOOLEXPR_E);
-		e->sym = newtemp();
+expr * emit_ifbool(expr *ex) {
+	assert(ex);
+	if(!ex->sym)
+		ex->sym = newtemp();
+	backpatch(ex->truelist, get_next_quad());
+	backpatch(ex->falselist, get_next_quad() + 2);
 
-		backpatch(operand->truelist, get_next_quad());
-		backpatch(operand->falselist, get_next_quad() + 2);
+	emit(ASSIGN_OP, ex, newexpr_constbool(true), NULL, 0, yylineno);
+	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
+	emit(ASSIGN_OP, ex, newexpr_constbool(false), NULL, 0, yylineno);
 
-		emit(ASSIGN_OP, e, newexpr_constbool(true), NULL, get_next_quad(), yylineno);
-		emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
-		emit(ASSIGN_OP, e , newexpr_constbool(false), NULL, get_next_quad(), yylineno);
-	}
-	return e;
+	return ex;
 }
 
 /*
@@ -211,15 +208,14 @@ expr * make_call (expr* lv, std::vector<expr*> *exp_vec) {
 
 
 expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
-	st_entry *st_tmp_entry = newtemp();
-	union values val;
-	expr *expr_pt = new expr(BOOLEXPR_E, st_tmp_entry, NULL, val);
+	expr *expr_pt = newexpr(BOOLEXPR_E);
+	expr_pt->sym = newtemp();
 	expr_pt->truelist = new std::vector<quad*>();
 	expr_pt->falselist = new std::vector<quad*>();
 	emit(opcode, NULL, arg1, arg2, 0, yylineno);
-	expr_pt->truelist->push_back(quad_vec[quad_vec.size()-1]);
+	expr_pt->truelist->push_back(quad_vec.back());
 	emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-	expr_pt->falselist->push_back(quad_vec[quad_vec.size()-1]);
+	expr_pt->falselist->push_back(quad_vec.back());
 	return expr_pt;
 }
 

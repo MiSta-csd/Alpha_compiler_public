@@ -51,9 +51,10 @@ typedef struct quad {
 }quad;
 
 typedef struct call {
-	expr* elist;
+	std::vector<expr*> *elist;
 	unsigned char method;
 	std::string *name;
+	call(std::string name, unsigned char method);
 }call;
 
 struct stmt_t {
