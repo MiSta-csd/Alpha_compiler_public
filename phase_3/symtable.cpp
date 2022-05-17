@@ -187,7 +187,7 @@ void restorecurrscopeoffset(unsigned n){
 }
 
 void enterscopespace(void){
-	std::cout << "Program var offset: " << programVarOffset << "\n Formal arg offset: " << formalArgOffset << "\n Function local offset: " << functionLocalOffset << "\n Current scope space: " << curScopeSpace << "\n";
+	// std::cout << "Program var offset: " << programVarOffset << "\n Formal arg offset: " << formalArgOffset << "\n Function local offset: " << functionLocalOffset << "\n Current scope space: " << curScopeSpace << "\n";
 	curScopeSpace++;
 }
 
@@ -227,9 +227,5 @@ void incfunctionLocalOffset(){
 bool scopeOffsetStackEmpty(){
 	return scopeoffsetstack.empty();
 }
-
-
-
-
 
 

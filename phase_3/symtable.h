@@ -21,7 +21,6 @@ struct st_entry {
 	unsigned line;
 	unsigned totalLocals;
 	unsigned iaddress;
-	struct quad *jump_quad;
 } typedef st_entry;
 
 st_entry *st_insert(std::string name_input, enum st_entry_type type_input);
@@ -51,10 +50,6 @@ int st_hide(unsigned int scope_input);
 int load_2_arglist(struct st_entry *arg); // inserts arg to st_entry
 
 int offload_arglist(st_entry *func); // gives the arg_list ptr to the func
-
-/* void st_set_inloop(bool b); */
-
-/* bool st_get_inloop(); */
 
 void st_initialize(); // also pushes the lib func entries in scope 0 of st
 

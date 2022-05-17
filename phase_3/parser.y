@@ -25,6 +25,7 @@ extern char *yytext;
 extern FILE *yyin;
 extern int yylex();
 extern unsigned tmp_var_count;
+union values emptyval;
 
 /* for short circuit eval purpose */
 static expr *aux_expr_for_true_test;
@@ -37,6 +38,8 @@ std::unordered_map<std::string, struct st_entry*> st_entry_tmp;
  */
 extern std::stack<struct st_entry*> func_stack;
 
+static int loopcounter = 0;
+
 void print_rules(std::string str) {
 	 /* std::cout << "~ entered rule :\t " << str << std::endl; */
 }
@@ -46,13 +49,17 @@ void print_rules(std::string str) {
 %defines
 %output "parser.cpp"
 %define parse.error verbose
-%union{
+%code requires { #include<vector> }
+%union {
 	int intConst;
 	double realConst;
 	std::string *strConst;
 	struct st_entry *st_entryVal;
 	struct expr *expr_p;
+	struct call *callVal;
 	bool boolean;
+	std::vector<expr*> *exprVec;
+	struct stmt_t *stmt_pt;
 }
 
 %token<intConst> INTEGER 
@@ -67,12 +74,27 @@ void print_rules(std::string str) {
 %token GREATER LESSER GREATEREQUAL LESSEREQUAL EQUAL
 %token LCBRACK RCBRACK LBRACK RBRACK LPAREN RPAREN SEMICOLON COMMA COLON COLONCOLON DOT DOTDOT
 
-%type<expr_p> expr const assignexpr term primary ifprefix
+%type<expr_p> expr const assignexpr term primary ifprefix call
 %type<intConst> elseprefix
-%type program stmts stmt
-%type member call elist objectdef returnstmt
+%type program
+%type <expr_p>objectdef returnstmt
 %type <intConst> idlist
 %type <intConst> funcargs
+
+%type <exprVec> elist;
+%type <exprVec> indexed;
+
+%type<callVal> callsuffix
+%type<callVal> normcall
+%type<callVal> methodcall
+
+%type <expr_p> tableitem;
+%type <expr_p> member
+
+%type <intConst> whilestart;
+%type <intConst> whilesecond;
+%type <stmt_pt> whilestmt;
+%type <stmt_pt> stmts stmt
 
 %type<st_entryVal> funcdef funcprefix
 %type<strConst> funcname
@@ -105,16 +127,17 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
+											$$->breakList = mergelist($1->breakList, $2->breakList);
+                                			$$->contList = mergelist($1->contList,  $2->contList);
+                                			//$$.returnList = mergelist($1->returnList, $2->returnList);
 										}
-			|							{	print_rules("2.2 stmts -> ε");}
+			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
 			;
 // Rule 3.
 stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											resettemp();
 											if($1->truelist) {
-												backpatch($1->truelist, get_next_quad());
-												backpatch($1->falselist, get_next_quad() + 2);
-												emit_branch_quads();
+												emit_ifbool($1);
 											}
 	  									}
 			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
@@ -126,8 +149,14 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");
+											make_stmt($$);
+											$$->breakList = newlist(get_next_quad());
+											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");
+											make_stmt($$);
+											$$->contList = newlist(get_next_quad());
+											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			| block						{	print_rules("3.8 stmt -> block");
 										}
@@ -203,7 +232,7 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 										{	print_rules("4.13 expr -> expr AND expr");
 											expr *expr2 = true_test($5);
 											backpatch(aux_expr_for_true_test->truelist, $4);
-											union values val;
+											union values val;// ginetai apotimhsh ths logikhs ekfrashs amesws kai apo8 sto BOOLEX quad
 											val.boolConst = aux_expr_for_true_test->value.boolConst && expr2->value.boolConst;
 											$$ = new expr(BOOLEXPR_E, expr2->sym, NULL, val);
 											$$->truelist = expr2->truelist;
@@ -213,7 +242,7 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 										{	print_rules("4.14 expr -> expr OR expr");
 											expr *expr2 = true_test($5);
 											backpatch(aux_expr_for_true_test->falselist, $4);
-											union values val;
+											union values val;// ginetai apotimhsh ths logikhs ekfrashs amesws kai apo8 sto BOOLEX quad
 											val.boolConst = aux_expr_for_true_test->value.boolConst || expr2->value.boolConst;
 											$$ = new expr(BOOLEXPR_E, expr2->sym, NULL, val);
 											$$->falselist = expr2->falselist;
@@ -271,21 +300,39 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 		   							 		if(!member_flag && $1->sym && ($1->sym->type==LIB_FUNC || $1->sym->type==USER_FUNC) ) {
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
-												if(!$3)
-													$$ = NULL;
+												// if(!$3)
+												// 	$$ = NULL;
+												// else {
+												// 	if($3->truelist) {// or falselist
+												// 		emit_ifbool($3);
+												// 	}
+												// 	emit(ASSIGN_OP, $1, $3, NULL, 0, yylineno);
+												// 	st_entry *st_tmp_entry = newtemp();
+												// 	$$ = new expr(VAR_E, st_tmp_entry, $3, $3->value);
+												// 	emit(ASSIGN_OP, $$, $1, NULL, 0, yylineno);
+												// }
+												if($1->type == TABLEITEM_E) {
+													emit(TABLESETELEM_OP, $1, $1->index, $3, get_next_quad(), yylineno);
+													$$ = emit_iftableitem($1);
+                                        			$$->type = VAR_E;
+												}
 												else {
 													if($3->truelist) {// or falselist
-														backpatch($3->truelist, get_next_quad());
-														backpatch($3->falselist, get_next_quad() + 2);
-														emit_branch_quads();
+														emit_ifbool($3);
 													}
-													/* expr *tmp_expr;
-													tmp_expr = new expr(VAR_E, $1, $3, $3->value); */
 													emit(ASSIGN_OP, $1, $3, NULL, 0, yylineno);
-													st_entry *st_tmp_entry = newtemp();
-													$$ = new expr(VAR_E, st_tmp_entry, $3, $3->value);
+													$$ = new expr(VAR_E, newtemp(), $3, $3->value);
 													emit(ASSIGN_OP, $$, $1, NULL, 0, yylineno);
 												}
+												// else{
+												// 	emit(ASSIGN_OP, $1, $3, NULL, 0, yylineno);
+												// 	expr *e = newexpr(VAR_E);
+												// 	e->value = $3->value;
+												// 	e->index = $3;
+												// 	e->sym = newtemp();
+												// 	emit(ASSIGN_OP, e, $1, NULL, 0, yylineno);
+												// 	$$ = e;
+												// }
 											}
 											if(member_flag) {
 												member_flag = false;
@@ -294,22 +341,33 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 			;
 
 // Rule 7.
-primary		: lvalue					{	print_rules("7.1 primary -> lvalue");
-											/* union values val;
-		 									$$ = new expr(VAR_E, $1, NULL, val); */
+primary		: lvalue					{	
+											print_rules("7.1 primary -> lvalue");							
+											$$ = emit_iftableitem($1);
+										}
+			| call						{	
+											print_rules("7.2 primary -> call");
 											$$ = $1;
 										}
-			| call						{	print_rules("7.2 primary -> call");}
-			| objectdef					{	print_rules("7.3 primary -> objectdef");}
-			| LPAREN funcdef RPAREN		{	print_rules("7.4 primary -> ( funcdef )");}
-			| const						{	print_rules("7.5 primary -> const");
+			| objectdef					{	
+											print_rules("7.3 primary -> objectdef");
+											$$ = $1;
+										}
+			| LPAREN funcdef RPAREN		{	
+											print_rules("7.4 primary -> ( funcdef )");
+											expr *e = newexpr(PROGRAMFUNC_E);
+											e->sym = $2;
+											$$ = e;
+										}
+			| const						{	
+											print_rules("7.5 primary -> const");
 											$$ = $1;
 										}
 			;
 // Rule 8.
 lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 											st_entry_tmp["r8"] = st_lookup(*$1);
-											if(!st_entry_tmp["r8"]){
+											if(!st_entry_tmp["r8"]) {
 												$$ = lvalue_expr (st_insert(*$1, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR));
 												if (scopeOffsetStackEmpty()){
 															incprogramVarOffset();
@@ -359,47 +417,97 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 										}
 			| member					{
 											print_rules("8.4 lvalue -> member");
+											$$ = $1;
 										}
 			;
-// Rule 9.
-member		: lvalue DOT ID				{
-											print_rules("9.1 member -> lvalue . ID");
-											member_flag = true;
+// Rule 8+.
+tableitem	: lvalue DOT ID				{
+											print_rules("8+.1 tableitem -> lvalue . ID");
+											$$ = member_item($1, $3);
 										}
 			| lvalue LBRACK expr RBRACK	{
-											print_rules("9.2 member -> lvalue [ expr ]");
+											print_rules("8+.2 tableitem -> lvalue [ expr ]");
+											expr *e = emit_ifbool($3);
+											$1 = emit_iftableitem($1);
+											$$ = newexpr(TABLEITEM_E);
+											$$->sym = $1->sym;
+											$$->index = e;
+										}
+
+
+// Rule 9.
+member		: tableitem					{
+											print_rules("9.1 member -> tableitem");
 											member_flag = true;
+											$$ = $1;
 										}
 			| call DOT ID				{
-											print_rules("9.3 member -> call . ID");
+											print_rules("9.2 member -> call . ID");
 											member_flag = true;
+											$$ = member_item($1,$3);
 										}
 			| call LBRACK expr RBRACK 	{
-											print_rules("9.4 member -> call [ expr ]");
+											print_rules("9.3 member -> call [ expr ]");
 											member_flag = true;
+											expr *e = emit_ifbool($3);
+											$$ = e;
 										}
 			;
 // Rule 10.
-call		: call LPAREN elist RPAREN	{	print_rules("10.1 member -> call ( elist )");}
-			| lvalue callsuffix			{	print_rules("10.2 member -> lvalue callsuffix");}
+call		: call LPAREN elist RPAREN	{	print_rules("10.1 member -> call ( elist )");
+											//$1 = make_call($1, $3);
+										}
+			| lvalue callsuffix			{	print_rules("10.2 member -> lvalue callsuffix");
+											$1 = emit_iftableitem($1);
+											if ($2->method){
+												expr* t= $1;
+												$1 = emit_iftableitem(member_item(t, $2->name));
+												//$2->elist->next = t; 
+											}
+											//$$ = make_call($1, $2->elist);
+										}
 			| LPAREN funcdef RPAREN LPAREN elist RPAREN{
 											print_rules("10.3 member -> ( funcdef ) ( elist )");
+											expr* func = newexpr(PROGRAMFUNC_E);
+											func->sym = $2;
+											//$$ = make_call(func, $5);
 										}
 			;
 // Rule 11.
-callsuffix	: normcall					{	print_rules("11.1 member -> normcall");}
-			| methodcall				{	print_rules("11.2 member -> methodcall");}
+callsuffix	: normcall					{	print_rules("11.1 member -> normcall");
+											$$ = $1;
+										}
+			| methodcall				{	print_rules("11.2 member -> methodcall");
+											$$ = $1;
+										}
 			;
 // Rule 12.
-normcall	: LPAREN elist RPAREN		{	print_rules("12.1 normcall -> ( elist )");}
+normcall	: LPAREN elist RPAREN		{	print_rules("12.1 normcall -> ( elist )");
+											//$$->elist = $2;
+											$$->method = 0;
+											//$$->name = NULL;
+									    }
 			;
 // Rule 13.
-methodcall	: DOTDOT ID LPAREN elist RPAREN{print_rules("13.1 methodcall -> .. ID ( elist )");}
+methodcall	: DOTDOT ID LPAREN elist RPAREN{print_rules("13.1 methodcall -> .. ID ( elist )");
+											//$$->elist = $4
+											//$$->method = 1;
+											//$$->name = $2;
+									    }
 			;
 // Rule 14.
-elist		: expr 						{	print_rules("14.1 elist -> expr");}
-			| elist COMMA expr 			{	print_rules("14.2 elist -> elist , expr");}
-			| 							{	print_rules("14.3 elist -> ε");}
+elist		: expr 						{	
+											print_rules("14.1 elist -> expr");
+										
+										}
+			| elist COMMA expr 			{	
+											print_rules("14.2 elist -> elist , expr");
+										
+										}
+			| 							{	
+											print_rules("14.3 elist -> ε");
+											
+										}
 			;
 // Rule 15.
 objectdef	: LBRACK elist RBRACK 		{	print_rules("15.1 objectdef -> [ elist ]");}
@@ -466,15 +574,12 @@ funcprefix  : FUNCTION funcname			{
 											$$ = st_lookup(*$2);
 											assert($$);
                                             $$->totalLocals = 0;
-											$$->iaddress = get_next_quad();
+											$$->iaddress = get_current_quad();
 											st_entry_tmp["r19"] = $$;
                                             func_stack.push($$);
-											/* std::cout << "func_stack scope = " << func_stack.top()->scope << ", top el = " << func_stack.top()->name << std::endl; */	
                                             expr *tmp_expr;
-                                            union values val;
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-											$$->jump_quad = quad_vec.back();
-                                            tmp_expr = new expr(PROGRAMFUNC_E, $$, NULL, val);
+                                            tmp_expr = new expr(PROGRAMFUNC_E, $$, NULL, emptyval);
                                             emit(FUNCSTART_OP, tmp_expr, NULL, NULL, 0, yylineno);
 											pushscopeoffsetstack(currscopeoffset());
 											st_increase_scope();
@@ -505,44 +610,33 @@ funcdef		: funcprefix funcargs funcbody  {
 												restorecurrscopeoffset(offset);
 												$$ = $1;
 												expr *tmp_expr;
-												union values val;
-												tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, val);
+												tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, emptyval);
 												emit(FUNCEND_OP, tmp_expr, NULL, NULL, 0, yylineno);
 												if(st_entry_tmp["r19"]) {
 													func_stack.pop();
 												}
-												$1->jump_quad->label = get_next_quad();
+												patchlabel(quad_vec[$1->iaddress], get_next_quad());
+												/* $1->jump_quad->label = get_next_quad(); */
                                         	}
 			;
 // Rule 20.
 const		: INTEGER 					{	print_rules("20.1 const -> INTEGER");
-											union values val;
-											val.intConst = $1;
-											$$ = new expr(CONSTINT_E, NULL, NULL, val);
+											$$ = newexpr_constint($1);
 										}	
 	   		| REAL 						{	print_rules("20.2 const -> REAL");
-											union values val;
-											val.doubleConst = $1;
-											$$ = new expr(CONSTDOUBLE_E, NULL, NULL, val);
+											$$ = newexpr_constdouble($1);
 										}
 			| STRING 					{	print_rules("20.3 const -> STRING");
-											union values val;
-											val.strConst = $1;
-											$$ = new expr(CONSTSTRING_E, NULL, NULL, val);	
+											$$ = newexpr_conststring($1);
 										}
 			| NIL 						{	print_rules("20.4 const -> NIL");
-											union values val;
-											$$ = new expr(NIL_E, NULL, NULL, val);
+											$$ = newexpr(NIL_E);
 										}
 			| TRUE 						{	print_rules("20.5 const -> TRUE");
-											union values val;
-											val.boolConst = true;
-											$$ = new expr(CONSTBOOL_E, NULL, NULL, val);
+											$$ = newexpr_constbool(true);
 										}
 			| FALSE						{	print_rules("20.6 const -> FALSE");
-											union values val;
-											val.boolConst = false;
-											$$ = new expr(CONSTBOOL_E, NULL, NULL, val);
+											$$ = newexpr_constbool(false);
 										}
 			;
 // Rule 21.
@@ -584,24 +678,20 @@ idlist		: ID 						{
 ifprefix	: IF LPAREN expr RPAREN		{
 											print_rules("23.1 ifprefix -> if ( expr )");
 											$3 = true_test($3);
-											backpatch($3->truelist, get_next_quad());
-											backpatch($3->falselist, get_next_quad() + 2);
-											emit_branch_quads();
+											emit_ifbool($3);
 											union values t_val;
-											t_val.boolConst = true;
-											expr *true_exp = new expr(CONSTBOOL_E, NULL, NULL, t_val);
-											expr *result = quad_vec[quad_vec.size()-1]->result;
-											emit(IF_EQ_OP, NULL, result, true_exp, get_next_quad() + 2, yylineno);
+											expr *result = quad_vec.back()->result;
+											emit(IF_EQ_OP, NULL, result, newexpr_constbool(true), get_next_quad() + 2, yylineno);
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											result->falselist = new std::vector<quad*>();
-											result->falselist->push_back(quad_vec[quad_vec.size()-1]);// pushback the jump so i can backpatch
+											result->falselist->push_back(quad_vec.back());// pushback the jump so i can backpatch
 											$$ = result;
 										}
 			;
 
 elseprefix	: ELSE						{
 											print_rules("23.2 elseprefix -> else");
-											$$ = get_next_quad();
+											$$ = get_current_quad();
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			;
@@ -613,14 +703,30 @@ ifstmt		: ifprefix stmt				{
 			| ifprefix stmt elseprefix stmt
 										{
 											print_rules("23.4 ifstmt -> ifstmt -> ifprefix stmt elseprefix stmt");
-											backpatch($1->falselist, $3+1);// arithmetics work that way.........................
-											quad_vec[$3-1]->label = get_next_quad();
+											backpatch($1->falselist, $3+2);
+											patchlabel(quad_vec[$3], get_next_quad());
 										}
 			;
 			
 // Rule 24.
-whilestmt	: WHILE LPAREN expr RPAREN stmt{
-		  									print_rules("24.1 whilestmt -> while ( expr ) stmt");
+whilestart	: WHILE						{	++loopcounter;	$$ = get_next_quad();}
+		   	;
+whilesecond	: LPAREN expr RPAREN		{
+											$2 = true_test($2);
+											emit(IF_EQ_OP, $2, newexpr_constbool(true), NULL, get_next_quad()+2, yylineno);
+											$$ = get_next_quad();
+											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+										}
+			;
+whilestmt	: whilestart whilesecond stmt
+		  								{	print_rules("24.1 whilestmt -> while ( expr ) stmt");
+											emit(JUMP_OP, NULL, NULL, NULL, $1, yylineno);
+											patchlabel(quad_vec[$2], get_next_quad());
+											$$ = new stmt_t();
+											make_stmt($$);
+											patchlist($$->breakList, get_next_quad());
+											patchlist($$->contList, $1);
+											--loopcounter;
 										}
 			;
 // Rule 25.
@@ -672,7 +778,7 @@ int main(int argc, char** argv) {
 	st_initialize();
     while( yyparse() != 0);
 	validate_comments();
-	/* st_print_table(); */
+	// st_print_table();
 	print_quads();
     return 0;
 }

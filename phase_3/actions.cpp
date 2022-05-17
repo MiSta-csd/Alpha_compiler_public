@@ -30,6 +30,16 @@ void resettemp() {
 	tmp_var_count = 0;
 }
 
+
+bool istempname (std::string s) {
+	return s[0] == '^';
+}
+
+bool istempexpr (expr* e) {
+	return e->sym && istempname(e->sym->name);
+}
+
+
 std::string exp_type_to_string(expr *ex){
 	
 	std::string ret;
@@ -81,9 +91,6 @@ expr * lvalue_expr (st_entry *sym) {
 
 	assert(sym);
 	expr *e = new expr();
-	/* memset(e, 0, sizeof(expr)); */ // mporei na xreiastei..
-
-	/* e->next = (expr*) 0; */
 	e->sym = sym;
 	switch (sym->type) {
 		case GLOBAL_VAR			:
@@ -99,17 +106,33 @@ expr * lvalue_expr (st_entry *sym) {
 }
 
 expr * newexpr (expr_t t) {
-	
 	expr* e = new expr();
 	/* memset(e, 0, sizeof(expr)); */ // Mporei na xreiastei..
 	e->type = t;
 	return e;
 }
 
-expr * newexpr_conststring (std::string s) {
-
+expr * newexpr_conststring (std::string *s) {
 	expr* e = newexpr(CONSTSTRING_E);
-	e->value.strConst = new std::string(s);
+	e->value.strConst = s;
+	return e;
+}
+
+expr * newexpr_constint (int i) {
+	expr* e = newexpr(CONSTINT_E);
+	e->value.intConst = i;
+	return e;
+}
+
+expr * newexpr_constdouble (double d) {
+	expr* e = newexpr(CONSTDOUBLE_E);
+	e->value.doubleConst = d;
+	return e;
+}
+
+expr * newexpr_constbool (bool b) {
+	expr *e = newexpr(CONSTBOOL_E);
+	e->value.boolConst = b;
 	return e;
 }
 
@@ -135,10 +158,28 @@ expr * emit_iftableitem (expr *e) {
 	}
 }
 
+
+expr * emit_ifbool(expr *operand) {
+	assert(operand);
+	expr *e = operand;
+	if(operand->type == BOOLEXPR_E) {
+		e = newexpr(BOOLEXPR_E);
+		e->sym = newtemp();
+
+		backpatch(operand->truelist, get_next_quad());
+		backpatch(operand->falselist, get_next_quad() + 2);
+
+		emit(ASSIGN_OP, e, newexpr_constbool(true), NULL, get_next_quad(), yylineno);
+		emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
+		emit(ASSIGN_OP, e , newexpr_constbool(false), NULL, get_next_quad(), yylineno);
+	}
+	return e;
+}
+
 /*
  *@brief makes new member item expression
 */
-expr * member_item (expr* lv, std::string name) {
+expr * member_item (expr* lv, std::string *name) {
 
 	lv = emit_iftableitem(lv);
 	expr* ti = newexpr(TABLEITEM_E);
@@ -148,16 +189,25 @@ expr * member_item (expr* lv, std::string name) {
 
 }
 
-// expr * make_call (expr* lv, expr * reversed_elist) {
+expr * make_call (expr* lv, std::vector<expr*> *exp_vec) {
 
-// 	expr * func = emit_iftableitem(lv);
-// 	while (reversed_elist) {
-// 		emit(
-// 			PARAM_OP,
-			
-// 		)
-// 	}
-// }
+	expr * func = emit_iftableitem(lv);
+	for(int i = exp_vec->size() - 1; i >= 0; --i ){
+		emit(
+			PARAM_OP,
+			(*exp_vec)[i],
+			NULL,
+			NULL,
+			get_next_quad(),
+			yylineno
+		);
+	}
+	emit(CALL_OP, func, NULL, NULL, get_next_quad(), yylineno);
+	expr* result = newexpr(VAR_E);
+	result->sym = newtemp();
+	emit(GETRETVAL_OP, result, NULL, NULL, get_next_quad(),yylineno);
+	return result;
+}
 
 
 expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
@@ -286,20 +336,6 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 	return NULL;
 }
 
-void emit_branch_quads(){
-	st_entry *st_tmp_entry = newtemp();
-	union values val;
-	expr *expr_pt, *bool_expr_tmp;
-	val.boolConst = true;
-	expr_pt = new expr(BOOLEXPR_E, st_tmp_entry, NULL, val);
-	bool_expr_tmp = new expr(CONSTBOOL_E, NULL, NULL, val);
-	emit(ASSIGN_OP, expr_pt, bool_expr_tmp, NULL, 0, yylineno);
-	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
-	val.boolConst = false;
-	bool_expr_tmp = new expr(CONSTBOOL_E, NULL, NULL, val);
-	emit(ASSIGN_OP, expr_pt, bool_expr_tmp, NULL, 0, yylineno);
-}
-
 void patchlabel (unsigned quadNo, unsigned label) {
 	assert(quadNo < get_current_quad() && !quad_vec[quadNo]->label);
 	quad_vec[quadNo]->label = label;
@@ -309,6 +345,10 @@ void backpatch(std::vector<quad*> *vq, unsigned label){
 	for(int i = 0; i < vq->size(); ++i){
 		(*vq)[i]->label = label;
 	}
+}
+
+void patchlabel(quad* q, unsigned label) {
+	q->label = label;
 }
 
 // expr* newexpr_const (unsigned int b) {
@@ -378,10 +418,7 @@ expr* true_test(expr* ex) {
 		}
 		expr_pt->truelist = new std::vector<quad*>();
 		expr_pt->falselist = new std::vector<quad*>();
-		union values t_val;
-		t_val.boolConst = true;
-		expr *true_exp = new expr(CONSTBOOL_E, NULL, expr_pt, t_val);
-		emit(IF_EQ_OP, NULL, expr_pt, true_exp, 0, yylineno);
+		emit(IF_EQ_OP, NULL, expr_pt, newexpr_constbool(true), 0, yylineno);
 		expr_pt->truelist->push_back(quad_vec[quad_vec.size()-1]);
 		emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 		expr_pt->falselist->push_back(quad_vec[quad_vec.size()-1]);

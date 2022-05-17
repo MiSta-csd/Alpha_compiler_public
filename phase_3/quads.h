@@ -37,8 +37,6 @@ struct expr {
 	union values value;
 	std::vector<quad*> *truelist;
 	std::vector<quad*> *falselist;
-
-	/* expr* next; */
 	expr();
 	expr(expr_t type, st_entry *sym, expr *index, union values value);
 }typedef expr;
@@ -52,6 +50,24 @@ typedef struct quad {
 	unsigned line;
 }quad;
 
+typedef struct call {
+	expr* elist;
+	unsigned char method;
+	std::string *name;
+}call;
+
+struct stmt_t {
+int breakList, contList;
+}typedef stmt_t;
+
+void make_stmt (stmt_t* s);
+
+int newlist (int i);
+
+void patchlist (int list, int label);
+
+int mergelist (int l1, int l2);
+
 void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 		unsigned line);
 
@@ -60,4 +76,3 @@ void print_quads();
 unsigned int get_current_quad();
 
 unsigned int get_next_quad();
-

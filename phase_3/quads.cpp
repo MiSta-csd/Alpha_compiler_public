@@ -19,7 +19,9 @@ void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 }
 
 expr::expr() {
-
+	sym = NULL;
+	index = NULL;
+	truelist = falselist = NULL;
 }
 
 expr::expr(expr_t type, st_entry *sym, expr *index, union values value) {
@@ -111,9 +113,33 @@ unsigned int get_next_quad() {
 	return quad_vec.size() + 1;
 }
 
-void erase_expressions() {
-	// for (unsigned i = 0; i < expr_vec.size(); ++i) {
-	// 	free(expr_vec[i]);
-	// } // den kanoume free giati trwme skato sto print
-	tmp_var_count = 0;
+void make_stmt (stmt_t* s) {
+	 s->breakList = s->contList = 0;
+ }
+
+int newlist (int i) {
+	quad_vec[i]->label = 0;
+	return i;
+}
+
+void patchlist (int list, int label) {
+	while (list) {
+		int next = quad_vec[list]->label;
+		quad_vec[list]->label = label;
+		list = next;
+	}
+}
+
+int mergelist (int l1, int l2) {
+	if (!l1)
+		return l2;
+	else if (!l2)
+		return l1;
+	else {
+		int i = l1;
+		while (quad_vec[i]->label)
+			i = quad_vec[i]->label;
+		quad_vec[i]->label = l2;
+		return l1;
+	}
 }
