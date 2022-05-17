@@ -31,8 +31,9 @@ expr::expr(expr_t type, st_entry *sym, expr *index, union values value) {
 	this->value = value;
 }
 
-call::call(std::string name, unsigned char method) {
-	this->elist = new std::vector<expr*>;
+call::call(std::string name, unsigned char method, std::vector<expr*> *elist) {
+	/* this->elist = new std::vector<expr*>(*elist); */ // WARNING! : Might be wrong.
+	this->elist = elist;
 	this->name = new std::string(name);
 	this->method = method;
 }

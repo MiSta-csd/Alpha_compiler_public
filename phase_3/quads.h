@@ -54,7 +54,7 @@ typedef struct call {
 	std::vector<expr*> *elist;
 	unsigned char method;
 	std::string *name;
-	call(std::string name, unsigned char method);
+	call(std::string name, unsigned char method, std::vector<expr*> *elist);
 }call;
 
 struct stmt_t {

@@ -158,11 +158,9 @@ expr * emit_iftableitem (expr *e) {
 	}
 }
 
-
-expr * emit_ifbool(expr *ex) {
+expr* emit_branch_quads(expr *ex) {
 	assert(ex);
-	if(!ex->sym)
-		ex->sym = newtemp();
+	
 	backpatch(ex->truelist, get_next_quad());
 	backpatch(ex->falselist, get_next_quad() + 2);
 
@@ -172,6 +170,27 @@ expr * emit_ifbool(expr *ex) {
 
 	return ex;
 }
+
+/* BENEFACToR */
+expr* emit_ifbool(expr *operant)
+{
+    assert(operant);
+    expr *e = operant;
+    if(operant->type == BOOLEXPR_E){
+        e = newexpr(BOOLEXPR_E);
+        e->sym = newtemp();
+
+        backpatch(operant->truelist, get_next_quad());
+        backpatch(operant->falselist, get_next_quad() + 2);
+
+        emit(ASSIGN_OP, e, newexpr_constbool(true), NULL, 0, yylineno);
+        emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
+        emit(ASSIGN_OP, e, newexpr_constbool(false), NULL, 0, yylineno);
+    }
+    return e;
+}
+
+
 
 /*
  *@brief makes new member item expression

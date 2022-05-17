@@ -31,6 +31,8 @@ expr *newexpr_constdouble(double);
 
 expr * emit_iftableitem (expr *e);
 
+expr* emit_branch_quads(expr *ex);
+
 expr * emit_ifbool(expr *operand);
 
 expr * member_item (expr* lv, std::string *name);

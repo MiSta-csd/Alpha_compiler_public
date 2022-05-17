@@ -137,7 +137,7 @@ stmts		: stmts stmt 				{
 stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											resettemp();
 											if($1->truelist) {
-												emit_ifbool($1);
+												emit_branch_quads($1);
 											}
 	  									}
 			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
@@ -304,17 +304,6 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 		   							 		if(!member_flag && $1->sym && ($1->sym->type==LIB_FUNC || $1->sym->type==USER_FUNC) ) {
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
-												// if(!$3)
-												// 	$$ = NULL;
-												// else {
-												// 	if($3->truelist) {// or falselist
-												// 		emit_ifbool($3);
-												// 	}
-												// 	emit(ASSIGN_OP, $1, $3, NULL, 0, yylineno);
-												// 	st_entry *st_tmp_entry = newtemp();
-												// 	$$ = new expr(VAR_E, st_tmp_entry, $3, $3->value);
-												// 	emit(ASSIGN_OP, $$, $1, NULL, 0, yylineno);
-												// }
 												if($1->type == TABLEITEM_E) {
 													emit(TABLESETELEM_OP, $1, $1->index, $3, get_next_quad(), yylineno);
 													$$ = emit_iftableitem($1);
@@ -322,7 +311,7 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 												}
 												else {
 													if($3->truelist) {// or falselist
-														emit_ifbool($3);
+														emit_branch_quads($3);
 													}
 													emit(ASSIGN_OP, $1, $3, NULL, 0, yylineno);
 													$$ = new expr(VAR_E, newtemp(), $3, $3->value);
@@ -431,7 +420,7 @@ tableitem	: lvalue DOT ID				{
 										}
 			| lvalue LBRACK expr RBRACK	{
 											print_rules("8+.2 tableitem -> lvalue [ expr ]");
-											expr *e = emit_ifbool($3);
+											expr *e = emit_branch_quads($3);
 											$1 = emit_iftableitem($1);
 											$$ = newexpr(TABLEITEM_E);
 											$$->sym = $1->sym;
@@ -499,24 +488,28 @@ normcall	: LPAREN elist RPAREN		{	print_rules("12.1 normcall -> ( elist )");
 // Rule 13.
 methodcall	: DOTDOT ID LPAREN elist RPAREN
 										{
-											//$$ = call()
-											//$$->elist = $4
-											//$$->method = 1;
-											//$$->name = $2;
+											print_rules("13.1 methodcall -> . . id ( elist )");
+											$$ = call($2, 1, $4);
 									    }
 			;
 // Rule 14.
-elist		: expr 						{	
+elist		: expr 						{	/// x, t, y
 											print_rules("14.1 elist -> expr");
-										
+											$$ = new std::vector<expr*>;
+											/* if($1->type == BOOLEXPR) {
+												
+											} */
+											$$->push_back(emit_ifbool($1));
 										}
 			| elist COMMA expr 			{	
 											print_rules("14.2 elist -> elist , expr");
-										
+											assert($1);
+											$1->push_back(emit_ifbool($3));
 										}
-			| 							{	
+			| 	/* THis rule may be palced in rule 12: methodcall */
+										{	
 											print_rules("14.3 elist -> ε");
-											
+											$$ = new std::vector<expr*>;
 										}
 			;
 // Rule 15.
@@ -688,7 +681,7 @@ idlist		: ID 						{
 ifprefix	: IF LPAREN expr RPAREN		{
 											print_rules("23.1 ifprefix -> if ( expr )");
 											$3 = true_test($3);
-											$3 = emit_ifbool($3);
+											$3 = emit_branch_quads($3);
 											expr *result = quad_vec.back()->result;
 											emit(IF_EQ_OP, NULL, result, newexpr_constbool(true), get_next_quad() + 2, yylineno);
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
@@ -722,9 +715,9 @@ whilestart	: WHILE						{	++loopcounter;	$$ = get_next_quad();}
 		   	;
 whilesecond	: LPAREN expr RPAREN		{
 											$2 = true_test($2);
-											emit_ifbool($2);
-											emit(IF_EQ_OP, $2, newexpr_constbool(true), NULL, get_next_quad()+2, yylineno);
-											$$ = get_next_quad();
+											emit_branch_quads($2);
+											emit(IF_EQ_OP, NULL, $2, newexpr_constbool(true), get_next_quad()+2, yylineno);
+											$$ = get_current_quad();
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			;
