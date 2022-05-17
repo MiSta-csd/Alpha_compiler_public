@@ -31,10 +31,10 @@ expr::expr(expr_t type, st_entry *sym, expr *index, union values value) {
 	this->value = value;
 }
 
-call::call(std::string name, unsigned char method, std::vector<expr*> *elist) {
+call::call(std::string *name, unsigned char method, std::vector<expr*> *elist) {
 	/* this->elist = new std::vector<expr*>(*elist); */ // WARNING! : Might be wrong.
 	this->elist = elist;
-	this->name = new std::string(name);
+	this->name = name;
 	this->method = method;
 }
 
@@ -62,7 +62,7 @@ void print_quads() {
 						std::cout << quad->arg1->value.doubleConst << " ";
 						break;
 					case CONSTSTRING_E:
-						std::cout << "\"" << quad->arg1->value.strConst << "\" ";
+						std::cout << *quad->arg1->value.strConst << " ";
 						break;
 					case CONSTBOOL_E:
 						// std::cout << (quad->arg1->value.boolConst == true? "'true'" : "'false'") << " ";

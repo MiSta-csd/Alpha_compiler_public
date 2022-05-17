@@ -15,6 +15,7 @@
 #include "quads.h"
 #include "actions.h"
 #include <unordered_map>
+#include <utility>
 
 bool member_flag = false;// why?
 int yyerror(std::string message);
@@ -60,6 +61,8 @@ void print_rules(std::string str) {
 	bool boolean;
 	std::vector<expr*> *exprVec;
 	struct stmt_t *stmt_pt;
+	std::pair<expr*, expr*> *pairVal;
+	std::vector<std::pair<expr*, expr*>* > *pairVec;
 }
 
 %token<intConst> INTEGER 
@@ -82,7 +85,8 @@ void print_rules(std::string str) {
 %type <intConst> funcargs
 
 %type <exprVec> elist;
-%type <exprVec> indexed;
+%type <pairVec> indexed;
+%type <pairVal> indexedelem;
 
 %type<callVal> callsuffix
 %type<callVal> normcall
@@ -150,12 +154,12 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");
 											make_stmt($$);
-											$$->breakList = newlist(get_next_quad());
+											$$->breakList = newlist(get_current_quad());// kanei apla to label qv[i] 0 kai epistrefei i -.-
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");
 											make_stmt($$);
-											$$->contList = newlist(get_next_quad());
+											$$->contList = newlist(get_current_quad());
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			| block						{	print_rules("3.8 stmt -> block");
@@ -448,23 +452,23 @@ member		: tableitem					{
 			;
 // Rule 10.				
 call		: call normcall				{	print_rules("10.1 member -> call ( elist )");
-											//$1 = make_call($1, $3);
+											$$ = make_call($1, $2->elist);
 										}
 			| lvalue callsuffix			{	print_rules("10.2 member -> lvalue callsuffix");
 											$1 = emit_iftableitem($1);
 											if ($2->method){
-												expr* t= $1;
+												expr* t = $1;
 												$1 = emit_iftableitem(member_item(t, $2->name));
-												//$2->elist->next = t; 
+												$2->elist->push_back(t);
 											}
-											//$$ = make_call($1, $2->elist);
+											$$ = make_call($1, $2->elist);
 										}
 			| LPAREN funcdef RPAREN LPAREN elist RPAREN
 										{
 											print_rules("10.3 member -> ( funcdef ) ( elist )");
 											expr* func = newexpr(PROGRAMFUNC_E);
 											func->sym = $2;
-											//$$ = make_call(func, $5);
+											$$ = make_call(func, $5);
 										}
 			;
 // Rule 11.
@@ -477,9 +481,7 @@ callsuffix	: normcall					{	print_rules("11.1 member -> normcall");
 			;
 // Rule 12.
 normcall	: LPAREN elist RPAREN		{	print_rules("12.1 normcall -> ( elist )");
-											//$$->elist = $2;
-											$$->method = 0;
-											//$$->name = NULL;
+											$$ = new call(NULL, 0, $2);
 									    }
 /* 			| LPAREN RPAREN				{
 											print_rules("12.2 normcall -> ( )");
@@ -489,11 +491,11 @@ normcall	: LPAREN elist RPAREN		{	print_rules("12.1 normcall -> ( elist )");
 methodcall	: DOTDOT ID LPAREN elist RPAREN
 										{
 											print_rules("13.1 methodcall -> . . id ( elist )");
-											$$ = call($2, 1, $4);
+											$$ = new call($2, 1, $4);
 									    }
 			;
 // Rule 14.
-elist		: expr 						{	/// x, t, y
+elist		: expr 						{
 											print_rules("14.1 elist -> expr");
 											$$ = new std::vector<expr*>;
 											/* if($1->type == BOOLEXPR) {
@@ -506,23 +508,70 @@ elist		: expr 						{	/// x, t, y
 											assert($1);
 											$1->push_back(emit_ifbool($3));
 										}
-			| 	/* THis rule may be palced in rule 12: methodcall */
+			| 	/* THis rule may have to be palced in rule 12: normcall */
 										{	
 											print_rules("14.3 elist -> ε");
 											$$ = new std::vector<expr*>;
 										}
 			;
 // Rule 15.
-objectdef	: LBRACK elist RBRACK 		{	print_rules("15.1 objectdef -> [ elist ]");}
-			| LBRACK indexed RBRACK 	{	print_rules("15.2 objectdef -> [ indexed ]");}
+objectdef	: LBRACK elist RBRACK 		{	
+											print_rules("15.1 objectdef -> [ elist ]");
+											expr* t = newexpr(NEWTABLE_E);
+											t->sym = newtemp();
+											emit(TABLECREATE_OP, t, NULL, NULL, get_next_quad(), yylineno);
+
+											for(int i=0; i < ($2->size()); ++i){
+												emit(
+													TABLESETELEM_OP, 
+													t, 
+													newexpr_constint(i), 
+													(*$2)[i], 
+													get_next_quad(), yylineno);
+											}
+											$$ = t;
+										}
+			| LBRACK indexed RBRACK 	{	
+											print_rules("15.2 objectdef -> [ indexed ]");
+											expr* t = newexpr(NEWTABLE_E);
+											t->sym = newtemp();
+											emit(TABLECREATE_OP, t, NULL, NULL, get_next_quad(), yylineno);
+
+											for(int i=0; i < ($2->size()); ++i){
+												emit(
+													TABLESETELEM_OP, 
+													t, 
+													(*$2)[i]->first, 
+													(*$2)[i]->second, 
+													get_next_quad(), yylineno);
+											}
+											$$ = t;
+										}
 			;
 // Rule 16.
-indexed		: indexedelem 				{	print_rules("16.1 indexed -> indexedelem");}
-			| indexed COMMA indexedelem	{	print_rules("16.2 indexed ->  indexed , indexedelem");}
+indexed		: indexedelem 				{	
+											print_rules("16.1 indexed -> indexedelem");
+											std::vector<std::pair<expr*, 
+											expr*>* >* v = new std::vector<std::pair<expr*, 
+											expr*>* >();
+											v->push_back($1);	/*  pair, not *pair  */
+										}
+			| indexed COMMA indexedelem	{	
+											print_rules("16.2 indexed ->  indexed , indexedelem");
+											assert($1);
+											$1->push_back($3);
+											$$ = $1;  /* Praying that it calls deep copy ctor */
+										}
 			;
 // Rule 17.
 indexedelem	: LCBRACK expr COLON expr 	
-			  RCBRACK					{	print_rules("17.1 indexedelem -> { expr : expr }");}
+			  RCBRACK					{	
+				  							print_rules("17.1 indexedelem -> { expr : expr }");
+											std::pair<expr*,expr*>* p = new std::pair<expr*,expr*>;
+											p->first = emit_ifbool($2);
+											p->second = emit_ifbool($4);
+											$$ = p;	  
+										}
 			;
 // Rule 18.
 block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
@@ -561,6 +610,7 @@ funcname    : ID						{
 													yyerror("UNHANDLED CASE ?\nonoma: " + st_entry_tmp["r19"]->name +
 													" typos: " + std::to_string(st_entry_tmp["r19"]->type) + 
 													" grammh: " + std::to_string(st_entry_tmp["r19"]->line));
+													assert(0);
 												}
 												st_entry_tmp["r19"] = NULL;
 											}

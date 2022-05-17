@@ -33,7 +33,7 @@ struct quad;
 struct expr {
 	expr_t type;
 	st_entry *sym;
-	expr *index;
+	expr *index;	
 	union values value;
 	std::vector<quad*> *truelist;
 	std::vector<quad*> *falselist;
@@ -54,8 +54,9 @@ typedef struct call {
 	std::vector<expr*> *elist;
 	unsigned char method;
 	std::string *name;
-	call(std::string name, unsigned char method, std::vector<expr*> *elist);
+	call(std::string *name, unsigned char method, std::vector<expr*> *elist);
 }call;
+
 
 struct stmt_t {
 int breakList, contList;

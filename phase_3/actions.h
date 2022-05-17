@@ -37,7 +37,7 @@ expr * emit_ifbool(expr *operand);
 
 expr * member_item (expr* lv, std::string *name);
 
-expr * make_call (expr* lv, std::vector<expr*> exp_vec);
+expr * make_call (expr* lv, std::vector<expr*> *exp_vec);
 
 void resettemp();
 
