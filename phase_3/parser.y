@@ -77,7 +77,6 @@ void print_rules(std::string str) {
 %token LCBRACK RCBRACK LBRACK RBRACK LPAREN RPAREN SEMICOLON COMMA COLON COLONCOLON DOT DOTDOT
 
 %type<expr_p> expr const assignexpr term primary ifprefix call
-%type<intConst> elseprefix
 %type program
 %type <expr_p>objectdef returnstmt
 %type <intConst> idlist
@@ -94,17 +93,20 @@ void print_rules(std::string str) {
 %type <expr_p> tableitem;
 %type <expr_p> member
 
-%type <intConst> whilestart;
-%type <intConst> whilesecond;
-%type <stmt_pt> whilestmt;
 %type <stmt_pt> stmts stmt
+%type <intConst> whilestart whilesecond
+%type <stmt_pt> whilestmt
+%type <stmt_pt> forstmt
+%type<intConst> M
+%type <stmt_pt> ifstmt
+%type<intConst> elseprefix
+
+%type<expr_p> block
 
 %type<st_entryVal> funcdef funcprefix
 %type<strConst> funcname
 %type<intConst> funcbody
 %type<expr_p> lvalue
-%type<intConst> M
-%type<expr_p> block
 						  // Operator Tokens Hierarchy
 %right 		ASSIGN
 %left 		OR
@@ -130,9 +132,11 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											$$->breakList = mergelist($1->breakList, $2->breakList);
-                                 			$$->contList = mergelist($1->contList,  $2->contList);
-                                			//$$.returnList = mergelist($1->returnList, $2->returnList);
+											if($1 || $2){
+												$$->breakList = mergelist($1->breakList, $2->breakList);
+												$$->contList = mergelist($1->contList,  $2->contList);
+												//$$.returnList = mergelist($1->returnList, $2->returnList);
+											}
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
 			;
@@ -143,29 +147,44 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 												backpatch($1->truelist, get_next_quad());
         										backpatch($1->falselist, get_next_quad() + 2);
 												emit_branch_assign_quads($1);
+												$$ = NULL;
+											}else {
+												$$= NULL;// TODO don't know what's needed yet
 											}
 	  									}
 			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
 										}
 			| whilestmt					{	print_rules("3.3 stmt -> whilestmt");
+											$$ = new stmt_t();
+											make_stmt($$);
+											/* $$->returnList = $1->returnList; */ // apo benefactor
 										}
 			| forstmt					{	print_rules("3.4 stmt -> forstmt");
 										}
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");
-											assert(loopcounter);// TODO make it error
-											$$ = new stmt_t();
-											make_stmt($$);
-											$$->breakList = newlist(get_current_quad());// kanei apla to label qv[i] 0 kai epistrefei i -.-
-											emit(JUMP_OP, NULL, NULL, NULL, 22, yylineno);// TODO
+											if(!loopcounter) {
+												yyerror("break stmt outside loop has no use");
+												$$ = NULL;
+											}else {// we are in loop for sure
+												$$ = new stmt_t();
+												make_stmt($$);
+												$$->breakList = newlist(get_next_quad());
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+											}
 										}
 			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");
 											assert(loopcounter);
-											$$ = new stmt_t();
-											make_stmt($$);
-											$$->contList = newlist(get_current_quad());
-											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+											if(!loopcounter) {
+												yyerror("continue stmt outside loop has no use");
+												$$ = NULL;
+											}else {// we are in loop for sure
+												$$ = new stmt_t();
+												make_stmt($$);
+												$$->contList = newlist(get_next_quad());
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+											}
 										}
 			| block						{	print_rules("3.8 stmt -> block");
 										}
@@ -836,8 +855,10 @@ whilestmt	: whilestart whilesecond stmt
 											patchlabel($2, get_next_quad());
 											$$ = new stmt_t();
 											make_stmt($$);
-											patchlist($$->breakList, get_next_quad());
-											patchlist($$->contList, $1);
+											if($3 != NULL) {
+												patchlist($3->breakList, get_next_quad());
+												patchlist($3->contList, $1);
+											}
 											--loopcounter;
 										}
 			;
