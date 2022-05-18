@@ -140,7 +140,7 @@ stmts		: stmts stmt 				{
 // Rule 3.
 stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											resettemp();
-											if($1->truelist) {
+											if($1->type == BOOLEXPR_E) {
 												emit_branch_quads($1);
 											}
 	  									}
@@ -314,7 +314,7 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
                                         			$$->type = VAR_E;
 												}
 												else {
-													if($3->truelist) {// or falselist
+													if($3->type == BOOLEXPR_E) {
 														emit_branch_quads($3);
 													}
 													emit(ASSIGN_OP, $1, $3, NULL, 0, yylineno);
@@ -731,13 +731,15 @@ idlist		: ID 						{
 ifprefix	: IF LPAREN expr RPAREN		{
 											print_rules("23.1 ifprefix -> if ( expr )");
 											$3 = true_test($3);
-											$3 = emit_branch_quads($3);
-											expr *result = quad_vec.back()->result;
-											emit(IF_EQ_OP, NULL, result, newexpr_constbool(true), get_next_quad() + 2, yylineno);
-											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-											result->falselist = new std::vector<quad*>();
-											result->falselist->push_back(quad_vec.back());// pushback the jump so i can backpatch
-											$$ = result;
+											if($3->type == BOOLEXPR_E) {
+												$3 = emit_branch_quads($3);
+												expr *result = quad_vec.back()->result;
+												emit(IF_EQ_OP, NULL, $3, newexpr_constbool(true), get_next_quad() + 2, yylineno);
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+											}
+											$3->falselist = new std::vector<quad*>();
+											$3->falselist->push_back(quad_vec.back());// pushback the jump so i can backpatch
+											$$ = $3;
 										}
 			;
 
@@ -765,10 +767,13 @@ whilestart	: WHILE						{	++loopcounter;	$$ = get_next_quad();}
 		   	;
 whilesecond	: LPAREN expr RPAREN		{
 											$2 = true_test($2);
-											emit_branch_quads($2);
-											emit(IF_EQ_OP, NULL, $2, newexpr_constbool(true), get_next_quad()+2, yylineno);
-											$$ = get_current_quad();
-											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+											if($2->type == BOOLEXPR_E) {
+												emit_branch_quads($2);
+												emit(IF_EQ_OP, NULL, $2, newexpr_constbool(true), get_next_quad()+2, yylineno);
+												$$ = get_current_quad();
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+											}else 
+												$$ = get_current_quad()-1;
 										}
 			;
 whilestmt	: whilestart whilesecond stmt
