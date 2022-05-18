@@ -33,7 +33,7 @@ struct quad;
 struct expr {
 	expr_t type;
 	st_entry *sym;
-	expr *index;	
+	expr *index;
 	union values value;
 	std::vector<int> *truelist;
 	std::vector<int> *falselist;

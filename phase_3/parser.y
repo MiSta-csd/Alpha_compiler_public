@@ -29,7 +29,6 @@ extern unsigned tmp_var_count;
 union values emptyval;
 
 /* for short circuit eval purpose */
-static expr *aux_expr_for_true_test;
 
 /* Auxiliary var for storing each rule's id value (e.g. entry["rule8.1"] = id) returned
  * from lookup (e.g at $1) */
@@ -131,8 +130,8 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											/* $$->breakList = mergelist($1->breakList, $2->breakList); */
-           /*                      			$$->contList = mergelist($1->contList,  $2->contList); */
+											$$->breakList = mergelist($1->breakList, $2->breakList);
+                                 			$$->contList = mergelist($1->contList,  $2->contList);
                                 			//$$.returnList = mergelist($1->returnList, $2->returnList);
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
@@ -141,7 +140,9 @@ stmts		: stmts stmt 				{
 stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											resettemp();
 											if($1->type == BOOLEXPR_E) {
-												emit_branch_quads($1);
+												backpatch($1->truelist, get_next_quad());
+        										backpatch($1->falselist, get_next_quad() + 2);
+												emit_branch_assign_quads($1);
 											}
 	  									}
 			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
@@ -153,11 +154,11 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");
-											assert(loopcounter);
+											assert(loopcounter);// TODO make it error
 											$$ = new stmt_t();
 											make_stmt($$);
 											$$->breakList = newlist(get_current_quad());// kanei apla to label qv[i] 0 kai epistrefei i -.-
-											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+											emit(JUMP_OP, NULL, NULL, NULL, 22, yylineno);// TODO
 										}
 			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");
 											assert(loopcounter);
@@ -236,25 +237,26 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");
 											$$ = expr_compare_expr($1, IF_NOTEQ_OP, $3);
 										}
-			| expr AND {aux_expr_for_true_test = true_test($1);} M expr
+			| expr AND {$1 = true_test($1);} M expr
 										{	print_rules("4.13 expr -> expr AND expr");
 											expr *expr2 = true_test($5);
-											backpatch(aux_expr_for_true_test->truelist, $4);
+											backpatch($1->truelist, $4);
 											union values val;// ginetai apotimhsh ths logikhs ekfrashs amesws kai apo8 sto BOOLEX quad
-											val.boolConst = aux_expr_for_true_test->value.boolConst && expr2->value.boolConst;
-											$$ = new expr(BOOLEXPR_E, expr2->sym, NULL, val);
+											val.boolConst = $1->value.boolConst && expr2->value.boolConst;
+
+											$$ = new expr(BOOLEXPR_E, newtemp(), NULL, val);
 											$$->truelist = expr2->truelist;
-											$$->falselist = merge(aux_expr_for_true_test->falselist, expr2->falselist);
+											$$->falselist = merge($1->falselist, expr2->falselist);
 										}
-			| expr OR {aux_expr_for_true_test = true_test($1);} M expr
+			| expr OR {$1 = true_test($1);} M expr
 										{	print_rules("4.14 expr -> expr OR expr");
 											expr *expr2 = true_test($5);
-											backpatch(aux_expr_for_true_test->falselist, $4);
+											backpatch($1->falselist, $4);
 											union values val;// ginetai apotimhsh ths logikhs ekfrashs amesws kai apo8 sto BOOLEX quad
-											val.boolConst = aux_expr_for_true_test->value.boolConst || expr2->value.boolConst;
-											$$ = new expr(BOOLEXPR_E, expr2->sym, NULL, val);
+											val.boolConst = $1->value.boolConst || expr2->value.boolConst;
+											$$ = new expr(BOOLEXPR_E, newtemp(), NULL, val);
 											$$->falselist = expr2->falselist;
-											$$->truelist = merge(aux_expr_for_true_test->truelist, expr2->truelist);
+											$$->truelist = merge($1->truelist, expr2->truelist);
 										}
 			| term						{	print_rules("4.15 expr -> term");
 											$$ = $1;
@@ -265,15 +267,20 @@ M 			:							{	$$ = get_next_quad();}
 			;
 
 // Rule 5.
-term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
+term		: LPAREN expr RPAREN		{	
+											print_rules("5.1 term -> ( expr )");
 											$$ = $2;
 	  									}
 			| MINUS expr %prec UMINUS	{	
 											print_rules("5.2 term -> - expr");
-			
+											check_arith($2, "MINUS expr \%UMINUS");
+											$$ = newexpr(ARITHEXPR_E);
+											$$->sym = (istempexpr($2)) ? $2->sym : newtemp();
+											emit(UMINUS_OP, $$, $2, NULL, get_next_quad(), yylineno);
 										}
 
-			| NOT expr					{	print_rules("5.3 term -> NOT expr");
+			| NOT expr					{	
+											print_rules("5.3 term -> NOT expr");
 											$$ = true_test($2);
 											std::vector<int> *tmp = $$->truelist;
 											$$->truelist = $$->falselist;
@@ -284,11 +291,34 @@ term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 											if($2->sym->type == USER_FUNC || $2->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
 											}
+											if($2->type == TABLEITEM_E) {
+												$$ = emit_iftableitem($2);
+												emit(ADD_OP, $$, newexpr_constint(1), $$, get_next_quad(), yylineno);
+												emit(TABLESETELEM_OP, $2, $2->index, $$, get_next_quad(), yylineno);
+											}
+											else {
+												emit(ADD_OP, $2, newexpr_constint(1), $2, get_next_quad(), yylineno);
+												$$ = newexpr(ARITHEXPR_E);
+												$$->sym = newtemp();
+												emit(ASSIGN_OP, $$, $2, NULL, get_next_quad(), yylineno);
+											}
 										}
 			| lvalue PLUSPLUS			{
 											print_rules("5.5 term -> lvalue ++");
 											if($1->sym->type == USER_FUNC || $1->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
+											}
+											$$ = newexpr(VAR_E);
+											$$->sym = newtemp();
+											if($1->type == TABLEITEM_E) {
+												expr *val = emit_iftableitem($1);
+												emit(ASSIGN_OP, $$, val, NULL, get_next_quad(), yylineno);
+												emit(ADD_OP, val, newexpr_constint(1), val, get_next_quad(), yylineno);
+												emit(TABLESETELEM_OP, $1, $1->index, val, get_next_quad(), yylineno);
+											}
+											else {
+												emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
+												emit(ADD_OP, $1, newexpr_constint(1), $1, get_next_quad(), yylineno);
 											}
 										}
 			| MINUSMINUS lvalue			{
@@ -296,11 +326,34 @@ term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 											if($2->sym->type == USER_FUNC || $2->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
 											}
+											if($2->type == TABLEITEM_E) {
+												$$ = emit_iftableitem($2);
+												emit(SUB_OP, $$, newexpr_constint(1), $$, get_next_quad(), yylineno);
+												emit(TABLESETELEM_OP, $2, $2->index, $$, get_next_quad(), yylineno);
+											}
+											else {
+												emit(SUB_OP, $2, newexpr_constint(1), $2, get_next_quad(), yylineno);
+												$$ = newexpr(ARITHEXPR_E);
+												$$->sym = newtemp();
+												emit(ASSIGN_OP, $$, $2, NULL, get_next_quad(), yylineno);
+											}
 										}
 			| lvalue MINUSMINUS			{
 											print_rules("5.7 term ->  lvalue --");
 											if($1->sym->type == USER_FUNC || $1->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
+											}
+											$$ = newexpr(VAR_E);
+											$$->sym = newtemp();
+											if($1->type == TABLEITEM_E) {
+												expr *val = emit_iftableitem($1);
+												emit(ASSIGN_OP, $$, val, NULL, get_next_quad(), yylineno);
+												emit(SUB_OP, val, newexpr_constint(1), val, get_next_quad(), yylineno);
+												emit(TABLESETELEM_OP, $1, $1->index, val, get_next_quad(), yylineno);
+											}
+											else {
+												emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
+												emit(SUB_OP, $1, newexpr_constint(1), $1, get_next_quad(), yylineno);
 											}
 										}
 			| primary					{	print_rules("5.8 term -> primary");
@@ -318,8 +371,10 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
                                         			$$->type = VAR_E;
 												}
 												else {
-													if($3->type == BOOLEXPR_E) {
-														emit_branch_quads($3);
+													if($3->type == BOOLEXPR_E) {									
+														backpatch($3->truelist, get_next_quad());
+														backpatch($3->falselist, get_next_quad() + 2);
+														emit_branch_assign_quads($3);
 													}
 													emit(ASSIGN_OP, $1, $3, NULL, 0, yylineno);
 													$$ = new expr(VAR_E, newtemp(), $3, $3->value);
@@ -402,6 +457,7 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 											if(!st_entry_tmp["r8"]){
 												yyerror("No global variable "+*$2+" exists.");
 												$$ = NULL;
+												assert(st_entry_tmp["r8"]);
 											}
 											else {
 												$$ = lvalue_expr (st_entry_tmp["r8"]);
@@ -419,7 +475,7 @@ tableitem	: lvalue DOT ID				{
 										}
 			| lvalue LBRACK expr RBRACK	{
 											print_rules("8+.2 tableitem -> lvalue [ expr ]");
-											expr *e = emit_branch_quads($3);
+											expr *e = emit_ifbool($3);
 											$1 = emit_iftableitem($1);
 											$$ = newexpr(TABLEITEM_E);
 											$$->sym = $1->sym;
@@ -727,13 +783,14 @@ ifprefix	: IF LPAREN expr RPAREN		{
 											print_rules("23.1 ifprefix -> if ( expr )");
 											$3 = true_test($3);
 											if($3->type == BOOLEXPR_E) {
-												$3 = emit_branch_quads($3);
-												expr *result = quad_vec.back().result;
+												backpatch($3->truelist, get_next_quad());
+												backpatch($3->falselist, get_next_quad() + 2);
+												$3 = emit_branch_assign_quads($3);
 												emit(IF_EQ_OP, NULL, $3, newexpr_constbool(true), get_next_quad() + 2, yylineno);
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
 											$3->falselist = new std::vector<int>();
-											$3->falselist->push_back(get_current_quad());// pushback the jump so i can backpatch
+											$3->falselist->push_back(get_current_quad()-1);// pushback the jump so i can backpatch
 											$$ = $3;
 										}
 			;
@@ -763,7 +820,9 @@ whilestart	: WHILE						{	++loopcounter;	$$ = get_next_quad();}
 whilesecond	: LPAREN expr RPAREN		{
 											$2 = true_test($2);
 											if($2->type == BOOLEXPR_E) {
-												emit_branch_quads($2);
+												backpatch($2->truelist, get_next_quad());
+												backpatch($2->falselist, get_next_quad() + 2);
+												emit_branch_assign_quads($2);
 												emit(IF_EQ_OP, NULL, $2, newexpr_constbool(true), get_next_quad()+2, yylineno);
 												$$ = get_current_quad();
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
@@ -777,8 +836,8 @@ whilestmt	: whilestart whilesecond stmt
 											patchlabel($2, get_next_quad());
 											$$ = new stmt_t();
 											make_stmt($$);
-											/* patchlist($$->breakList, get_next_quad()); */
-											/* patchlist($$->contList, $1); */
+											patchlist($$->breakList, get_next_quad());
+											patchlist($$->contList, $1);
 											--loopcounter;
 										}
 			;
@@ -829,7 +888,7 @@ int main(int argc, char** argv) {
 		yyin = stdin;
 	}
 	st_initialize();
-    while( yyparse() != 0);
+    yyparse();
 	validate_comments();
 	// st_print_table();
 	print_quads();

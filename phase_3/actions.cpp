@@ -158,11 +158,8 @@ expr * emit_iftableitem (expr *e) {
 	}
 }
 
-expr* emit_branch_quads(expr *ex) {
+expr* emit_branch_assign_quads(expr *ex) {
 	assert(ex);
-	
-	backpatch(ex->truelist, get_next_quad());
-	backpatch(ex->falselist, get_next_quad() + 2);
 
 	emit(ASSIGN_OP, ex, newexpr_constbool(true), NULL, 0, yylineno);
 	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
@@ -171,7 +168,7 @@ expr* emit_branch_quads(expr *ex) {
 	return ex;
 }
 
-/* BENEFACToR */
+/*  */
 expr* emit_ifbool(expr *operant)
 {
     assert(operant);
@@ -183,9 +180,7 @@ expr* emit_ifbool(expr *operant)
         backpatch(operant->truelist, get_next_quad());
         backpatch(operant->falselist, get_next_quad() + 2);
 
-        emit(ASSIGN_OP, e, newexpr_constbool(true), NULL, 0, yylineno);
-        emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
-        emit(ASSIGN_OP, e, newexpr_constbool(false), NULL, 0, yylineno);
+		emit_branch_assign_quads(e);
     }
     return e;
 }
@@ -214,14 +209,14 @@ expr * make_call (expr* lv, std::vector<expr*> *exp_vec) {
 			(*exp_vec)[i],
 			NULL,
 			NULL,
-			get_next_quad(),
+			0,
 			yylineno
 		);
 	}
-	emit(CALL_OP, func, NULL, NULL, get_next_quad(), yylineno);
+	emit(CALL_OP, func, NULL, NULL, 0, yylineno);
 	expr* result = newexpr(VAR_E);
 	result->sym = newtemp();
-	emit(GETRETVAL_OP, result, NULL, NULL, get_next_quad(),yylineno);
+	emit(GETRETVAL_OP, result, NULL, NULL, 0,yylineno);
 	return result;
 }
 
@@ -232,9 +227,9 @@ expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	expr_pt->truelist = new std::vector<int>();
 	expr_pt->falselist = new std::vector<int>();
 	emit(opcode, NULL, arg1, arg2, 0, yylineno);
-	expr_pt->truelist->push_back(get_current_quad());
+	expr_pt->truelist->push_back(get_current_quad()-1);
 	emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-	expr_pt->falselist->push_back(get_current_quad());
+	expr_pt->falselist->push_back(get_current_quad()-1);
 	return expr_pt;
 }
 
@@ -358,7 +353,7 @@ void patchlabel (unsigned quadNo, unsigned label) {
 
 void backpatch(std::vector<int> *vi, unsigned label){  
 	for(int i = 0; i < vi->size(); ++i){
-		quad_vec[i].label = label;
+		quad_vec[(*vi)[i]].label = label;
 	}
 }
 
@@ -386,6 +381,7 @@ expr* true_test(expr* ex) {
 				}
 				break;
 			case CONSTBOOL_E:
+				val.boolConst = ex->value.boolConst;
 				const_flag = 1;
 				break;
 			case TABLEITEM_E:
@@ -420,14 +416,15 @@ expr* true_test(expr* ex) {
 		if(!const_flag)// for printing the desired output as quad in case of constant check
 			expr_pt = new expr(BOOLEXPR_E, ex->sym, ex, val);
 		else {
-			expr_pt = ex;
+			expr_pt = ex;//newexpr(ex->type);
+			//expr_pt->value = val;
 		}
 		expr_pt->truelist = new std::vector<int>();
 		expr_pt->falselist = new std::vector<int>();
 		emit(IF_EQ_OP, NULL, expr_pt, newexpr_constbool(true), 0, yylineno);
-		expr_pt->truelist->push_back(get_current_quad());
+		expr_pt->truelist->push_back(get_current_quad()-1);
 		emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-		expr_pt->falselist->push_back(get_current_quad());
+		expr_pt->falselist->push_back(get_current_quad()-1);
 		return expr_pt;
 	}
 	return ex;

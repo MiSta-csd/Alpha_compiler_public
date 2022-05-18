@@ -31,7 +31,7 @@ expr *newexpr_constdouble(double);
 
 expr * emit_iftableitem (expr *e);
 
-expr* emit_branch_quads(expr *ex);
+expr* emit_branch_assign_quads(expr *ex);
 
 expr * emit_ifbool(expr *operand);
 
