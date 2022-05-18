@@ -8,6 +8,8 @@ std::vector<quad> quad_vec;
 
 unsigned tmp_var_count = 0;
 
+unsigned loop_scope = 0;
+
 void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 		unsigned line) {
 	quad_vec.push_back({.op = op,
@@ -121,7 +123,7 @@ unsigned int get_next_quad() {
 }
 
 void make_stmt (stmt_t* s) {
-	 s->breakList = s->contList = 0;
+	 s->breakList = s->contList = s->retList = 0;
  }
 
 int newlist (int i) {

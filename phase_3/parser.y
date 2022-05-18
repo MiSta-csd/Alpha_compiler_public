@@ -62,6 +62,7 @@ void print_rules(std::string str) {
 	struct stmt_t *stmt_pt;
 	std::pair<expr*, expr*> *pairVal;
 	std::vector<std::pair<expr*, expr*>* > *pairVec;
+	struct forstmt_t *forVal;
 }
 
 %token<intConst> INTEGER 
@@ -94,14 +95,19 @@ void print_rules(std::string str) {
 %type <expr_p> member
 
 %type <stmt_pt> stmts stmt
+
 %type <intConst> whilestart whilesecond
 %type <stmt_pt> whilestmt
+
 %type <stmt_pt> forstmt
+%type <forVal> forprefix
+%type <intConst> N
+
 %type<intConst> M
 %type <stmt_pt> ifstmt
 %type<intConst> elseprefix
 
-%type<expr_p> block
+%type<stmt_pt> block
 
 %type<st_entryVal> funcdef funcprefix
 %type<strConst> funcname
@@ -169,8 +175,8 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 												$$ = NULL;
 											}else {// we are in loop for sure
 												$$ = new stmt_t();
-												make_stmt($$);
-												$$->breakList = newlist(get_next_quad());
+												make_stmt($$);// makes breakList=contList=0
+												$$->breakList = get_next_quad();// newlist(get_next_quad();
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
 										}
@@ -187,6 +193,7 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											}
 										}
 			| block						{	print_rules("3.8 stmt -> block");
+											$$ = $1;
 										}
 			| funcdef					{	print_rules("3.9 stmt -> funcdef");
 										}
@@ -282,7 +289,10 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 										}
 			;
 
-M 			:							{	$$ = get_next_quad();}
+M 			:							{	
+											print_rules("4+ M -> ε");
+											$$ = get_next_quad();
+										}
 			;
 
 // Rule 5.
@@ -645,10 +655,12 @@ indexedelem	: LCBRACK expr COLON expr
 			;
 // Rule 18.
 block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
-											st_increase_scope();}
+											st_increase_scope();
+										}
 	   		  stmts RCBRACK 			{
 											st_hide(st_get_scope());
 											st_decrease_scope();
+											$$ = $3;
 										}
 			;
 // Rule 19.
@@ -824,12 +836,17 @@ elseprefix	: ELSE						{
 ifstmt		: ifprefix stmt				{
 											print_rules("23.3 ifstmt -> ifprefix stmt");
 											backpatch($1->falselist, get_next_quad());
+											$$ = $2;
 										}
 			| ifprefix stmt elseprefix stmt
 										{
 											print_rules("23.4 ifstmt -> ifstmt -> ifprefix stmt elseprefix stmt");
 											backpatch($1->falselist, $3+2);
 											patchlabel($3, get_next_quad());
+											/* $2->breakList = mergelist($2->breakList, $4->breakList); */ // benefactoras 
+											/* $2->contList = mergelist($2->contList,  $4->contList); */
+											/* $2->returnList = mergelist($2->returnList, $4->returnList); */
+											/* $$ = $2; */ // omws trwme skato
 										}
 			;
 			
@@ -850,7 +867,8 @@ whilesecond	: LPAREN expr RPAREN		{
 										}
 			;
 whilestmt	: whilestart whilesecond stmt
-		  								{	print_rules("24.1 whilestmt -> while ( expr ) stmt");
+		  								{
+											print_rules("24.1 whilestmt -> while ( expr ) stmt");
 											emit(JUMP_OP, NULL, NULL, NULL, $1, yylineno);
 											patchlabel($2, get_next_quad());
 											$$ = new stmt_t();
@@ -863,10 +881,31 @@ whilestmt	: whilestart whilesecond stmt
 										}
 			;
 // Rule 25.
-forstmt		: FOR LPAREN elist SEMICOLON expr SEMICOLON elist RPAREN stmt {
+forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
+										{
+											print_rules("25- forprefix -> for ( elist ; expr ;");
+											
+										}
+/* 			| FOR LPAREN SEMICOLON M expr SEMICOLON
+										{
+											// May not be needed: elist can be empty.
+										} */
+			;
+
+forstmt		: forprefix N elist RPAREN N stmt N 
+										{
 		 									print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");
+												$$ = new stmt_t();
+												make_stmt($$);
 										}
 			;
+
+N 			:							{
+											$$ = get_next_quad();
+                							emit(JUMP_OP, NULL, NULL, NULL, -1, yylineno);
+										}
+			;
+
 // Rule 26.
 returnstmt 	: RETURN SEMICOLON 			{
 											print_rules("26.1 returnstmt -> return ;");

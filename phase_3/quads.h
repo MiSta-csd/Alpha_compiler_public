@@ -57,8 +57,14 @@ typedef struct call {
 	call(std::string *name, unsigned char method, std::vector<expr*> *elist);
 }call;
 
+typedef struct for_stmt
+{
+    int test;
+    int enter;
+}for_stmt;
+
 struct stmt_t {
-	int breakList, contList;
+	int breakList, contList, retList;
 }typedef stmt_t;
 
 void make_stmt (stmt_t* s);
