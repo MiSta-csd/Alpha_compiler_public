@@ -35,8 +35,8 @@ struct expr {
 	st_entry *sym;
 	expr *index;	
 	union values value;
-	std::vector<quad*> *truelist;
-	std::vector<quad*> *falselist;
+	std::vector<int> *truelist;
+	std::vector<int> *falselist;
 	expr();
 	expr(expr_t type, st_entry *sym, expr *index, union values value);
 }typedef expr;
@@ -57,9 +57,8 @@ typedef struct call {
 	call(std::string *name, unsigned char method, std::vector<expr*> *elist);
 }call;
 
-
 struct stmt_t {
-int breakList, contList;
+	int breakList, contList;
 }typedef stmt_t;
 
 void make_stmt (stmt_t* s);

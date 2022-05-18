@@ -5,7 +5,7 @@
 #include <string>
 
 extern unsigned tmp_var_count;
-extern std::vector<quad*> quad_vec;
+extern std::vector<quad> quad_vec;
 extern int yylineno;
 
 st_entry* newtemp() {
@@ -229,12 +229,12 @@ expr * make_call (expr* lv, std::vector<expr*> *exp_vec) {
 expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	expr *expr_pt = newexpr(BOOLEXPR_E);
 	expr_pt->sym = newtemp();
-	expr_pt->truelist = new std::vector<quad*>();
-	expr_pt->falselist = new std::vector<quad*>();
+	expr_pt->truelist = new std::vector<int>();
+	expr_pt->falselist = new std::vector<int>();
 	emit(opcode, NULL, arg1, arg2, 0, yylineno);
-	expr_pt->truelist->push_back(quad_vec.back());
+	expr_pt->truelist->push_back(get_current_quad());
 	emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-	expr_pt->falselist->push_back(quad_vec.back());
+	expr_pt->falselist->push_back(get_current_quad());
 	return expr_pt;
 }
 
@@ -261,7 +261,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 
 		enum iopcode prev_op;// gia na borei na douleyei h veltistopoihsh swsta
 		if(quad_vec.size()){
-			prev_op = quad_vec[quad_vec.size()-1]->op;
+			prev_op = quad_vec[quad_vec.size()-1].op;
 		}else { prev_op = opcode;}
 		
 		// if(opcode == MOD_OP){
@@ -352,26 +352,17 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 }
 
 void patchlabel (unsigned quadNo, unsigned label) {
-	assert(quadNo < get_current_quad() && !quad_vec[quadNo]->label);
-	quad_vec[quadNo]->label = label;
+	assert(quadNo < get_current_quad() && !quad_vec[quadNo].label);
+	quad_vec[quadNo].label = label;
 }
 
-void backpatch(std::vector<quad*> *vq, unsigned label){  
-	for(int i = 0; i < vq->size(); ++i){
-		(*vq)[i]->label = label;
+void backpatch(std::vector<int> *vi, unsigned label){  
+	for(int i = 0; i < vi->size(); ++i){
+		quad_vec[i].label = label;
 	}
 }
 
-void patchlabel(quad* q, unsigned label) {
-	q->label = label;
-}
-
-// expr* newexpr_const (unsigned int b) {
-// 	expr* e = new_expr()
-// 	return e;
-// }
-
-std::vector<quad*>* merge(std::vector<quad*>* list1, std::vector<quad*>* list2){
+std::vector<int>* merge(std::vector<int>* list1, std::vector<int>* list2){
 	for(int i = 0; i < list2->size(); ++i){
 		list1->push_back((*list2)[i]);
 	}
@@ -431,12 +422,12 @@ expr* true_test(expr* ex) {
 		else {
 			expr_pt = ex;
 		}
-		expr_pt->truelist = new std::vector<quad*>();
-		expr_pt->falselist = new std::vector<quad*>();
+		expr_pt->truelist = new std::vector<int>();
+		expr_pt->falselist = new std::vector<int>();
 		emit(IF_EQ_OP, NULL, expr_pt, newexpr_constbool(true), 0, yylineno);
-		expr_pt->truelist->push_back(quad_vec.back());
+		expr_pt->truelist->push_back(get_current_quad());
 		emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-		expr_pt->falselist->push_back(quad_vec.back());
+		expr_pt->falselist->push_back(get_current_quad());
 		return expr_pt;
 	}
 	return ex;

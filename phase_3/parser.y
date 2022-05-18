@@ -20,7 +20,7 @@
 bool member_flag = false;// why?
 int yyerror(std::string message);
 
-extern std::vector<quad*> quad_vec;
+extern std::vector<quad> quad_vec;
 extern int yylineno;
 extern char *yytext;
 extern FILE *yyin;
@@ -131,8 +131,8 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											$$->breakList = mergelist($1->breakList, $2->breakList);
-                                			$$->contList = mergelist($1->contList,  $2->contList);
+											/* $$->breakList = mergelist($1->breakList, $2->breakList); */
+           /*                      			$$->contList = mergelist($1->contList,  $2->contList); */
                                 			//$$.returnList = mergelist($1->returnList, $2->returnList);
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
@@ -153,11 +153,15 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");
+											assert(loopcounter);
+											$$ = new stmt_t();
 											make_stmt($$);
 											$$->breakList = newlist(get_current_quad());// kanei apla to label qv[i] 0 kai epistrefei i -.-
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");
+											assert(loopcounter);
+											$$ = new stmt_t();
 											make_stmt($$);
 											$$->contList = newlist(get_current_quad());
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
@@ -271,7 +275,7 @@ term		: LPAREN expr RPAREN		{	print_rules("5.1 term -> ( expr )");
 
 			| NOT expr					{	print_rules("5.3 term -> NOT expr");
 											$$ = true_test($2);
-											std::vector<quad*> *tmp = $$->truelist;
+											std::vector<int> *tmp = $$->truelist;
 											$$->truelist = $$->falselist;
 											$$->falselist = tmp;
 										}
@@ -321,15 +325,6 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 													$$ = new expr(VAR_E, newtemp(), $3, $3->value);
 													emit(ASSIGN_OP, $$, $1, NULL, 0, yylineno);
 												}
-												// else{
-												// 	emit(ASSIGN_OP, $1, $3, NULL, 0, yylineno);
-												// 	expr *e = newexpr(VAR_E);
-												// 	e->value = $3->value;
-												// 	e->index = $3;
-												// 	e->sym = newtemp();
-												// 	emit(ASSIGN_OP, e, $1, NULL, 0, yylineno);
-												// 	$$ = e;
-												// }
 											}
 											if(member_flag) {
 												member_flag = false;
@@ -668,7 +663,7 @@ funcdef		: funcprefix funcargs funcbody  {
 												if(st_entry_tmp["r19"]) {
 													func_stack.pop();
 												}
-												patchlabel(quad_vec[$1->iaddress], get_next_quad());
+												patchlabel($1->iaddress, get_next_quad());
 												/* $1->jump_quad->label = get_next_quad(); */
                                         	}
 			;
@@ -733,12 +728,12 @@ ifprefix	: IF LPAREN expr RPAREN		{
 											$3 = true_test($3);
 											if($3->type == BOOLEXPR_E) {
 												$3 = emit_branch_quads($3);
-												expr *result = quad_vec.back()->result;
+												expr *result = quad_vec.back().result;
 												emit(IF_EQ_OP, NULL, $3, newexpr_constbool(true), get_next_quad() + 2, yylineno);
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
-											$3->falselist = new std::vector<quad*>();
-											$3->falselist->push_back(quad_vec.back());// pushback the jump so i can backpatch
+											$3->falselist = new std::vector<int>();
+											$3->falselist->push_back(get_current_quad());// pushback the jump so i can backpatch
 											$$ = $3;
 										}
 			;
@@ -758,7 +753,7 @@ ifstmt		: ifprefix stmt				{
 										{
 											print_rules("23.4 ifstmt -> ifstmt -> ifprefix stmt elseprefix stmt");
 											backpatch($1->falselist, $3+2);
-											patchlabel(quad_vec[$3], get_next_quad());
+											patchlabel($3, get_next_quad());
 										}
 			;
 			
@@ -779,11 +774,11 @@ whilesecond	: LPAREN expr RPAREN		{
 whilestmt	: whilestart whilesecond stmt
 		  								{	print_rules("24.1 whilestmt -> while ( expr ) stmt");
 											emit(JUMP_OP, NULL, NULL, NULL, $1, yylineno);
-											patchlabel(quad_vec[$2], get_next_quad());
+											patchlabel($2, get_next_quad());
 											$$ = new stmt_t();
 											make_stmt($$);
-											patchlist($$->breakList, get_next_quad());
-											patchlist($$->contList, $1);
+											/* patchlist($$->breakList, get_next_quad()); */
+											/* patchlist($$->contList, $1); */
 											--loopcounter;
 										}
 			;
