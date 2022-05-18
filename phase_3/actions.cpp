@@ -148,10 +148,10 @@ expr * emit_iftableitem (expr *e) {
 		result->sym = newtemp();
 		emit(
 			TABLEGETELEM_OP,
+			result,
 			e,
 			e->index,
-			result,
-			0, /* nextquadlabel() */
+			get_next_quad(),
 			yylineno
 			);
 		return result;
@@ -226,7 +226,7 @@ expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	expr_pt->sym = newtemp();
 	expr_pt->truelist = new std::vector<int>();
 	expr_pt->falselist = new std::vector<int>();
-	emit(opcode, NULL, arg1, arg2, 0, yylineno);
+	emit(opcode, NULL, arg1, arg2, get_next_quad(), yylineno);
 	expr_pt->truelist->push_back(get_current_quad()-1);
 	emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 	expr_pt->falselist->push_back(get_current_quad()-1);

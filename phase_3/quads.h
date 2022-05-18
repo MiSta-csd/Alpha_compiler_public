@@ -57,8 +57,7 @@ typedef struct call {
 	call(std::string *name, unsigned char method, std::vector<expr*> *elist);
 }call;
 
-typedef struct for_stmt
-{
+typedef struct for_stmt{
     int test;
     int enter;
 }for_stmt;

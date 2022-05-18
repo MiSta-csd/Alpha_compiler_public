@@ -21,6 +21,7 @@ bool member_flag = false;// why?
 int yyerror(std::string message);
 
 extern std::vector<quad> quad_vec;
+extern std::stack<int> loop_stack;
 extern int yylineno;
 extern char *yytext;
 extern FILE *yyin;
@@ -61,8 +62,8 @@ void print_rules(std::string str) {
 	std::vector<expr*> *exprVec;
 	struct stmt_t *stmt_pt;
 	std::pair<expr*, expr*> *pairVal;
-	std::vector<std::pair<expr*, expr*>* > *pairVec;
-	struct forstmt_t *forVal;
+	std::vector<std::pair<expr*, expr*>* > *pairVec; 
+	struct for_stmt *forVal; /* doesn't need to be pointer */
 }
 
 %token<intConst> INTEGER 
@@ -79,10 +80,10 @@ void print_rules(std::string str) {
 
 %type<expr_p> expr const assignexpr term primary ifprefix call
 %type program
-%type <expr_p>objectdef returnstmt
+%type <expr_p>objectdef 
 %type <intConst> idlist
 %type <intConst> funcargs
-
+%type <intConst> returnstmt
 %type <exprVec> elist;
 %type <pairVec> indexed;
 %type <pairVal> indexedelem;
@@ -96,7 +97,7 @@ void print_rules(std::string str) {
 
 %type <stmt_pt> stmts stmt
 
-%type <intConst> whilestart whilesecond
+%type <intConst> whilestart whilecond
 %type <stmt_pt> whilestmt
 
 %type <stmt_pt> forstmt
@@ -138,11 +139,11 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											if($1 || $2){
-												$$->breakList = mergelist($1->breakList, $2->breakList);
-												$$->contList = mergelist($1->contList,  $2->contList);
-												//$$.returnList = mergelist($1->returnList, $2->returnList);
-											}
+											// if($1 || $2){
+											// 	$$->breakList = mergelist($1->breakList, $2->breakList);
+											// 	$$->contList = mergelist($1->contList,  $2->contList);
+											// 	//$$.returnList = mergelist($1->returnList, $2->returnList);
+											// }
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
 			;
@@ -405,9 +406,9 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 														backpatch($3->falselist, get_next_quad() + 2);
 														emit_branch_assign_quads($3);
 													}
-													emit(ASSIGN_OP, $1, $3, NULL, 0, yylineno);
+													emit(ASSIGN_OP, $1, $3, NULL, get_next_quad(), yylineno);
 													$$ = new expr(VAR_E, newtemp(), $3, $3->value);
-													emit(ASSIGN_OP, $$, $1, NULL, 0, yylineno);
+													emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
 												}
 											}
 											if(member_flag) {
@@ -662,6 +663,7 @@ block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 											st_decrease_scope();
 											$$ = $3;
 										}
+			| LCBRACK RCBRACK			{	print_rules("18.2 block -> { }");	}  
 			;
 // Rule 19.
 funcname    : ID						{
@@ -715,7 +717,7 @@ funcprefix  : FUNCTION funcname			{
                                             expr *tmp_expr;
 											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
                                             tmp_expr = new expr(PROGRAMFUNC_E, $$, NULL, emptyval);
-                                            emit(FUNCSTART_OP, tmp_expr, NULL, NULL, 0, yylineno);
+                                            emit(FUNCSTART_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
 											pushscopeoffsetstack(currscopeoffset());
 											st_increase_scope();
 											enterscopespace();
@@ -746,7 +748,7 @@ funcdef		: funcprefix funcargs funcbody  {
 												$$ = $1;
 												expr *tmp_expr;
 												tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, emptyval);
-												emit(FUNCEND_OP, tmp_expr, NULL, NULL, 0, yylineno);
+												emit(FUNCEND_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
 												if(st_entry_tmp["r19"]) {
 													func_stack.pop();
 												}
@@ -804,7 +806,8 @@ idlist		: ID 						{
 											incformalArgOffset();
 											$$ = currscopeoffset();
 										}
-			|							{print_rules("21.3 empty id_list");
+			|							{
+											print_rules("21.3 empty id_list");
 											
 										}
 			;
@@ -853,7 +856,7 @@ ifstmt		: ifprefix stmt				{
 // Rule 24.
 whilestart	: WHILE						{	++loopcounter;	$$ = get_next_quad();}
 		   	;
-whilesecond	: LPAREN expr RPAREN		{
+whilecond	: LPAREN expr RPAREN		{
 											$2 = true_test($2);
 											if($2->type == BOOLEXPR_E) {
 												backpatch($2->truelist, get_next_quad());
@@ -866,7 +869,7 @@ whilesecond	: LPAREN expr RPAREN		{
 												$$ = get_current_quad()-1;
 										}
 			;
-whilestmt	: whilestart whilesecond stmt
+whilestmt	: whilestart whilecond stmt
 		  								{
 											print_rules("24.1 whilestmt -> while ( expr ) stmt");
 											emit(JUMP_OP, NULL, NULL, NULL, $1, yylineno);
@@ -884,7 +887,12 @@ whilestmt	: whilestart whilesecond stmt
 forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 										{
 											print_rules("25- forprefix -> for ( elist ; expr ;");
-											
+											loop_stack.push(st_get_scope());
+											$$ = new for_stmt();
+											$$->test = $5;
+											$$->enter = get_next_quad();
+											expr* e = emit_ifbool($6);
+											emit(IF_EQ_OP, NULL, e, newexpr_constbool(1), 0, yylineno);
 										}
 /* 			| FOR LPAREN SEMICOLON M expr SEMICOLON
 										{
@@ -895,6 +903,7 @@ forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 forstmt		: forprefix N elist RPAREN N stmt N 
 										{
 		 									print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");
+												loop_stack.pop();
 												$$ = new stmt_t();
 												make_stmt($$);
 										}
@@ -902,7 +911,7 @@ forstmt		: forprefix N elist RPAREN N stmt N
 
 N 			:							{
 											$$ = get_next_quad();
-                							emit(JUMP_OP, NULL, NULL, NULL, -1, yylineno);
+                							emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			;
 
@@ -912,18 +921,20 @@ returnstmt 	: RETURN SEMICOLON 			{
 											if (func_stack.empty()){
 												yyerror("Use of 'return' while not in a function\n");
 											}else {
-												emit(RET_OP, NULL, NULL, NULL, 0, yylineno);
+												emit(RET_OP, NULL, NULL, NULL, get_next_quad(), yylineno);
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
+											$$ = get_next_quad();
 										}
 			| RETURN expr SEMICOLON 	{
 											print_rules("26.2 returnstmt -> return expr ;");
 											if (func_stack.empty()){
 												yyerror("Use of 'return' while not in a function\n");
 											}else {
-												emit(RET_OP, $2, NULL, NULL, 0, yylineno);
+												emit(RET_OP, $2, NULL, NULL, 0, get_next_quad());
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
-											/* emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno); */
+											$$ = get_next_quad();
 										}
 			;
 

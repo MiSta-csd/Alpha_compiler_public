@@ -3,12 +3,15 @@
 #include <assert.h>
 #include <vector>
 #include <string>
+#include <stack>
 
 std::vector<quad> quad_vec;
 
+std::stack<int> loop_stack;
+
 unsigned tmp_var_count = 0;
 
-unsigned loop_scope = 0;
+/* unsigned loop_scope = 0; */
 
 void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 		unsigned line) {
@@ -92,7 +95,7 @@ void print_quads() {
 						std::cout << quad.arg2->value.doubleConst << " ";
 						break;
 					case CONSTSTRING_E:
-						std::cout << quad.arg2->value.strConst << " ";
+						std::cout << *quad.arg2->value.strConst << " ";
 						break;
 					case CONSTBOOL_E:
 						std::cout << (quad.arg2->value.boolConst == true? "'true'" : "'false'") << " ";
