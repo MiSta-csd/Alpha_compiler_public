@@ -903,9 +903,17 @@ forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 forstmt		: forprefix N elist RPAREN N stmt N 
 										{
 		 									print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");
-												loop_stack.pop();
-												$$ = new stmt_t();
-												make_stmt($$);
+											loop_stack.pop();
+											/* $$ = new stmt_t(); // Kwstas code lines
+											make_stmt($$); */
+											patchlabel($1->enter, $5 + 1);
+											patchlabel($2, get_next_quad());
+											patchlabel($5, $1->test);
+											patchlabel($7, $2 + 1);
+
+											patchlist($6->breakList, get_next_quad());
+											patchlist($6->contList, $2 + 1);
+											$$ = $6;
 										}
 			;
 
