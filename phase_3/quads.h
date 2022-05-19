@@ -62,9 +62,10 @@ typedef struct for_stmt{
     int enter;
 }for_stmt;
 
-struct stmt_t {
+typedef struct stmt_t {
 	int breakList, contList, retList;
-}typedef stmt_t;
+	stmt_t();
+} stmt_t;
 
 void make_stmt (stmt_t* s);
 

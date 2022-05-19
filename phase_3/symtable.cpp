@@ -22,7 +22,7 @@ st_entry *st_insert(std::string name, enum st_entry_type type) {
 	st_entry *new_entry;
 	assert(new_entry = new st_entry);
 	*new_entry = {true,  name, type,
-		(type == USER_FUNC) ? new std::vector<st_entry *> : NULL,
+		// (type == USER_FUNC) ? new std::vector<st_entry *> : NULL,
 		scope, (unsigned)yylineno};
 	symbol_table[scope].push_back(*new_entry);
 	return new_entry;
@@ -91,18 +91,18 @@ int st_hide(unsigned int scope_input) {
 	return 0;
 }
 
-int load_2_arglist(struct st_entry *arg) {
-	f_arg_list.push_back(arg);
-	return 0;
-}
+// int load_2_arglist(struct st_entry *arg) {
+// 	f_arg_list.push_back(arg);
+// 	return 0;
+// }
 
-int offload_arglist(st_entry *func) {
-	assert(func->type == USER_FUNC);
-	assert(func->argList);
-	*(func->argList) = f_arg_list;
-	f_arg_list.clear();
-	return 0;
-}
+// int offload_arglist(st_entry *func) {
+// 	assert(func->type == USER_FUNC);
+// 	assert(func->argList);
+// 	*(func->argList) = f_arg_list;
+// 	f_arg_list.clear();
+// 	return 0;
+// }
 
 void st_set_inloop(bool b) { in_loop = b; }
 

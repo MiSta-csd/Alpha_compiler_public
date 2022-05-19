@@ -63,7 +63,7 @@ void print_quads() {
 			std::cout << quad.result->sym->name << " ";
 		}
 		if(quad.arg1) {
-			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E) {
+			if(quad.arg1->sym) {
 				std::cout << quad.arg1->sym->name << " ";
 			}else {
 				switch (quad.arg1->type) {
@@ -77,8 +77,6 @@ void print_quads() {
 						std::cout << *quad.arg1->value.strConst << " ";
 						break;
 					case CONSTBOOL_E:
-						// std::cout << (quad.arg1->value.boolConst == true? "'true'" : "'false'") << " ";
-					// 	break;
 					case BOOLEXPR_E:
 						std::cout << (quad.arg1->value.boolConst == true? "'true'" : "'false'") << " ";
 						break;
@@ -91,7 +89,7 @@ void print_quads() {
 			}
 		}
 		if(quad.arg2) {
-			if(quad.arg2->sym && quad.arg2->type != CONSTBOOL_E) {
+			if(quad.arg2->sym) {
 				std::cout << quad.arg2->sym->name << " ";
 			}else {
 				switch (quad.arg2->type) {
@@ -132,6 +130,10 @@ unsigned int get_current_quad() {
 
 unsigned int get_next_quad() {
 	return quad_vec.size() + 1;
+}
+
+stmt_t::stmt_t(){
+	this->breakList = this->contList = this->retList = 0;
 }
 
 void make_stmt (stmt_t* s) {

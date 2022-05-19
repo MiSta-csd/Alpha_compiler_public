@@ -11,14 +11,16 @@ extern int yylineno;
 st_entry* newtemp() {
 	st_entry *st_tmp_entry;
 	std::string tmp_name;
-	if(tmp_var_count)
+	/* if(tmp_var_count)
 		tmp_name = "^" + std::to_string(tmp_var_count-1);
 	else
 		tmp_name = newtempname();
 	if(!(st_tmp_entry = st_lookup(tmp_name) )) {
 		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-	}
-	return st_tmp_entry;
+	} */	// Kwstas original code
+	tmp_name = newtempname();
+	st_tmp_entry = st_lookup(tmp_name, st_get_scope());
+	return (st_tmp_entry) ? st_tmp_entry : (st_tmp_entry = st_insert(tmp_name, LOCAL_VAR));
 }
 
 std::string newtempname() {
@@ -51,6 +53,7 @@ std::string exp_type_to_string(expr *ex){
 			return (ex->value.boolConst == true? "'true'" : "'false'");
 		case CONSTDOUBLE_E:
 			return std::to_string(ex->value.doubleConst);
+		case ARITHEXPR_E:
 		case VAR_E:
 			return ex->sym->name;
 		case CONSTINT_E:
@@ -201,8 +204,6 @@ expr * member_item (expr* lv, std::string *name) {
 
 expr * make_call (expr* lv, std::vector<expr*> *expr_vec) {
 	expr * func = emit_iftableitem(lv);
-	if (st_lookup(func->sym->name)){
-	}
 	for(int i = expr_vec->size() - 1; i >= 0; --i ){
 		emit(
 			PARAM_OP,
@@ -375,11 +376,8 @@ expr* true_test(expr* ex) {
 			case ARITHEXPR_E:
 			case ASSIGNEXPR_E:
 			case VAR_E:
-				if(ex->index)
-					val.boolConst = true;
-				else {
-					val.boolConst = false;
-				}
+				val = ex->value;
+				const_flag = 1;// den einai const alla se quad while(x) == while(1);
 				break;
 			case CONSTBOOL_E:
 				val.boolConst = ex->value.boolConst;
@@ -392,18 +390,18 @@ expr* true_test(expr* ex) {
 				val.boolConst = true;
 				break;
 			case CONSTINT_E:
-				// ex->value.boolConst = !!ex->value.intConst;
+				val.boolConst = !!ex->value.intConst;
 				const_flag = 1;
 				break;
 			case CONSTSTRING_E:
-				// ex->value.boolConst = true;
+				val.boolConst = true;
 				const_flag = 1;
 				break;
 			case CONSTDOUBLE_E:
-				// if(ex->value.doubleConst == 0.0)
-				// 	ex->value.boolConst = false;
-				// else
-				// 	ex->value.boolConst = true;
+				if(ex->value.doubleConst == 0.0)
+					val.boolConst = false;
+				else
+					val.boolConst = true;
 				const_flag = 1;
 				break;
 			case NIL_E:
@@ -417,8 +415,9 @@ expr* true_test(expr* ex) {
 		if(!const_flag)// for printing the desired output as quad in case of constant check
 			expr_pt = new expr(BOOLEXPR_E, ex->sym, ex, val);
 		else {
-			expr_pt = ex;//newexpr(ex->type);
-			//expr_pt->value = val;
+			expr_pt = newexpr(ex->type);// for printing correctly i need to know that type != boolexpr_e
+			expr_pt->sym = newtemp();
+			expr_pt->value = val;
 		}
 		expr_pt->truelist = new std::vector<int>();
 		expr_pt->falselist = new std::vector<int>();

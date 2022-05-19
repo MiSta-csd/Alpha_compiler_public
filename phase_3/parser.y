@@ -141,7 +141,7 @@ stmts		: stmts stmt 				{
 											print_rules("2.1 stmts -> stmts stmt");
 											if(!$1 && !$2) {
 												$$ = new stmt_t();
-												make_stmt($$);
+												//make_stmt($$);
 											}else if(!$1) {
 												$$ = $2;
 											}else if(!$2) {
@@ -150,7 +150,7 @@ stmts		: stmts stmt 				{
 											else {
 												$$->breakList = mergelist($1->breakList, $2->breakList);
 												$$->contList = mergelist($1->contList,  $2->contList);
-												//$$->returnList = mergelist($1->returnList, $2->returnList);
+												$$->retList = mergelist($1->retList, $2->retList);
 											}
 
 										}
@@ -165,8 +165,7 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 												emit_branch_assign_quads($1);
 												$$ = NULL;
 											}else {
-												$$ = new stmt_t();// TODO don't know what's needed yet
-												make_stmt($$);
+												$$ = new stmt_t();// new stmt_t calls make_stmt
 											}
 	  									}
 			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
@@ -174,12 +173,15 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 										}
 			| whilestmt					{	print_rules("3.3 stmt -> whilestmt");
 											$$ = $1;
-											/* $$->returnList = $1->returnList; */ // apo benefactor
+											$$->retList = $1->retList;
 										}
 			| forstmt					{	print_rules("3.4 stmt -> forstmt");
 											$$ = $1;
+											$$->retList = $1->retList;
 										}
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
+											$$ = new stmt_t();
+											$$->retList = $1;
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");			
 											if(!loopcounter) {
@@ -187,8 +189,7 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 												$$ = NULL;
 											}else {// we are in loop for sure
 												$$ = new stmt_t();
-												make_stmt($$);// makes breakList=contList=0
-												$$->breakList = get_next_quad();// newlist(get_next_quad();
+												$$->breakList = get_current_quad();// newlist(get_next_quad();
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
 										}
@@ -199,8 +200,7 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 												$$ = NULL;
 											}else {// we are in loop for sure
 												$$ = new stmt_t();
-												make_stmt($$);
-												$$->contList = newlist(get_next_quad());
+												$$->contList = newlist(get_current_quad());
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
 										}
@@ -209,11 +209,12 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 										}
 			| funcdef					{	print_rules("3.9 stmt -> funcdef");
 											$$ = new stmt_t();
-											make_stmt($$);
+											//make_stmt($$);
 										}
 			| SEMICOLON					{	print_rules("3.10 stmt -> ;");	$$ = NULL;
 											$$ = new stmt_t();
-											make_stmt($$);}
+											//make_stmt($$);
+										}
 			;
 
 // Rule 4.
@@ -555,7 +556,7 @@ call		: call normcall				{	print_rules("10.1 member -> call ( elist )");
 											if ($2->method){
 												expr* t = $1;
 												$1 = emit_iftableitem(member_item(t, $2->name));
-												$2->elist->push_back(t);
+												$2->elist->insert($2->elist->begin(),t); //v.insert(v.begin(), 6);
 											}
 											$$ = make_call($1, $2->elist);
 										}
@@ -742,9 +743,9 @@ funcprefix  : FUNCTION funcname			{
 
 funcargs:   LPAREN idlist RPAREN  		{
 											$$ = $2;										
-											if(st_entry_tmp["r19"]){
-												offload_arglist(st_entry_tmp["r19"]);
-											}
+											// if(st_entry_tmp["r19"]){
+											// 	offload_arglist(st_entry_tmp["r19"]);
+											// }
 											enterscopespace();
 											resetfunctionlocalsoffset();
 											st_decrease_scope();
@@ -800,7 +801,7 @@ idlist		: ID 						{
 											}
 											else {
 												st_entry_tmp["r21"] = st_insert(*$1, FORMAL_ARG);
-												load_2_arglist(st_entry_tmp["r21"]);
+												// load_2_arglist(st_entry_tmp["r21"]);
 											}
 											incformalArgOffset();
 											$$ = currscopeoffset();
@@ -816,14 +817,14 @@ idlist		: ID 						{
 											}
 											else{
 												st_entry_tmp["r21"] = st_insert(*$3, FORMAL_ARG);
-												load_2_arglist(st_entry_tmp["r21"]);
+												// load_2_arglist(st_entry_tmp["r21"]);
 											}
 											incformalArgOffset();
 											$$ = currscopeoffset();
 										}
 			|							{
 											print_rules("21.3 empty id_list");
-											
+											$$ = currscopeoffset();
 										}
 			;
 
@@ -861,10 +862,10 @@ ifstmt		: ifprefix stmt				{
 											print_rules("23.4 ifstmt -> ifstmt -> ifprefix stmt elseprefix stmt");
 											backpatch($1->falselist, $3+2);
 											patchlabel($3, get_next_quad());
-											/* $2->breakList = mergelist($2->breakList, $4->breakList); */ // benefactoras 
-											/* $2->contList = mergelist($2->contList,  $4->contList); */
-											/* $2->returnList = mergelist($2->returnList, $4->returnList); */
-											/* $$ = $2; */ // omws trwme skato
+											$2->breakList = mergelist($2->breakList, $4->breakList);
+											$2->contList = mergelist($2->contList,  $4->contList);
+											$2->retList = mergelist($2->retList, $4->retList);
+											$$ = $2;
 										}
 			;
 			
@@ -880,22 +881,22 @@ whilecond	: LPAREN expr RPAREN		{
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}else // case i have while(true) ...
 												$$ = get_current_quad()-1;
+											loop_stack.push(st_get_scope());
 										}
 			;
 whilestmt	: whilestart whilecond stmt
 		  								{
 											print_rules("24.1 whilestmt -> while ( expr ) stmt");
-											emit(JUMP_OP, NULL, NULL, NULL, $1, yylineno);
-											patchlabel($2, get_next_quad());
+											loop_stack.pop();
 											$$ = new stmt_t();
-											make_stmt($$);
 											if($3 != NULL) {
-												patchlist($3->breakList, get_next_quad());
+												patchlist($3->breakList, get_next_quad()+1);
 												patchlist($3->contList, $1);
 											} else {
 												$$ = new stmt_t();
-												make_stmt($$);
 											}
+											emit(JUMP_OP, NULL, NULL, NULL, $1, yylineno);
+											patchlabel($2, get_next_quad());
 											--loopcounter;
 										}
 			;
@@ -908,20 +909,14 @@ forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 											$$->test = $5;
 											$$->enter = get_next_quad();
 											expr* e = handle_bool_e($6);
-											emit(IF_EQ_OP, NULL, e, newexpr_constbool(1), 0, yylineno);
+											emit(IF_EQ_OP, NULL, e, newexpr_constbool(true), 0, yylineno);
 										}
-/* 			| FOR LPAREN SEMICOLON M expr SEMICOLON
-										{
-											// May not be needed: elist can be empty.
-										} */
 			;
 
-forstmt		: forprefix N elist RPAREN N stmt N 
+forstmt		: forprefix N elist RPAREN N stmt N
 										{
 		 									print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");
 											loop_stack.pop();
-											/* $$ = new stmt_t(); // Kwstas code lines
-											make_stmt($$); */
 											patchlabel($1->enter, $5 + 1);
 											patchlabel($2, get_next_quad());
 											patchlabel($5, $1->test);
@@ -946,19 +941,19 @@ returnstmt 	: RETURN SEMICOLON 			{
 												yyerror("Use of 'return' while not in a function\n");
 											}else {
 												emit(RET_OP, NULL, NULL, NULL, get_next_quad(), yylineno);
+												$$ = get_current_quad();// TODO check
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
-											$$ = get_next_quad();
 										}
 			| RETURN expr SEMICOLON 	{
 											print_rules("26.2 returnstmt -> return expr ;");
 											if (func_stack.empty()){
 												yyerror("Use of 'return' while not in a function\n");
 											}else {
-												emit(RET_OP, $2, NULL, NULL, 0, get_next_quad());
+												emit(RET_OP, $2, NULL, NULL, get_next_quad(), yylineno);
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
-											$$ = get_next_quad();
+											$$ = get_current_quad();// TODO check
 										}
 			;
 
