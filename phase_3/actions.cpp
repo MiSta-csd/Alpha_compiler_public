@@ -200,23 +200,23 @@ expr * member_item (expr* lv, std::string *name) {
 
 }
 
-expr * make_call (expr* lv, std::vector<expr*> *exp_vec) {
-
+expr * make_call (expr* lv, std::vector<expr*> *expr_vec) {
 	expr * func = emit_iftableitem(lv);
-	for(int i = exp_vec->size() - 1; i >= 0; --i ){
+	for(int i = expr_vec->size() - 1; i >= 0; --i ){
 		emit(
 			PARAM_OP,
-			(*exp_vec)[i],
 			NULL,
+			(*expr_vec)[i],
 			NULL,
 			0,
 			yylineno
 		);
 	}
-	emit(CALL_OP, func, NULL, NULL, 0, yylineno);
+	
+	emit(CALL_OP, func, NULL, NULL, get_next_quad(), yylineno);
 	expr* result = newexpr(VAR_E);
 	result->sym = newtemp();
-	emit(GETRETVAL_OP, result, NULL, NULL, 0,yylineno);
+	emit(GETRETVAL_OP, result, NULL, NULL, get_next_quad(), yylineno);
 	return result;
 }
 
