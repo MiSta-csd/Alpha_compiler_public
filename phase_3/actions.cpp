@@ -422,7 +422,7 @@ expr* true_test(expr* ex) {
 		}
 		expr_pt->truelist = new std::vector<int>();
 		expr_pt->falselist = new std::vector<int>();
-		emit(IF_EQ_OP, NULL, expr_pt, newexpr_constbool(true), 0, yylineno);
+		emit(IF_EQ_OP, NULL, expr_pt, newexpr_constbool(true), get_next_quad() + 2, yylineno);
 		expr_pt->truelist->push_back(get_current_quad()-1);
 		emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 		expr_pt->falselist->push_back(get_current_quad()-1);

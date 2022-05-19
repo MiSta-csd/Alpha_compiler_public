@@ -892,6 +892,9 @@ whilestmt	: whilestart whilecond stmt
 											if($3 != NULL) {
 												patchlist($3->breakList, get_next_quad());
 												patchlist($3->contList, $1);
+											} else {
+												$$ = new stmt_t();
+												make_stmt($$);
 											}
 											--loopcounter;
 										}
