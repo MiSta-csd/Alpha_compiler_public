@@ -84,9 +84,9 @@ void print_rules(std::string str) {
 %type <intConst> idlist
 %type <intConst> funcargs
 %type <intConst> returnstmt
-%type <exprVec> elist;
-%type <pairVec> indexed;
-%type <pairVal> indexedelem;
+%type <exprVec> elist
+%type <pairVec> indexed
+%type <pairVal> indexedelem
 
 %type<callVal> callsuffix
 %type<callVal> normcall
@@ -134,6 +134,7 @@ void print_rules(std::string str) {
 %%
 
 program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
+		 	|
 			;
 
 // Rule 2.
@@ -155,6 +156,7 @@ stmts		: stmts stmt 				{
 
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
+			
 			;
 // Rule 3.
 stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
@@ -184,7 +186,8 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											$$->retList = $1;
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");			
-											if(!loopcounter) {
+											/* if(!loopcounter) { */
+											if(loop_stack.empty()) {
 												yyerror("break stmt outside loop has no use");
 												$$ = NULL;
 											}else {// we are in loop for sure
@@ -194,8 +197,8 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											}
 										}
 			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");
-											assert(loopcounter);
-											if(!loopcounter) {
+											/* if(!loopcounter) { */
+											if(loop_stack.empty()) {
 												yyerror("continue stmt outside loop has no use");
 												$$ = NULL;
 											}else {// we are in loop for sure
@@ -870,7 +873,7 @@ ifstmt		: ifprefix stmt				{
 			;
 			
 // Rule 24.
-whilestart	: WHILE						{	++loopcounter;	$$ = get_next_quad();}
+whilestart	: WHILE						{	/* ++loopcounter; */	$$ = get_next_quad();}
 		   	;
 whilecond	: LPAREN expr RPAREN		{
 											$2 = true_test($2);
@@ -887,7 +890,6 @@ whilecond	: LPAREN expr RPAREN		{
 whilestmt	: whilestart whilecond stmt
 		  								{
 											print_rules("24.1 whilestmt -> while ( expr ) stmt");
-											loop_stack.pop();
 											$$ = new stmt_t();
 											if($3 != NULL) {
 												patchlist($3->breakList, get_next_quad()+1);
@@ -897,17 +899,18 @@ whilestmt	: whilestart whilecond stmt
 											}
 											emit(JUMP_OP, NULL, NULL, NULL, $1, yylineno);
 											patchlabel($2, get_next_quad());
-											--loopcounter;
+											loop_stack.pop();
+											/* --loopcounter; */
 										}
 			;
 // Rule 25.
 forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 										{
-											print_rules("25- forprefix -> for ( elist ; expr ;");
+											print_rules("25.0 forprefix -> for ( elist ; expr ;");
 											loop_stack.push(st_get_scope());
 											$$ = new for_stmt();
 											$$->test = $5;
-											$$->enter = get_next_quad();
+											$$->enter = get_current_quad();
 											expr* e = handle_bool_e($6);
 											emit(IF_EQ_OP, NULL, e, newexpr_constbool(true), 0, yylineno);
 										}
@@ -916,8 +919,7 @@ forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 forstmt		: forprefix N elist RPAREN N stmt N
 										{
 		 									print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");
-											loop_stack.pop();
-											patchlabel($1->enter, $5 + 1);
+											patchlabel($1->enter, $5+1);
 											patchlabel($2, get_next_quad());
 											patchlabel($5, $1->test);
 											patchlabel($7, $2 + 1);
@@ -925,11 +927,12 @@ forstmt		: forprefix N elist RPAREN N stmt N
 											patchlist($6->breakList, get_next_quad());
 											patchlist($6->contList, $2 + 1);
 											$$ = $6;
+											loop_stack.pop();
 										}
 			;
 
 N 			:							{
-											$$ = get_next_quad();
+											$$ = get_current_quad();
                 							emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			;

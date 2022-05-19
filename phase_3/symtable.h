@@ -16,7 +16,6 @@ struct st_entry {
 	bool active;
 	std::string name;
 	enum st_entry_type type;
-	// std::vector<st_entry *> *argList; // Formal Arguments list
 	unsigned scope;
 	unsigned line;
 	unsigned totalLocals;

@@ -1,28 +1,34 @@
 #include "symtable.h"
 #include <unordered_map>
+#include <cassert>
 unsigned int scope;
 unsigned int scope_MAX;
 unsigned in_funcdef;
 unsigned int nonos;
+unsigned programVarOffset = 0;
+unsigned formalArgOffset = 0;
+unsigned functionLocalOffset = 0;
+unsigned curScopeSpace = 0;
 
 extern int yylineno;
 
 std::vector<std::unordered_map<std::string, std::vector<st_entry>>> symbol_table;
 std::vector<struct st_entry *> f_arg_list;
 std::stack<struct st_entry *> func_stack;
+std::stack<unsigned> scopeoffsetstack;
 
 st_entry *st_insert(std::string name, enum st_entry_type type) {
 	st_entry *new_entry;
 	assert(new_entry = new st_entry);
 	*new_entry = {true,  name, type,
-		(type == USER_FUNC) ? new std::vector<st_entry *> : NULL,
-		scope, yylineno};
+		// (type == USER_FUNC) ? new std::vector<st_entry *> : NULL,
+		scope, (unsigned)yylineno};
 	symbol_table[scope][name].push_back(*new_entry);// works even if bucket~key==name is empty
 	return new_entry;
 }
 
 std::string st_godfather() {
-	std::string s = "_$f" + std::to_string(nonos++);
+	std::string s = "$f" + std::to_string(nonos++);
 	return s;
 }
 
@@ -93,7 +99,7 @@ int load_2_arglist(struct st_entry *arg) {
 
 int offload_arglist(st_entry *func) {
 	assert(func->type == USER_FUNC);
-	*(func->argList) = f_arg_list;
+	// *(func->argList) = f_arg_list;
 	f_arg_list.clear();
 	return 0;
 }
@@ -138,3 +144,85 @@ void st_print_table() {
 	std::cout << " ------------------------------------------- \n";
 	std::cout << "\"name\"  [type]   (line)  (scope)   \n";
 }
+
+void resetformalargsoffset(void){
+	formalArgOffset = 0;
+}
+
+void resetfunctionlocalsoffset(void){
+	functionLocalOffset = 0;
+}
+
+scope_space currscopespace(void){
+    if(curScopeSpace == 0){
+        return programvar;
+	} else if(curScopeSpace == 1){
+        return formalarg;
+	} else{
+        return functionlocal;
+	}
+}
+
+unsigned currscopeoffset(){
+    switch(currscopespace())
+    {
+	    case programvar:	return programVarOffset;
+	    case functionlocal:	return functionLocalOffset; 
+	    case formalarg:		return formalArgOffset; 
+        default:            assert(0);
+    }
+}
+
+void restorecurrscopeoffset(unsigned n){
+    switch (currscopespace())
+    {
+        case programvar:        programVarOffset = n;       break;
+        case functionlocal:     functionLocalOffset = n;    break;
+        case formalarg:         formalArgOffset = n;        break;
+        default: assert(0);
+
+    }
+}
+
+void enterscopespace(void){
+	// std::cout << "Program var offset: " << programVarOffset << "\n Formal arg offset: " << formalArgOffset << "\n Function local offset: " << functionLocalOffset << "\n Current scope space: " << curScopeSpace << "\n";
+	curScopeSpace++;
+}
+
+void exitscopespace(void){
+	assert(curScopeSpace > 0);
+	curScopeSpace--;
+}
+
+void pushscopeoffsetstack(unsigned n){
+	scopeoffsetstack.push(n);
+}
+
+scope_space popscopeoffsetstack(){
+	unsigned offset = scopeoffsetstack.top();
+	scopeoffsetstack.pop();
+	if(offset == 0){
+        return programvar;
+	} else if(offset % 2 == 1){
+        return formalarg;
+	} else{
+        return functionlocal;
+	}
+}
+
+void incprogramVarOffset(){
+    programVarOffset++;
+}
+
+void incformalArgOffset(){
+    formalArgOffset++;
+}
+
+void incfunctionLocalOffset(){
+    functionLocalOffset++;
+}
+
+bool scopeOffsetStackEmpty(){
+	return scopeoffsetstack.empty();
+}
+

@@ -20,14 +20,12 @@ st_entry* newtemp() {
 	// }	// Kwstas original code
 	tmp_name = newtempname();
 	st_tmp_entry = st_lookup(tmp_name, st_get_scope());
-	print_quads();
 	/* return (st_tmp_entry) ? st_tmp_entry : (st_tmp_entry = st_insert(tmp_name, LOCAL_VAR)); */
 	if(st_tmp_entry){
 		return st_tmp_entry;
 	}
 	else {
 		st_tmp_entry = st_insert(std::string(tmp_name), LOCAL_VAR);
-		print_quads();
 		return st_tmp_entry;
 	}
 
