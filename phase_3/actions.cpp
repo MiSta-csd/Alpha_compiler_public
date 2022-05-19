@@ -169,16 +169,15 @@ expr* emit_branch_assign_quads(expr *ex) {
 }
 
 /*  */
-expr* emit_ifbool(expr *operant)
+expr* handle_bool_e(expr *arg_e)
 {
-    assert(operant);
-    expr *e = operant;
-    if(operant->type == BOOLEXPR_E){
-        e = newexpr(BOOLEXPR_E);
+    assert(arg_e);
+    expr *e = arg_e;
+    if(arg_e->type == BOOLEXPR_E){
         e->sym = newtemp();
 
-        backpatch(operant->truelist, get_next_quad());
-        backpatch(operant->falselist, get_next_quad() + 2);
+        backpatch(arg_e->truelist, get_next_quad());
+        backpatch(arg_e->falselist, get_next_quad() + 2);
 
 		emit_branch_assign_quads(e);
     }
@@ -202,6 +201,9 @@ expr * member_item (expr* lv, std::string *name) {
 
 expr * make_call (expr* lv, std::vector<expr*> *expr_vec) {
 	expr * func = emit_iftableitem(lv);
+	if (st_lookup(func->sym->name)){
+		std::cout << func->sym->argList;
+	}
 	for(int i = expr_vec->size() - 1; i >= 0; --i ){
 		emit(
 			PARAM_OP,

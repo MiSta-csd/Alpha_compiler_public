@@ -33,7 +33,7 @@ expr * emit_iftableitem (expr *e);
 
 expr* emit_branch_assign_quads(expr *ex);
 
-expr * emit_ifbool(expr *operand);
+expr * handle_bool_e(expr *operand);
 
 expr * member_item (expr* lv, std::string *name);
 

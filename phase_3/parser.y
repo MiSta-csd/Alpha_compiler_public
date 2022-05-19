@@ -139,11 +139,20 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											// if($1 || $2){
-											// 	$$->breakList = mergelist($1->breakList, $2->breakList);
-											// 	$$->contList = mergelist($1->contList,  $2->contList);
-											// 	//$$.returnList = mergelist($1->returnList, $2->returnList);
-											// }
+											if(!$1 && !$2) {
+												$$ = new stmt_t();
+												make_stmt($$);
+											}else if(!$1) {
+												$$ = $2;
+											}else if(!$2) {
+												$$ = $1;
+											}
+											else {
+												$$->breakList = mergelist($1->breakList, $2->breakList);
+												$$->contList = mergelist($1->contList,  $2->contList);
+												//$$->returnList = mergelist($1->returnList, $2->returnList);
+											}
+
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
 			;
@@ -156,21 +165,23 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 												emit_branch_assign_quads($1);
 												$$ = NULL;
 											}else {
-												$$= NULL;// TODO don't know what's needed yet
+												$$ = new stmt_t();// TODO don't know what's needed yet
+												make_stmt($$);
 											}
 	  									}
 			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
+											$$ = $1;
 										}
 			| whilestmt					{	print_rules("3.3 stmt -> whilestmt");
-											$$ = new stmt_t();
-											make_stmt($$);
+											$$ = $1;
 											/* $$->returnList = $1->returnList; */ // apo benefactor
 										}
 			| forstmt					{	print_rules("3.4 stmt -> forstmt");
+											$$ = $1;
 										}
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
 										}
-			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");
+			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");			
 											if(!loopcounter) {
 												yyerror("break stmt outside loop has no use");
 												$$ = NULL;
@@ -197,8 +208,12 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											$$ = $1;
 										}
 			| funcdef					{	print_rules("3.9 stmt -> funcdef");
+											$$ = new stmt_t();
+											make_stmt($$);
 										}
-			| SEMICOLON					{	print_rules("3.10 stmt -> ;");}
+			| SEMICOLON					{	print_rules("3.10 stmt -> ;");	$$ = NULL;
+											$$ = new stmt_t();
+											make_stmt($$);}
 			;
 
 // Rule 4.
@@ -505,7 +520,7 @@ tableitem	: lvalue DOT ID				{
 										}
 			| lvalue LBRACK expr RBRACK	{
 											print_rules("8+.2 tableitem -> lvalue [ expr ]");
-											expr *e = emit_ifbool($3);
+											expr *e = handle_bool_e($3);
 											$1 = emit_iftableitem($1);
 											$$ = newexpr(TABLEITEM_E);
 											$$->sym = $1->sym;
@@ -527,7 +542,7 @@ member		: tableitem					{
 			| call LBRACK expr RBRACK 	{
 											print_rules("9.3 member -> call [ expr ]");
 											member_flag = true;
-											expr *e = emit_ifbool($3);
+											expr *e = handle_bool_e($3);
 											$$ = e;
 										}
 			;
@@ -582,12 +597,12 @@ elist		: expr 						{
 											/* if($1->type == BOOLEXPR) {
 												
 											} */
-											$$->push_back(emit_ifbool($1));
+											$$->push_back(handle_bool_e($1));
 										}
 			| elist COMMA expr 			{	
 											print_rules("14.2 elist -> elist , expr");
 											assert($1);
-											$1->push_back(emit_ifbool($3));
+											$1->push_back(handle_bool_e($3));
 										}
 			| 	/* THis rule may have to be palced in rule 12: normcall */
 										{	
@@ -649,8 +664,8 @@ indexedelem	: LCBRACK expr COLON expr
 			  RCBRACK					{	
 				  							print_rules("17.1 indexedelem -> { expr : expr }");
 											std::pair<expr*,expr*>* p = new std::pair<expr*,expr*>;
-											p->first = emit_ifbool($2);
-											p->second = emit_ifbool($4);
+											p->first = handle_bool_e($2);
+											p->second = handle_bool_e($4);
 											$$ = p;	  
 										}
 			;
@@ -663,7 +678,7 @@ block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 											st_decrease_scope();
 											$$ = $3;
 										}
-			| LCBRACK RCBRACK			{	print_rules("18.2 block -> { }");	}  
+			| LCBRACK RCBRACK			{	print_rules("18.2 block -> { }");	}  // TODO if stmts rule can be empty this rule is redundant
 			;
 // Rule 19.
 funcname    : ID						{
@@ -891,7 +906,7 @@ forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 											$$ = new for_stmt();
 											$$->test = $5;
 											$$->enter = get_next_quad();
-											expr* e = emit_ifbool($6);
+											expr* e = handle_bool_e($6);
 											emit(IF_EQ_OP, NULL, e, newexpr_constbool(1), 0, yylineno);
 										}
 /* 			| FOR LPAREN SEMICOLON M expr SEMICOLON
