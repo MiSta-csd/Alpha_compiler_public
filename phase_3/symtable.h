@@ -21,6 +21,7 @@ struct st_entry {
 	unsigned line;
 	unsigned totalLocals;
 	unsigned iaddress;
+	
 } typedef st_entry;
 
 st_entry *st_insert(std::string name_input, enum st_entry_type type_input);

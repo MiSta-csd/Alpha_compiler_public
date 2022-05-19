@@ -11,16 +11,26 @@ extern int yylineno;
 st_entry* newtemp() {
 	st_entry *st_tmp_entry;
 	std::string tmp_name;
-	/* if(tmp_var_count)
-		tmp_name = "^" + std::to_string(tmp_var_count-1);
-	else
-		tmp_name = newtempname();
-	if(!(st_tmp_entry = st_lookup(tmp_name) )) {
-		st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-	} */	// Kwstas original code
+	// if(tmp_var_count)
+	// 	tmp_name = "^" + std::to_string(tmp_var_count-1);
+	// else
+	// 	tmp_name = newtempname();
+	// if(!(st_tmp_entry = st_lookup(tmp_name) )) {
+	// 	st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+	// }	// Kwstas original code
 	tmp_name = newtempname();
 	st_tmp_entry = st_lookup(tmp_name, st_get_scope());
-	return (st_tmp_entry) ? st_tmp_entry : (st_tmp_entry = st_insert(tmp_name, LOCAL_VAR));
+	print_quads();
+	/* return (st_tmp_entry) ? st_tmp_entry : (st_tmp_entry = st_insert(tmp_name, LOCAL_VAR)); */
+	if(st_tmp_entry){
+		return st_tmp_entry;
+	}
+	else {
+		st_tmp_entry = st_insert(std::string(tmp_name), LOCAL_VAR);
+		print_quads();
+		return st_tmp_entry;
+	}
+
 }
 
 std::string newtempname() {
@@ -258,89 +268,90 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 
 		enum iopcode prev_op;// gia na borei na douleyei h veltistopoihsh swsta
 		if(quad_vec.size()){
-			prev_op = quad_vec[quad_vec.size()-1].op;
+			prev_op = quad_vec.back().op;
 		}else { prev_op = opcode;}
-		
-		// if(opcode == MOD_OP){
-		// 	if(type == CONSTDOUBLE_E) {
-		// 		val.doubleConst = (double)(val_1 % val_2);
-		// 	}else {
-		// 		val.intConst = val_1 % val_2;
-		// 	}
-		// 	if(prev_op == SUB_OP || prev_op == ADD_OP) {
-		// 		tmp_name = new_tmp_name();
-		// 		if( !(st_tmp_entry = st_lookup(tmp_name) )) {
-		// 			st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-		// 		}
-		// 	}
-		// }else {// OLOI OI ELEGXOI ME DOUBLE INT EINAI KYRIWS GIA NA PROSDIORISW TON TELIKO TYPO sto union ALLA KAI GIA NA EPITREPSW MOD ME FLOAT
-		// 	switch(opcode){
-		// 		case ADD_OP:
-		// 			if(type == CONSTINT_E){
-		// 				val.intConst = val_1 + val_2;
-		// 			}else {
-		// 				if(arg1->type == CONSTINT_E)
-		// 					val.doubleConst = (double)val_1 + arg2->value.doubleConst;
-		// 				else if(arg2->type == CONSTINT_E)
-		// 					val.doubleConst = (double)val_2 + arg1->value.doubleConst;
-		// 				else
-		// 					val.doubleConst = arg1->value.doubleConst + arg2->value.doubleConst;
-		// 			}
-		// 			break;
-		// 		case SUB_OP:
-		// 			if(type == CONSTINT_E){
-		// 				val.intConst = val_1 - val_2;
-		// 			}else {
-		// 				if(arg1->type == CONSTINT_E)
-		// 					val.doubleConst = (double)val_1 - arg2->value.doubleConst;
-		// 				else if(arg2->type == CONSTINT_E)
-		// 					val.doubleConst = arg1->value.doubleConst - (double)val_2;
-		// 				else
-		// 					val.doubleConst = arg1->value.doubleConst - arg2->value.doubleConst;
-		// 			}
-		// 			break;
-		// 		case MUL_OP:
-		// 			if(type == CONSTINT_E) {
-		// 				val.intConst = val_1 * val_2;
-		// 			}else {
-		// 				if(arg1->type == CONSTINT_E)
-		// 					val.doubleConst = (double)val_1 * arg2->value.doubleConst;
-		// 				else if(arg2->type == CONSTINT_E)
-		// 					val.doubleConst = (double)val_2 * arg1->value.doubleConst;
-		// 				else
-		// 					val.doubleConst = arg1->value.doubleConst * arg2->value.doubleConst;
-		// 			}
-		// 			if(prev_op == SUB_OP || prev_op == ADD_OP) {
-		// 				tmp_name = new_tmp_name();
-		// 				if( !(st_tmp_entry = st_lookup(tmp_name) )) {
-		// 					st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-		// 				}
-		// 			}
-		// 			break;
-		// 		case DIV_OP:
-		// 			if(type == CONSTINT_E){
-		// 				val.intConst = val_1 / val_2;
-		// 			}else {
-		// 				if(arg1->type == CONSTINT_E)
-		// 					val.doubleConst = (double)val_1 / arg2->value.doubleConst;
-		// 				else if(arg2->type == CONSTINT_E)
-		// 					val.doubleConst = arg1->value.doubleConst / (double)val_2;
-		// 				else
-		// 					val.doubleConst = arg1->value.doubleConst / arg2->value.doubleConst;
-		// 			}
-		// 			if(prev_op == SUB_OP || prev_op == ADD_OP) {
-		// 				tmp_name = new_tmp_name();
-		// 				if( !(st_tmp_entry = st_lookup(tmp_name) )) {
-		// 					st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-		// 				}
-		// 			}
-		// 			break;
-		// 		default :
-		// 			std::cout << "\033[31mError\033[37m:\tCannot work with this opcode : " << opcode << std::endl;
-		// 			assert(NULL);// better assert
-		// 			return NULL;
-		// 	}
-		// }
+		std::string tmp_name;
+		if(opcode == MOD_OP){
+			if(type == CONSTDOUBLE_E) {
+				val.doubleConst = (double)(val_1 % val_2);
+			}else {
+				val.intConst = val_1 % val_2;
+			}
+			if(prev_op == SUB_OP || prev_op == ADD_OP) {
+				tmp_name = newtempname();
+				if( !(st_tmp_entry = st_lookup(tmp_name, st_get_scope()) )) {
+					st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+				}
+			}
+		}else {// OLOI OI ELEGXOI ME DOUBLE INT EINAI KYRIWS GIA NA PROSDIORISW TON TELIKO TYPO sto union ALLA KAI GIA NA EPITREPSW MOD ME FLOAT
+			switch(opcode){
+				// case ADD_OP:
+				// 	if(type == CONSTINT_E){
+				// 		val.intConst = val_1 + val_2;
+				// 	}else {
+				// 		if(arg1->type == CONSTINT_E)
+				// 			val.doubleConst = (double)val_1 + arg2->value.doubleConst;
+				// 		else if(arg2->type == CONSTINT_E)
+				// 			val.doubleConst = (double)val_2 + arg1->value.doubleConst;
+				// 		else
+				// 			val.doubleConst = arg1->value.doubleConst + arg2->value.doubleConst;
+				// 	}
+				// 	break;
+				// case SUB_OP:
+				// 	if(type == CONSTINT_E){
+				// 		val.intConst = val_1 - val_2;
+				// 	}else {
+				// 		if(arg1->type == CONSTINT_E)
+				// 			val.doubleConst = (double)val_1 - arg2->value.doubleConst;
+				// 		else if(arg2->type == CONSTINT_E)
+				// 			val.doubleConst = arg1->value.doubleConst - (double)val_2;
+				// 		else
+				// 			val.doubleConst = arg1->value.doubleConst - arg2->value.doubleConst;
+				// 	}
+				// 	break;
+				case MUL_OP:
+					// if(type == CONSTINT_E) {
+					// 	val.intConst = val_1 * val_2;
+					// }else {
+					// 	if(arg1->type == CONSTINT_E)
+					// 		val.doubleConst = (double)val_1 * arg2->value.doubleConst;
+					// 	else if(arg2->type == CONSTINT_E)
+					// 		val.doubleConst = (double)val_2 * arg1->value.doubleConst;
+					// 	else
+					// 		val.doubleConst = arg1->value.doubleConst * arg2->value.doubleConst;
+					// }
+					if(prev_op == SUB_OP || prev_op == ADD_OP) {
+						tmp_name = newtempname();
+						if( !(st_tmp_entry = st_lookup(tmp_name, st_get_scope()) )) {
+							st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+						}
+					}
+					break;
+				case DIV_OP:
+					// if(type == CONSTINT_E){
+					// 	val.intConst = val_1 / val_2;
+					// }else {
+					// 	if(arg1->type == CONSTINT_E)
+					// 		val.doubleConst = (double)val_1 / arg2->value.doubleConst;
+					// 	else if(arg2->type == CONSTINT_E)
+					// 		val.doubleConst = arg1->value.doubleConst / (double)val_2;
+					// 	else
+					// 		val.doubleConst = arg1->value.doubleConst / arg2->value.doubleConst;
+					// }
+					if(prev_op == SUB_OP || prev_op == ADD_OP) {
+						tmp_name = newtempname();
+						if( !(st_tmp_entry = st_lookup(tmp_name, st_get_scope()) )) {
+							st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
+						}
+					}
+					break;
+				default :
+					break;
+					std::cout << "\033[31mError\033[37m:\tCannot work with this opcode : " << opcode << std::endl;
+					assert(NULL);// better assert
+					return NULL;
+			}
+		}
 		res = new expr(type, st_tmp_entry, NULL, val);
 		emit(opcode, res, arg1, arg2, 0, yylineno);
 		return res;
