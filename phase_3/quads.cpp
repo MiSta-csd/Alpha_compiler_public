@@ -43,6 +43,13 @@ call::call(std::string *name, unsigned char method, std::vector<expr*> *elist) {
 	this->method = method;
 }
 
+static bool can_jump(iopcode op) {
+	if(op == JUMP_OP || op == IF_EQ_OP || op == IF_LESS_OP || op == IF_GREATER_OP
+			|| op == IF_LESS_OP || op == IF_GREATEREQ_OP || op == IF_LESSEQ_OP)
+		return true;
+	return false;
+}
+
 void print_quads() {
 	std::string opcodes[] = {"ASSIGN_OP", "ADD_OP", "SUB_OP", "MUL_OP", "DIV_OP", "MOD_OP", "UMINUS_OP", "AND_OP",
 	"OR_OP", "NOT_OP", "IF_EQ_OP", "IF_NOTEQ_OP", "IF_LESSEQ_OP", "IF_GREATEREQ_OP", "IF_LESS_OP", "IF_GREATER_OP",
@@ -76,7 +83,7 @@ void print_quads() {
 						std::cout << (quad.arg1->value.boolConst == true? "'true'" : "'false'") << " ";
 						break;
 					case NIL_E:
-						std::cout << "NIL";
+						std::cout << "NIL ";
 						break;
 					default:
 						assert(NULL);
@@ -101,15 +108,17 @@ void print_quads() {
 						std::cout << (quad.arg2->value.boolConst == true? "'true'" : "'false'") << " ";
 						break;
 					case NIL_E:
-						std::cout << "NIL";
+						std::cout << "NIL ";
 						break;
 					default:
 						assert(NULL);
 				}
 			}
 		}
-		if (quad.label){
-			std::cout << quad.label << " ";
+		if(can_jump(quad.op)) {
+			if (quad.label){
+				std::cout << quad.label << " ";
+			}
 		}
 		std::cout << "[line " << quad.line << "]\n";
 		i++;

@@ -874,13 +874,11 @@ whilestart	: WHILE						{	++loopcounter;	$$ = get_next_quad();}
 whilecond	: LPAREN expr RPAREN		{
 											$2 = true_test($2);
 											if($2->type == BOOLEXPR_E) {
-												backpatch($2->truelist, get_next_quad());
-												backpatch($2->falselist, get_next_quad() + 2);
-												emit_branch_assign_quads($2);
+												$2 = handle_bool_e($2);
 												emit(IF_EQ_OP, NULL, $2, newexpr_constbool(true), get_next_quad()+2, yylineno);
 												$$ = get_current_quad();
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-											}else 
+											}else // case i have while(true) ...
 												$$ = get_current_quad()-1;
 										}
 			;

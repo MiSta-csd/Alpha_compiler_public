@@ -202,7 +202,6 @@ expr * member_item (expr* lv, std::string *name) {
 expr * make_call (expr* lv, std::vector<expr*> *expr_vec) {
 	expr * func = emit_iftableitem(lv);
 	if (st_lookup(func->sym->name)){
-		std::cout << func->sym->argList;
 	}
 	for(int i = expr_vec->size() - 1; i >= 0; --i ){
 		emit(
