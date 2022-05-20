@@ -1,4 +1,0 @@
-1: IF_EQ_OP 'true' 'true' 3 [line 1]
-2: JUMP_OP 5 [line 1]
-3: ASSIGN_OP x "Peos" [line 1]
-4: ASSIGN_OP ^1 x [line 1]
