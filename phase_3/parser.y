@@ -775,20 +775,22 @@ funcname    : ID						{
 
 funcprefix  : FUNCTION funcname			{
 											print_rules("19.1 funcdef -> function ( idlist ) block");
-											$$ = st_lookup(*$2);
-											assert($$);
-                                            $$->totalLocals = 0;
-											$$->iaddress = get_current_quad();
-											st_entry_tmp["r19"] = $$;
-                                            func_stack.push($$);
-                                            expr *tmp_expr;
-											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-                                            tmp_expr = new expr(PROGRAMFUNC_E, $$, NULL, emptyval);
-                                            emit(FUNCSTART_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
-											pushscopeoffsetstack(currscopeoffset());
-											st_increase_scope();
-											enterscopespace();
-											resetformalargsoffset();
+											if($2) {
+												$$ = st_lookup(*$2);
+												assert($$);
+												$$->totalLocals = 0;
+												$$->iaddress = get_current_quad();
+												st_entry_tmp["r19"] = $$;
+												func_stack.push($$);
+												expr *tmp_expr;
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+												tmp_expr = new expr(PROGRAMFUNC_E, $$, NULL, emptyval);
+												emit(FUNCSTART_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
+												pushscopeoffsetstack(currscopeoffset());
+												st_increase_scope();
+												enterscopespace();
+												resetformalargsoffset();
+											}
 										}
 			;
 
@@ -812,19 +814,21 @@ funcbody    : block						{
 			;
 funcdef		: funcprefix funcargs funcbody  
 		 								{	
-											exitscopespace();
-											patchlist($3, get_next_quad());
-											$1->totalLocals = currscopeoffset();
-											int offset = popscopeoffsetstack();
-											restorecurrscopeoffset(offset);
-											$$ = $1;
-											expr *tmp_expr;
-											tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, emptyval);
-											emit(FUNCEND_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
-											if(st_entry_tmp["r19"]) {
-												func_stack.pop();
+											if(!hasError) {
+												exitscopespace();
+												patchlist($3, get_next_quad());
+												$1->totalLocals = currscopeoffset();
+												int offset = popscopeoffsetstack();
+												restorecurrscopeoffset(offset);
+												$$ = $1;
+												expr *tmp_expr;
+												tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, emptyval);
+												emit(FUNCEND_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
+												if(st_entry_tmp["r19"]) {
+													func_stack.pop();
+												}
+												patchlabel($1->iaddress, get_next_quad());
 											}
-											patchlabel($1->iaddress, get_next_quad());
 										}
 			;
 // Rule 20.
@@ -1042,6 +1046,8 @@ int yyerror(std:: string err){
 	std::cout << "\033[31m" << "ERROR " << "\033[37m" <<
 	"in line " << yylineno << " : " << err << "\n";
 	hasError = true;
+	std::cout << "One or more errors on compilation, aborting... \n";
+	exit(1);
 	return 1;
 }
 
@@ -1063,9 +1069,9 @@ int main(int argc, char** argv) {
 	validate_comments();
 	// st_print_table();
 	if (!hasError){
-		print_line();
+		/* print_line(); */
 		print_quads(arg);	/* arg = 1 -> typwnei se file, arg = 0 sthn konsola */
-		print_line();
+		/* print_line(); */
 	} else {
 		std::cout << "One or more errors on compilation, aborting... \n";
 	}
