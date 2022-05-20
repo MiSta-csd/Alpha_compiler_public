@@ -3,6 +3,8 @@
 #include <iostream>
 #include <vector>
 #include <stack>
+#include <assert.h>
+#include <string>
 
 enum st_entry_type {
 	GLOBAL_VAR = 0,
@@ -60,38 +62,3 @@ void st_print_table();
 /* a search to the current arg list while picking the formal arguments to check
  * for conflicts among the arg list names*/
 st_entry *check_arglist(std::string name_input);
-
-enum scope_space
-{
-    programvar,
-    functionlocal,
-    formalarg
-};
-typedef enum scope_space scope_space;
-
-void resetformalargsoffset(void);
-
-void resetfunctionlocalsoffset(void);
-
-scope_space curr_scope_space();
-
-unsigned currscopeoffset(void);
-
-void enterscopespace(void);
-
-void exitscopespace(void);
-
-void pushscopeoffsetstack(unsigned);
-
-scope_space popscopeoffsetstack(void);
-
-void restorecurrscopeoffset(unsigned n);
-
-void incprogramVarOffset();
-
-void incformalArgOffset();
-
-void incfunctionLocalOffset();
-
-bool scopeOffsetStackEmpty();
-

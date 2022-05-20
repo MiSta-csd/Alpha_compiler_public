@@ -1,22 +1,16 @@
 #include "symtable.h"
-#include <assert.h>
-#include <string>
+
 unsigned scope;
 unsigned scope_MAX;
 unsigned in_funcdef;
 bool in_loop;
 unsigned nonos;
-unsigned programVarOffset = 0;
-unsigned formalArgOffset = 0;
-unsigned functionLocalOffset = 0;
-unsigned curScopeSpace = 0;
 
 extern int yylineno;
 
 std::vector<std::vector<st_entry>> symbol_table;
 std::vector<struct st_entry *> f_arg_list;
 std::stack<struct st_entry *> func_stack;
-std::stack<unsigned> scopeoffsetstack;
 
 st_entry *st_insert(std::string name, enum st_entry_type type) {
 	st_entry *new_entry;
@@ -145,86 +139,3 @@ void st_print_table() {
 	std::cout << " ------------------------------------------- \n";
 	std::cout << "\"name\"  [type]   (line)  (scope)   \n";
 }
-
-void resetformalargsoffset(void){
-	formalArgOffset = 0;
-}
-
-void resetfunctionlocalsoffset(void){
-	functionLocalOffset = 0;
-}
-
-scope_space currscopespace(void){
-    if(curScopeSpace == 0){
-        return programvar;
-	} else if(curScopeSpace == 1){
-        return formalarg;
-	} else{
-        return functionlocal;
-	}
-}
-
-unsigned currscopeoffset(){
-    switch(currscopespace())
-    {
-	    case programvar:	return programVarOffset;
-	    case functionlocal:	return functionLocalOffset; 
-	    case formalarg:		return formalArgOffset; 
-        default:            assert(0);
-    }
-}
-
-void restorecurrscopeoffset(unsigned n){
-    switch (currscopespace())
-    {
-        case programvar:        programVarOffset = n;       break;
-        case functionlocal:     functionLocalOffset = n;    break;
-        case formalarg:         formalArgOffset = n;        break;
-        default: assert(0);
-
-    }
-}
-
-void enterscopespace(void){
-	// std::cout << "Program var offset: " << programVarOffset << "\n Formal arg offset: " << formalArgOffset << "\n Function local offset: " << functionLocalOffset << "\n Current scope space: " << curScopeSpace << "\n";
-	curScopeSpace++;
-}
-
-void exitscopespace(void){
-	assert(curScopeSpace > 0);
-	curScopeSpace--;
-}
-
-void pushscopeoffsetstack(unsigned n){
-	scopeoffsetstack.push(n);
-}
-
-scope_space popscopeoffsetstack(){
-	unsigned offset = scopeoffsetstack.top();
-	scopeoffsetstack.pop();
-	if(offset == 0){
-        return programvar;
-	} else if(offset % 2 == 1){
-        return formalarg;
-	} else{
-        return functionlocal;
-	}
-}
-
-void incprogramVarOffset(){
-    programVarOffset++;
-}
-
-void incformalArgOffset(){
-    formalArgOffset++;
-}
-
-void incfunctionLocalOffset(){
-    functionLocalOffset++;
-}
-
-bool scopeOffsetStackEmpty(){
-	return scopeoffsetstack.empty();
-}
-
-
