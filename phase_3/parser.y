@@ -140,19 +140,19 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											if(!$1 && !$2) {
-												$$ = new stmt_t();
-												//make_stmt($$);
-											}else if(!$1) {
-												$$ = $2;
-											}else if(!$2) {
-												$$ = $1;
-											}
-											else {
+											/* if(!$1 && !$2) { */
+											/* 	$$ = new stmt_t(); */
+											/* }else if(!$1) { */
+											/* 	$$ = $2; */
+											/* }else if(!$2) { */
+											/* 	$$ = $1; */
+											/* } */
+											/* else { */
+											$$ = $2;
 												$$->breakList = mergelist($1->breakList, $2->breakList);
 												$$->contList = mergelist($1->contList,  $2->contList);
 												$$->retList = mergelist($1->retList, $2->retList);
-											}
+											/* } */
 
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
@@ -174,16 +174,16 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											$$ = $1;
 										}
 			| whilestmt					{	print_rules("3.3 stmt -> whilestmt");
-											$$ = $1;
+											$$ = new stmt_t();
 											$$->retList = $1->retList;
 										}
 			| forstmt					{	print_rules("3.4 stmt -> forstmt");
-											$$ = $1;
+											$$ = new stmt_t();
 											$$->retList = $1->retList;
 										}
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
 											$$ = new stmt_t();
-											$$->retList = $1;
+											$$->retList = newlist(get_current_quad());
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");			
 											/* if(!loopcounter) { */
@@ -212,11 +212,9 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 										}
 			| funcdef					{	print_rules("3.9 stmt -> funcdef");
 											$$ = new stmt_t();
-											//make_stmt($$);
 										}
 			| SEMICOLON					{	print_rules("3.10 stmt -> ;");	$$ = NULL;
 											$$ = new stmt_t();
-											//make_stmt($$);
 										}
 			;
 
@@ -759,21 +757,22 @@ funcbody    : block						{
 											exitscopespace();
 										}
 			;
-funcdef		: funcprefix funcargs funcbody  {	
-												exitscopespace();
-												$1->totalLocals = $3;
-												int offset = popscopeoffsetstack();
-												restorecurrscopeoffset(offset);
-												$$ = $1;
-												expr *tmp_expr;
-												tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, emptyval);
-												emit(FUNCEND_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
-												if(st_entry_tmp["r19"]) {
-													func_stack.pop();
-												}
-												patchlabel($1->iaddress, get_next_quad());
-												/* $1->jump_quad->label = get_next_quad(); */
-                                        	}
+funcdef		: funcprefix funcargs funcbody  
+		 								{	
+											exitscopespace();
+                                                /* patchlist($3->returnList, nextquadlabel()); */ // den to pros8etw akoma
+											$1->totalLocals = $3;
+											int offset = popscopeoffsetstack();
+											restorecurrscopeoffset(offset);
+											$$ = $1;
+											expr *tmp_expr;
+											tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, emptyval);
+											emit(FUNCEND_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
+											if(st_entry_tmp["r19"]) {
+												func_stack.pop();
+											}
+											patchlabel($1->iaddress, get_next_quad());
+										}
 			;
 // Rule 20.
 const		: INTEGER 					{	print_rules("20.1 const -> INTEGER");
@@ -922,7 +921,7 @@ forstmt		: forprefix N elist RPAREN N stmt N
 											patchlabel($1->enter, $5+1);
 											patchlabel($2, get_next_quad());
 											patchlabel($5, $1->test);
-											patchlabel($7, $2 + 1);
+											patchlabel($7, $2 + 2);
 
 											patchlist($6->breakList, get_next_quad());
 											patchlist($6->contList, $2 + 1);
@@ -941,7 +940,7 @@ N 			:							{
 returnstmt 	: RETURN SEMICOLON 			{
 											print_rules("26.1 returnstmt -> return ;");
 											if (func_stack.empty()){
-												yyerror("Use of 'return' while not in a function\n");
+												yyerror("Use of 'return' while not in a function");
 											}else {
 												emit(RET_OP, NULL, NULL, NULL, get_next_quad(), yylineno);
 												$$ = get_current_quad();// TODO check
@@ -951,12 +950,12 @@ returnstmt 	: RETURN SEMICOLON 			{
 			| RETURN expr SEMICOLON 	{
 											print_rules("26.2 returnstmt -> return expr ;");
 											if (func_stack.empty()){
-												yyerror("Use of 'return' while not in a function\n");
+												yyerror("Use of 'return' while not in a function");
 											}else {
 												emit(RET_OP, $2, NULL, NULL, get_next_quad(), yylineno);
+												$$ = get_current_quad();// TODO check
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
-											$$ = get_current_quad();// TODO check
 										}
 			;
 
