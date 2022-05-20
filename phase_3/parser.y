@@ -14,6 +14,7 @@
 #include "symtable.h"
 #include "quads.h"
 #include "actions.h"
+#include "scoping.h"
 #include <unordered_map>
 #include <utility>
 
