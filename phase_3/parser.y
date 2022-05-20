@@ -329,10 +329,11 @@ term		: LPAREN expr RPAREN		{
 
 			| NOT expr					{	
 											print_rules("5.3 term -> NOT expr");
-											$$ = true_test($2);
+											$$ = true_test($2);// TODO make it BOOLEXPR_E
 											std::vector<int> *tmp = $$->truelist;
 											$$->truelist = $$->falselist;
 											$$->falselist = tmp;
+											$$->type = BOOLEXPR_E;
 										}
 			| PLUSPLUS lvalue			{
 											print_rules("5.4 term -> ++ lvalue");
@@ -653,6 +654,7 @@ indexed		: indexedelem 				{
 											expr*>* >* v = new std::vector<std::pair<expr*, 
 											expr*>* >();
 											v->push_back($1);	/*  pair, not *pair  */
+											$$ = v;
 										}
 			| indexed COMMA indexedelem	{	
 											print_rules("16.2 indexed ->  indexed , indexedelem");
