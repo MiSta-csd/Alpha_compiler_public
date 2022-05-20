@@ -20,6 +20,7 @@
 
 bool member_flag = false;// why?
 int yyerror(std::string message);
+bool hasError = false;
 
 extern std::vector<quad> quad_vec;
 extern std::stack<int> loop_stack;
@@ -971,6 +972,7 @@ extern void validate_comments();
 int yyerror(std:: string err){
 	std::cout << "\033[31m" << "ERROR " << "\033[37m" <<
 	"in line " << yylineno << " : " << err << "\n";
+	hasError = true;
 	return 1;
 }
 
@@ -987,7 +989,11 @@ int main(int argc, char** argv) {
 	st_initialize();
     yyparse();
 	validate_comments();
-	// st_print_table();
-	print_quads();
+	if (!hasError){
+		st_print_table();
+		print_quads();
+	} else {
+		std::cout << "One or more errors on compilation, aborting... \n";
+	}
     return 0;
 }
