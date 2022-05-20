@@ -183,7 +183,7 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 										}
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
 											$$ = new stmt_t();
-											$$->retList = newlist(get_current_quad());
+											$$->retList = newlist($1);
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");			
 											/* if(!loopcounter) { */
@@ -680,7 +680,9 @@ block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 											st_decrease_scope();
 											$$ = $3;
 										}
-			| LCBRACK RCBRACK			{	print_rules("18.2 block -> { }");	}  // TODO if stmts rule can be empty this rule is redundant
+			| LCBRACK RCBRACK			{	print_rules("18.2 block -> { }");
+											$$ = new stmt_t();
+										}  // TODO if stmts rule can be empty this rule is redundant
 			;
 // Rule 19.
 funcname    : ID						{
@@ -753,14 +755,15 @@ funcargs:   LPAREN idlist RPAREN  		{
                                 		}
             ;						
 funcbody    : block						{
-										    $$ = currscopeoffset();
+										    /* $$ = currscopeoffset(); */
+											$$ = $1->retList;
 											exitscopespace();
 										}
 			;
 funcdef		: funcprefix funcargs funcbody  
 		 								{	
 											exitscopespace();
-                                                /* patchlist($3->returnList, nextquadlabel()); */ // den to pros8etw akoma
+											patchlist($3, get_next_quad());
 											$1->totalLocals = $3;
 											int offset = popscopeoffsetstack();
 											restorecurrscopeoffset(offset);
