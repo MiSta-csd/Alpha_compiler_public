@@ -143,11 +143,13 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											$$ = $2;
-											$$->breakList = mergelist($1->breakList, $2->breakList);
-											$$->contList = mergelist($1->contList,  $2->contList);
-											$$->retList = mergelist($1->retList, $2->retList);
-
+											if($1 && $2) {
+												$$ = $2;
+												$$->breakList = mergelist($1->breakList, $2->breakList);
+												$$->contList = mergelist($1->contList,  $2->contList);
+												$$->retList = mergelist($1->retList, $2->retList);
+											}else
+												$$ = NULL;
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
 			
@@ -159,20 +161,22 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 												backpatch($1->truelist, get_next_quad());
         										backpatch($1->falselist, get_next_quad() + 2);
 												emit_branch_assign_quads($1);
-											}
-											$$ = new stmt_t();// new stmt_t calls make_stmt
-
+												$$ = new stmt_t();// new stmt_t calls make_stmt
+											}else
+												$$ = NULL;
 	  									}
 			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
 											$$ = $1;
 										}
 			| whilestmt					{	print_rules("3.3 stmt -> whilestmt");
-											$$ = new stmt_t();
-											$$->retList = $1->retList;
+											$$ = $1;
+											// $$ = new stmt_t();
+											// $$->retList = $1->retList;
 										}
 			| forstmt					{	print_rules("3.4 stmt -> forstmt");
-											$$ = new stmt_t();
-											$$->retList = $1->retList;
+											// $$ = new stmt_t();
+											// $$->retList = $1->retList;
+											$$ = $1;
 										}
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
 											$$ = new stmt_t();
@@ -207,7 +211,8 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											$$ = new stmt_t();
 										}
 			| SEMICOLON					{	print_rules("3.10 stmt -> ;");	$$ = NULL;
-											$$ = new stmt_t();
+											// $$ = new stmt_t();
+											$$ = NULL;
 										}
 			;
 
@@ -241,59 +246,75 @@ expr		: assignexpr				{	print_rules("4.1 expr -> assignexpr");
 											}
 										}
 			| expr GREATER expr			{	print_rules("4.7 expr -> expr > expr");
-											bool is_arith = check_arith($1, "expr greater expr. Invalid use of comparison operator on non arithmetic type expression")
-											&& check_arith($3, "expr greater expr. Invalid use of comparison operator on non arithmetic type expression");
-											if(is_arith) {
-												$$ = expr_compare_expr($1, IF_GREATER_OP, $3);
+											if($1 && $3) {
+												bool is_arith = check_arith($1, "expr greater expr. Invalid use of comparison operator on non arithmetic type expression")
+												&& check_arith($3, "expr greater expr. Invalid use of comparison operator on non arithmetic type expression");
+												if(is_arith) {
+													$$ = expr_compare_expr($1, IF_GREATER_OP, $3);
+												}
 											}
 										}
 			| expr GREATEREQUAL expr	{	print_rules("4.8 expr -> expr >= expr");
-											bool is_arith = check_arith($1, "expr greaterequal expr. Invalid use of comparison operator on non arithmetic type expression")
-											&& check_arith($3, "expr greaterequal expr. Invalid use of comparison operator on non arithmetic type expression");
-											if(is_arith) {
-												$$ = expr_compare_expr($1, IF_GREATER_OP, $3);
+											if($1 && $3) {
+												bool is_arith = check_arith($1, "expr greaterequal expr. Invalid use of comparison operator on non arithmetic type expression")
+												&& check_arith($3, "expr greaterequal expr. Invalid use of comparison operator on non arithmetic type expression");
+												if(is_arith) {
+													$$ = expr_compare_expr($1, IF_GREATER_OP, $3);
+												}
 											}
 										}
 			| expr LESSER expr			{	print_rules("4.9 expr -> expr < expr");
-											bool is_arith = check_arith($1, "expr lesser expr. Invalid use of comparison operator on non arithmetic type expression")
-											&& check_arith($3, "expr lesser expr. Invalid use of comparison operator on non arithmetic type expression");
-											if(is_arith) {
-												$$ = expr_compare_expr($1, IF_LESS_OP, $3);
+											if($1 && $3) {
+												bool is_arith = check_arith($1, "expr lesser expr. Invalid use of comparison operator on non arithmetic type expression")
+												&& check_arith($3, "expr lesser expr. Invalid use of comparison operator on non arithmetic type expression");
+												if(is_arith) {
+													$$ = expr_compare_expr($1, IF_LESS_OP, $3);
+												}
 											}
 										}
 			| expr LESSEREQUAL expr		{	print_rules("4.10 expr -> expr <= expr");
-											bool is_arith = check_arith($1, "expr lessereq expr. Invalid use of comparison operator on non arithmetic type expression")
-											&& check_arith($3, "expr lessereq expr. Invalid use of comparison operator on non arithmetic type expression");
-											if(is_arith) {
-												$$ = expr_compare_expr($1, IF_LESSEQ_OP, $3);
+											if($1 && $3) {
+												bool is_arith = check_arith($1, "expr lessereq expr. Invalid use of comparison operator on non arithmetic type expression")
+												&& check_arith($3, "expr lessereq expr. Invalid use of comparison operator on non arithmetic type expression");
+												if(is_arith) {
+													$$ = expr_compare_expr($1, IF_LESSEQ_OP, $3);
+												}
 											}
 										}	
 			| expr EQUAL expr			{	print_rules("4.11 expr -> expr == expr");
-											$$ = expr_compare_expr($1, IF_EQ_OP, $3);
+											if($1 && $3) {
+												$$ = expr_compare_expr($1, IF_EQ_OP, $3);
+											}
 										}	
 			| expr NOTEQUAL expr		{	print_rules("4.12 expr -> expr != expr");
-											$$ = expr_compare_expr($1, IF_NOTEQ_OP, $3);
+											if($1 && $3) {
+												$$ = expr_compare_expr($1, IF_NOTEQ_OP, $3);
+											}
 										}
 			| expr AND {$1 = true_test($1);} M expr
 										{	print_rules("4.13 expr -> expr AND expr");
-											expr *expr2 = true_test($5);
-											backpatch($1->truelist, $4);
-											union values val;// ginetai apotimhsh ths logikhs ekfrashs amesws kai apo8 sto BOOLEX quad
-											val.boolConst = $1->value.boolConst && expr2->value.boolConst;
+											if($1 && $5) {
+												expr *expr2 = true_test($5);
+												backpatch($1->truelist, $4);
+												union values val;// ginetai apotimhsh ths logikhs ekfrashs amesws kai apo8 sto BOOLEX quad
+												val.boolConst = $1->value.boolConst && expr2->value.boolConst;
 
-											$$ = new expr(BOOLEXPR_E, newtemp(), NULL, val);
-											$$->truelist = expr2->truelist;
-											$$->falselist = merge($1->falselist, expr2->falselist);
+												$$ = new expr(BOOLEXPR_E, newtemp(), NULL, val);
+												$$->truelist = expr2->truelist;
+												$$->falselist = merge($1->falselist, expr2->falselist);
+											}
 										}
 			| expr OR {$1 = true_test($1);} M expr
 										{	print_rules("4.14 expr -> expr OR expr");
-											expr *expr2 = true_test($5);
-											backpatch($1->falselist, $4);
-											union values val;// ginetai apotimhsh ths logikhs ekfrashs amesws kai apo8 sto BOOLEX quad
-											val.boolConst = $1->value.boolConst || expr2->value.boolConst;
-											$$ = new expr(BOOLEXPR_E, newtemp(), NULL, val);
-											$$->falselist = expr2->falselist;
-											$$->truelist = merge($1->truelist, expr2->truelist);
+											if($1 && $5) {
+												expr *expr2 = true_test($5);
+												backpatch($1->falselist, $4);
+												union values val;// ginetai apotimhsh ths logikhs ekfrashs amesws kai apo8 sto BOOLEX quad
+												val.boolConst = $1->value.boolConst || expr2->value.boolConst;
+												$$ = new expr(BOOLEXPR_E, newtemp(), NULL, val);
+												$$->falselist = expr2->falselist;
+												$$->truelist = merge($1->truelist, expr2->truelist);
+											}
 										}
 			| term						{	print_rules("4.15 expr -> term");
 											$$ = $1;
@@ -313,88 +334,100 @@ term		: LPAREN expr RPAREN		{
 	  									}
 			| MINUS expr %prec UMINUS	{	
 											print_rules("5.2 term -> - expr");
-											check_arith($2, "MINUS expr \%UMINUS");
-											$$ = newexpr(ARITHEXPR_E);
-											$$->sym = (istempexpr($2)) ? $2->sym : newtemp();
-											emit(UMINUS_OP, $$, $2, NULL, get_next_quad(), yylineno);
+											if($2) {
+												check_arith($2, "MINUS expr \%UMINUS");
+												$$ = newexpr(ARITHEXPR_E);
+												$$->sym = (istempexpr($2)) ? $2->sym : newtemp();
+												emit(UMINUS_OP, $$, $2, NULL, get_next_quad(), yylineno);
+											}
 										}
 
 			| NOT expr					{	
 											print_rules("5.3 term -> NOT expr");
-											$$ = true_test($2);// TODO make it BOOLEXPR_E
-											std::vector<int> *tmp = $$->truelist;
-											$$->truelist = $$->falselist;
-											$$->falselist = tmp;
-											$$->type = BOOLEXPR_E;
+											if($2) {
+												$$ = true_test($2);// TODO make it BOOLEXPR_E
+												std::vector<int> *tmp = $$->truelist;
+												$$->truelist = $$->falselist;
+												$$->falselist = tmp;
+												$$->type = BOOLEXPR_E;
+											}
 										}
 			| PLUSPLUS lvalue			{
 											print_rules("5.4 term -> ++ lvalue");
-											if($2->sym->type == USER_FUNC || $2->sym->type == LIB_FUNC){
+											if($2 && $2->sym->type == USER_FUNC || $2->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
 											}
-											if($2->type == TABLEITEM_E) {
-												$$ = emit_iftableitem($2);
-												emit(ADD_OP, $$, newexpr_constint(1), $$, get_next_quad(), yylineno);
-												emit(TABLESETELEM_OP, $2, $2->index, $$, get_next_quad(), yylineno);
-											}
-											else {
-												emit(ADD_OP, $2, newexpr_constint(1), $2, get_next_quad(), yylineno);
-												$$ = newexpr(ARITHEXPR_E);
-												$$->sym = newtemp();
-												emit(ASSIGN_OP, $$, $2, NULL, get_next_quad(), yylineno);
+											if($2) {
+												if($2->type == TABLEITEM_E) {
+													$$ = emit_iftableitem($2);
+													emit(ADD_OP, $$, newexpr_constint(1), $$, get_next_quad(), yylineno);
+													emit(TABLESETELEM_OP, $2, $2->index, $$, get_next_quad(), yylineno);
+												}
+												else {
+													emit(ADD_OP, $2, newexpr_constint(1), $2, get_next_quad(), yylineno);
+													$$ = newexpr(ARITHEXPR_E);
+													$$->sym = newtemp();
+													emit(ASSIGN_OP, $$, $2, NULL, get_next_quad(), yylineno);
+												}
 											}
 										}
 			| lvalue PLUSPLUS			{
 											print_rules("5.5 term -> lvalue ++");
-											if($1->sym->type == USER_FUNC || $1->sym->type == LIB_FUNC){
+											if($1 && $1->sym->type == USER_FUNC || $1->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
 											}
-											$$ = newexpr(VAR_E);
-											$$->sym = newtemp();
-											if($1->type == TABLEITEM_E) {
-												expr *val = emit_iftableitem($1);
-												emit(ASSIGN_OP, $$, val, NULL, get_next_quad(), yylineno);
-												emit(ADD_OP, val, newexpr_constint(1), val, get_next_quad(), yylineno);
-												emit(TABLESETELEM_OP, $1, $1->index, val, get_next_quad(), yylineno);
-											}
-											else {
-												emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
-												emit(ADD_OP, $1, newexpr_constint(1), $1, get_next_quad(), yylineno);
+											if ($1) {
+												$$ = newexpr(VAR_E);
+												$$->sym = newtemp();
+												if($1->type == TABLEITEM_E) {
+													expr *val = emit_iftableitem($1);
+													emit(ASSIGN_OP, $$, val, NULL, get_next_quad(), yylineno);
+													emit(ADD_OP, val, newexpr_constint(1), val, get_next_quad(), yylineno);
+													emit(TABLESETELEM_OP, $1, $1->index, val, get_next_quad(), yylineno);
+												}
+												else {
+													emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
+													emit(ADD_OP, $1, newexpr_constint(1), $1, get_next_quad(), yylineno);
+												}
 											}
 										}
 			| MINUSMINUS lvalue			{
 											print_rules("5.6 term -> -- lvalue");
-											if($2->sym->type == USER_FUNC || $2->sym->type == LIB_FUNC){
+											if($2 && $2->sym->type == USER_FUNC || $2->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
 											}
-											if($2->type == TABLEITEM_E) {
-												$$ = emit_iftableitem($2);
-												emit(SUB_OP, $$, newexpr_constint(1), $$, get_next_quad(), yylineno);
-												emit(TABLESETELEM_OP, $2, $2->index, $$, get_next_quad(), yylineno);
-											}
-											else {
-												emit(SUB_OP, $2, newexpr_constint(1), $2, get_next_quad(), yylineno);
-												$$ = newexpr(ARITHEXPR_E);
-												$$->sym = newtemp();
-												emit(ASSIGN_OP, $$, $2, NULL, get_next_quad(), yylineno);
+											if($2) {
+												if($2->type == TABLEITEM_E) {
+													$$ = emit_iftableitem($2);
+													emit(SUB_OP, $$, newexpr_constint(1), $$, get_next_quad(), yylineno);
+													emit(TABLESETELEM_OP, $2, $2->index, $$, get_next_quad(), yylineno);
+												}
+												else {
+													emit(SUB_OP, $2, newexpr_constint(1), $2, get_next_quad(), yylineno);
+													$$ = newexpr(ARITHEXPR_E);
+													$$->sym = newtemp();
+													emit(ASSIGN_OP, $$, $2, NULL, get_next_quad(), yylineno);
+												}
 											}
 										}
 			| lvalue MINUSMINUS			{
 											print_rules("5.7 term ->  lvalue --");
-											if($1->sym->type == USER_FUNC || $1->sym->type == LIB_FUNC){
+											if($1 && $1->sym->type == USER_FUNC || $1->sym->type == LIB_FUNC){
 												yyerror("invalid assignment (lvalue is a function)");
 											}
-											$$ = newexpr(VAR_E);
-											$$->sym = newtemp();
-											if($1->type == TABLEITEM_E) {
-												expr *val = emit_iftableitem($1);
-												emit(ASSIGN_OP, $$, val, NULL, get_next_quad(), yylineno);
-												emit(SUB_OP, val, newexpr_constint(1), val, get_next_quad(), yylineno);
-												emit(TABLESETELEM_OP, $1, $1->index, val, get_next_quad(), yylineno);
-											}
-											else {
-												emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
-												emit(SUB_OP, $1, newexpr_constint(1), $1, get_next_quad(), yylineno);
+											if($1) {
+												$$ = newexpr(VAR_E);
+												$$->sym = newtemp();
+												if($1->type == TABLEITEM_E) {
+													expr *val = emit_iftableitem($1);
+													emit(ASSIGN_OP, $$, val, NULL, get_next_quad(), yylineno);
+													emit(SUB_OP, val, newexpr_constint(1), val, get_next_quad(), yylineno);
+													emit(TABLESETELEM_OP, $1, $1->index, val, get_next_quad(), yylineno);
+												}
+												else {
+													emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
+													emit(SUB_OP, $1, newexpr_constint(1), $1, get_next_quad(), yylineno);
+												}
 											}
 										}
 			| primary					{	print_rules("5.8 term -> primary");
@@ -403,7 +436,7 @@ term		: LPAREN expr RPAREN		{
 			;
 // Rule 6.
 assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr");
-		   							 		if(!member_flag && $1->sym && ($1->sym->type==LIB_FUNC || $1->sym->type==USER_FUNC) ) {
+		   							 		if($1 && !member_flag && $1->sym && ($1->sym->type==LIB_FUNC || $1->sym->type==USER_FUNC) ) {
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
 												if($1 && $1->type == TABLEITEM_E) {
@@ -412,7 +445,7 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
                                         			$$->type = VAR_E;
 												}
 												else {
-													if($1) {
+													if($3 && $1) {
 														if($3->type == BOOLEXPR_E) {									
 															backpatch($3->truelist, get_next_quad());
 															backpatch($3->falselist, get_next_quad() + 2);
@@ -516,15 +549,18 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 // Rule 8+.
 tableitem	: lvalue DOT ID				{
 											print_rules("8+.1 tableitem -> lvalue . ID");
-											$$ = member_item($1, $3);
+											if($1)
+												$$ = member_item($1, $3);
 										}
 			| lvalue LBRACK expr RBRACK	{
 											print_rules("8+.2 tableitem -> lvalue [ expr ]");
-											expr *e = handle_bool_e($3);
-											$1 = emit_iftableitem($1);
-											$$ = newexpr(TABLEITEM_E);
-											$$->sym = $1->sym;
-											$$->index = e;
+											if($1 && $3) {
+												expr *e = handle_bool_e($3);
+												$1 = emit_iftableitem($1);
+												$$ = newexpr(TABLEITEM_E);
+												$$->sym = $1->sym;
+												$$->index = e;
+											}
 										}
 
 
@@ -537,27 +573,33 @@ member		: tableitem					{
 			| call DOT ID				{
 											print_rules("9.2 member -> call . ID");
 											member_flag = true;
-											$$ = member_item($1,$3);
+											if($1)
+												$$ = member_item($1,$3);
 										}
 			| call LBRACK expr RBRACK 	{
 											print_rules("9.3 member -> call [ expr ]");
 											member_flag = true;
-											expr *e = handle_bool_e($3);
-											$$ = e;
+											if($3) {
+												expr *e = handle_bool_e($3);
+												$$ = e;
+											}
 										}
 			;
 // Rule 10.				
 call		: call normcall				{	print_rules("10.1 member -> call ( elist )");
-											$$ = make_call($1, $2->elist);
+											if($1 && $2)
+												$$ = make_call($1, $2->elist);
 										}
 			| lvalue callsuffix			{	print_rules("10.2 member -> lvalue callsuffix");
-											$1 = emit_iftableitem($1);
-											if ($2->method){
-												expr* t = $1;
-												$1 = emit_iftableitem(member_item(t, $2->name));
-												$2->elist->insert($2->elist->begin(),t); //v.insert(v.begin(), 6);
+											if($1 && $2) {
+												$1 = emit_iftableitem($1);
+												if ($2->method){
+													expr* t = $1;
+													$1 = emit_iftableitem(member_item(t, $2->name));
+													$2->elist->insert($2->elist->begin(),t); //v.insert(v.begin(), 6);
+												}
+												$$ = make_call($1, $2->elist);
 											}
-											$$ = make_call($1, $2->elist);
 										}
 			| LPAREN funcdef RPAREN LPAREN elist RPAREN
 										{
@@ -594,15 +636,15 @@ methodcall	: DOTDOT ID LPAREN elist RPAREN
 elist		: expr 						{
 											print_rules("14.1 elist -> expr");
 											$$ = new std::vector<expr*>;
-											/* if($1->type == BOOLEXPR) {
-												
-											} */
-											$$->push_back(handle_bool_e($1));
+											if($1) {
+												$$->push_back(handle_bool_e($1));
+											}
 										}
 			| elist COMMA expr 			{	
 											print_rules("14.2 elist -> elist , expr");
 											assert($1);
-											$1->push_back(handle_bool_e($3));
+											if($3)
+												$1->push_back(handle_bool_e($3));
 										}
 			|	/* ε */					{	
 											print_rules("14.3 elist -> ε");
@@ -664,8 +706,10 @@ indexedelem	: LCBRACK expr COLON expr
 			  RCBRACK					{	
 				  							print_rules("17.1 indexedelem -> { expr : expr }");
 											std::pair<expr*,expr*>* p = new std::pair<expr*,expr*>;
-											p->first = handle_bool_e($2);
-											p->second = handle_bool_e($4);
+											if($2 && $4) {
+												p->first = handle_bool_e($2);
+												p->second = handle_bool_e($4);
+											}
 											$$ = p;	  
 										}
 			;
@@ -699,14 +743,17 @@ funcname    : ID						{
 												if(st_entry_tmp["r19"]->type == USER_FUNC)// kseroume oti einai locally defined
 													yyerror("redefinition of user function defined in line "
 													+ std::to_string(st_entry_tmp["r19"]->line));
+													$$ = NULL;
 												else if(st_entry_tmp["r19"]->type == LIB_FUNC){
 													yyerror("function definition shadows lib function");
+													$$ = NULL;
 												}
 												else if(st_entry_tmp["r19"]->type == LOCAL_VAR
 														|| st_entry_tmp["r19"]->type == FORMAL_ARG
 														|| st_entry_tmp["r19"]->type == GLOBAL_VAR){
 													yyerror("variable \""+ *$$ + "\" already defined in line "
 													+std::to_string(st_entry_tmp["r19"]->line));
+													$$ = NULL;
 												}
 												else {
 													yyerror("UNHANDLED CASE ?\nonoma: " + st_entry_tmp["r19"]->name +
@@ -755,7 +802,9 @@ funcargs:   LPAREN idlist RPAREN  		{
             ;						
 funcbody    : block						{
 										    /* $$ = currscopeoffset(); */
-											$$ = $1->retList;
+											if($1) {
+												$$ = $1->retList;
+											}
 											exitscopespace();
 										}
 			;
@@ -835,17 +884,20 @@ idlist		: ID 						{
 // Rule 23.
 ifprefix	: IF LPAREN expr RPAREN		{
 											print_rules("23.1 ifprefix -> if ( expr )");
-											$3 = true_test($3);
-											if($3->type == BOOLEXPR_E) {
-												backpatch($3->truelist, get_next_quad());
-												backpatch($3->falselist, get_next_quad() + 2);
-												$3 = emit_branch_assign_quads($3);
-												emit(IF_EQ_OP, NULL, $3, newexpr_constbool(true), get_next_quad() + 2, yylineno);
-												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-											}
-											$3->falselist = new std::vector<int>();
-											$3->falselist->push_back(get_current_quad()-1);// pushback the jump so i can backpatch
-											$$ = $3;
+											if($3) {
+												$3 = true_test($3);
+												if($3->type == BOOLEXPR_E) {
+													backpatch($3->truelist, get_next_quad());
+													backpatch($3->falselist, get_next_quad() + 2);
+													$3 = emit_branch_assign_quads($3);
+													emit(IF_EQ_OP, NULL, $3, newexpr_constbool(true), get_next_quad() + 2, yylineno);
+													emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+												}
+												$3->falselist = new std::vector<int>();
+												$3->falselist->push_back(get_current_quad()-1);// pushback the jump so i can backpatch
+												$$ = $3;
+											}else
+												$$ = NULL;
 										}
 			;
 
@@ -858,18 +910,26 @@ elseprefix	: ELSE						{
 
 ifstmt		: ifprefix stmt				{
 											print_rules("23.3 ifstmt -> ifprefix stmt");
-											backpatch($1->falselist, get_next_quad());
-											$$ = $2;
+											if($1) {
+												backpatch($1->falselist, get_next_quad());
+												$$ = $2;
+											}else
+												$$ = NULL;
 										}
 			| ifprefix stmt elseprefix stmt
 										{
 											print_rules("23.4 ifstmt -> ifstmt -> ifprefix stmt elseprefix stmt");
-											backpatch($1->falselist, $3+2);
-											patchlabel($3, get_next_quad());
-											$2->breakList = mergelist($2->breakList, $4->breakList);
-											$2->contList = mergelist($2->contList,  $4->contList);
-											$2->retList = mergelist($2->retList, $4->retList);
-											$$ = $2;
+											if($1 && $2 && $4){
+												backpatch($1->falselist, $3+2);
+												patchlabel($3, get_next_quad());
+												$2->breakList = mergelist($2->breakList, $4->breakList);
+												$2->contList = mergelist($2->contList,  $4->contList);
+												$2->retList = mergelist($2->retList, $4->retList);
+												$$ = $2;
+											}else{
+												$$=NULL;
+											}
+											
 										}
 			;
 			
@@ -877,21 +937,22 @@ ifstmt		: ifprefix stmt				{
 whilestart	: WHILE						{	/* ++loopcounter; */	$$ = get_next_quad();}
 		   	;
 whilecond	: LPAREN expr RPAREN		{
-											$2 = true_test($2);
-											if($2->type == BOOLEXPR_E) {
-												$2 = handle_bool_e($2);
-												emit(IF_EQ_OP, NULL, $2, newexpr_constbool(true), get_next_quad()+2, yylineno);
-												$$ = get_current_quad();
-												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-											}else // case i have while(true) ...
-												$$ = get_current_quad()-1;
-											loop_stack.push(st_get_scope());
+											if($2) {
+												$2 = true_test($2);
+												if($2->type == BOOLEXPR_E) {
+													$2 = handle_bool_e($2);
+													emit(IF_EQ_OP, NULL, $2, newexpr_constbool(true), get_next_quad()+2, yylineno);
+													$$ = get_current_quad();
+													emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+												}else // case i have while(true) ...
+													$$ = get_current_quad()-1;
+												loop_stack.push(st_get_scope());
+											}
 										}
 			;
 whilestmt	: whilestart whilecond stmt
 		  								{
 											print_rules("24.1 whilestmt -> while ( expr ) stmt");
-											$$ = new stmt_t();
 											if($3 != NULL) {
 												patchlist($3->breakList, get_next_quad()+1);
 												patchlist($3->contList, $1);
@@ -909,11 +970,14 @@ forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 										{
 											print_rules("25.0 forprefix -> for ( elist ; expr ;");
 											loop_stack.push(st_get_scope());
-											$$ = new for_stmt();
-											$$->test = $5;
-											expr* e = handle_bool_e($6);
-											$$->enter = get_current_quad();
-											emit(IF_EQ_OP, NULL, e, newexpr_constbool(true), 0, yylineno);
+											if($6) {
+												$$ = new for_stmt();
+												$$->test = $5;
+												expr* e = handle_bool_e($6);
+												$$->enter = get_current_quad();
+												emit(IF_EQ_OP, NULL, e, newexpr_constbool(true), 0, yylineno);
+											}else
+												$$ = NULL;
 										}
 			;
 
@@ -924,10 +988,13 @@ forstmt		: forprefix N elist RPAREN N stmt N
 											patchlabel($2, get_next_quad());
 											patchlabel($5, $1->test);
 											patchlabel($7, $2 + 2);
-
-											patchlist($6->breakList, get_next_quad());
-											patchlist($6->contList, $2 + 1);
-											$$ = $6;
+											if($6){
+												patchlist($6->breakList, get_next_quad());
+												patchlist($6->contList, $2 + 1);
+												$$ = $6;
+											}else{
+												$$ = NULL;
+											}
 											loop_stack.pop();
 										}
 			;
@@ -957,7 +1024,7 @@ returnstmt 	: RETURN SEMICOLON 			{
 												emit(RET_OP, NULL, NULL, $2, get_next_quad(), yylineno);
 												$$ = get_current_quad();// TODO check
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-												if($2->type == BOOLEXPR_E) {
+												if($2 && $2->type == BOOLEXPR_E) {
 													backpatch($2->truelist, get_next_quad());
 													backpatch($2->falselist, get_next_quad() + 2);
 													emit_branch_assign_quads($2);

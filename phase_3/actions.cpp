@@ -137,7 +137,7 @@ expr * newexpr_constbool (bool b) {
 */
 expr * emit_iftableitem (expr *e) {
 	expr* result;
-	if (e->type != TABLEITEM_E)
+	if (e && e->type != TABLEITEM_E)
 		return e;
 	else {
 		result = newexpr(VAR_E);

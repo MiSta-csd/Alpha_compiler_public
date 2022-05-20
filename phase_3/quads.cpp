@@ -79,7 +79,7 @@ void print_quads(int arg) {
 			outFile << quad.result->sym->name << " ";
 		}
 		if(quad.arg1) {
-			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E
+			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E && CONSTSTRING_E
 			&& quad.arg1->type != CONSTINT_E && quad.arg1->type != CONSTDOUBLE_E) {
 				outFile << quad.arg1->sym->name << " ";
 			}else {
@@ -106,7 +106,7 @@ void print_quads(int arg) {
 			}
 		}
 		if(quad.arg2) {
-			if(quad.arg2->sym && quad.arg2->type != CONSTBOOL_E
+			if(quad.arg2->sym && quad.arg2->type != CONSTBOOL_E && CONSTSTRING_E
 			&& quad.arg2->type != CONSTINT_E && quad.arg2->type != CONSTDOUBLE_E) {
 				outFile << quad.arg2->sym->name << " ";
 			}else {
