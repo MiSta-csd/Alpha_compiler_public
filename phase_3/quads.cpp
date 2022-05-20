@@ -63,7 +63,7 @@ void print_quads() {
 			std::cout << quad.result->sym->name << " ";
 		}
 		if(quad.arg1) {
-			if(quad.arg1->sym) {
+			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E) {
 				std::cout << quad.arg1->sym->name << " ";
 			}else {
 				switch (quad.arg1->type) {

@@ -606,8 +606,7 @@ elist		: expr 						{
 											assert($1);
 											$1->push_back(handle_bool_e($3));
 										}
-			| 	/* THis rule may have to be palced in rule 12: normcall */
-										{	
+			|	/* ε */					{	
 											print_rules("14.3 elist -> ε");
 											$$ = new std::vector<expr*>;
 										}
@@ -764,7 +763,7 @@ funcdef		: funcprefix funcargs funcbody
 		 								{	
 											exitscopespace();
 											patchlist($3, get_next_quad());
-											$1->totalLocals = $3;
+											$1->totalLocals = currscopeoffset();
 											int offset = popscopeoffsetstack();
 											restorecurrscopeoffset(offset);
 											$$ = $1;
