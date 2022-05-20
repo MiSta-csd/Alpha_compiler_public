@@ -912,8 +912,8 @@ forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 											loop_stack.push(st_get_scope());
 											$$ = new for_stmt();
 											$$->test = $5;
-											$$->enter = get_current_quad();
 											expr* e = handle_bool_e($6);
+											$$->enter = get_current_quad();
 											emit(IF_EQ_OP, NULL, e, newexpr_constbool(true), 0, yylineno);
 										}
 			;
@@ -921,7 +921,7 @@ forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 forstmt		: forprefix N elist RPAREN N stmt N
 										{
 		 									print_rules("25.1 forstmt -> for ( elist ; expr ; elist ) stmt");
-											patchlabel($1->enter, $5+1);
+											patchlabel($1->enter, $5+2);
 											patchlabel($2, get_next_quad());
 											patchlabel($5, $1->test);
 											patchlabel($7, $2 + 2);
