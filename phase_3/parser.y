@@ -143,13 +143,18 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											if($1 && $2) {
+											if(!$1 && !$2)
+												$$ = NULL;
+											else if(!$1) {
 												$$ = $2;
+											}else if(!$2)
+												$$ = $1;
+											else {
+												$$ = new stmt_t();
 												$$->breakList = mergelist($1->breakList, $2->breakList);
 												$$->contList = mergelist($1->contList,  $2->contList);
 												$$->retList = mergelist($1->retList, $2->retList);
-											}else
-												$$ = NULL;
+											}
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
 			
@@ -170,12 +175,8 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 										}
 			| whilestmt					{	print_rules("3.3 stmt -> whilestmt");
 											$$ = $1;
-											// $$ = new stmt_t();
-											// $$->retList = $1->retList;
 										}
 			| forstmt					{	print_rules("3.4 stmt -> forstmt");
-											// $$ = new stmt_t();
-											// $$->retList = $1->retList;
 											$$ = $1;
 										}
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
@@ -740,10 +741,11 @@ funcname    : ID						{
 											}
 											else
 											{
-												if(st_entry_tmp["r19"]->type == USER_FUNC)// kseroume oti einai locally defined
+												if(st_entry_tmp["r19"]->type == USER_FUNC) {// kseroume oti einai locally defined
 													yyerror("redefinition of user function defined in line "
 													+ std::to_string(st_entry_tmp["r19"]->line));
 													$$ = NULL;
+												}
 												else if(st_entry_tmp["r19"]->type == LIB_FUNC){
 													yyerror("function definition shadows lib function");
 													$$ = NULL;
@@ -912,9 +914,8 @@ ifstmt		: ifprefix stmt				{
 											print_rules("23.3 ifstmt -> ifprefix stmt");
 											if($1) {
 												backpatch($1->falselist, get_next_quad());
-												$$ = $2;
-											}else
-												$$ = NULL;
+											}
+											$$ = $2;
 										}
 			| ifprefix stmt elseprefix stmt
 										{
@@ -953,12 +954,12 @@ whilecond	: LPAREN expr RPAREN		{
 whilestmt	: whilestart whilecond stmt
 		  								{
 											print_rules("24.1 whilestmt -> while ( expr ) stmt");
-											if($3 != NULL) {
+											if($3) {
 												patchlist($3->breakList, get_next_quad()+1);
 												patchlist($3->contList, $1);
-											} else {
+												$$ = $3;
+											}else
 												$$ = new stmt_t();
-											}
 											emit(JUMP_OP, NULL, NULL, NULL, $1, yylineno);
 											patchlabel($2, get_next_quad());
 											loop_stack.pop();

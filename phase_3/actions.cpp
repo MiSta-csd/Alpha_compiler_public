@@ -157,9 +157,9 @@ expr * emit_iftableitem (expr *e) {
 expr* emit_branch_assign_quads(expr *ex) {
 	assert(ex);
 
-	emit(ASSIGN_OP, ex, newexpr_constbool(true), NULL, 0, yylineno);
+	emit(ASSIGN_OP, ex, newexpr_constbool(true), NULL, get_next_quad(), yylineno);
 	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
-	emit(ASSIGN_OP, ex, newexpr_constbool(false), NULL, 0, yylineno);
+	emit(ASSIGN_OP, ex, newexpr_constbool(false), NULL, get_next_quad(), yylineno);
 
 	return ex;
 }

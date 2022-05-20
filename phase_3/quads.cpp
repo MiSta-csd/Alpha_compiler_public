@@ -131,11 +131,11 @@ void print_quads(int arg) {
 				}
 			}
 		}
-		if(can_jump(quad.op)) {
+		// if(can_jump(quad.op)) {
 			if (quad.label){
 				outFile << quad.label << " ";
 			}
-		}
+		// }
 		outFile << "[line " << quad.line << "]\n";
 		i++;
     }
@@ -162,7 +162,7 @@ unsigned int get_next_quad() {
 }
 
 stmt_t::stmt_t(){
-	this->breakList = this->contList = this->retList = 0;
+	make_stmt(this);
 }
 
 void make_stmt (stmt_t* s) {
