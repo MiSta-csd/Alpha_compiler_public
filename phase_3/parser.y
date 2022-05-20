@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <iostream>
 #include <string>
+#include <cstring>
 #include "symtable.h"
 #include "quads.h"
 #include "actions.h"
@@ -142,19 +143,10 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											/* if(!$1 && !$2) { */
-											/* 	$$ = new stmt_t(); */
-											/* }else if(!$1) { */
-											/* 	$$ = $2; */
-											/* }else if(!$2) { */
-											/* 	$$ = $1; */
-											/* } */
-											/* else { */
 											$$ = $2;
-												$$->breakList = mergelist($1->breakList, $2->breakList);
-												$$->contList = mergelist($1->contList,  $2->contList);
-												$$->retList = mergelist($1->retList, $2->retList);
-											/* } */
+											$$->breakList = mergelist($1->breakList, $2->breakList);
+											$$->contList = mergelist($1->contList,  $2->contList);
+											$$->retList = mergelist($1->retList, $2->retList);
 
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
@@ -163,14 +155,13 @@ stmts		: stmts stmt 				{
 // Rule 3.
 stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											resettemp();
-											if($1->type == BOOLEXPR_E) {
+											if($1 && $1->type == BOOLEXPR_E) {
 												backpatch($1->truelist, get_next_quad());
         										backpatch($1->falselist, get_next_quad() + 2);
 												emit_branch_assign_quads($1);
-												$$ = NULL;
-											}else {
-												$$ = new stmt_t();// new stmt_t calls make_stmt
 											}
+											$$ = new stmt_t();// new stmt_t calls make_stmt
+
 	  									}
 			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
 											$$ = $1;
@@ -415,20 +406,22 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 		   							 		if(!member_flag && $1->sym && ($1->sym->type==LIB_FUNC || $1->sym->type==USER_FUNC) ) {
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
-												if($1->type == TABLEITEM_E) {
+												if($1 && $1->type == TABLEITEM_E) {
 													emit(TABLESETELEM_OP, $1, $1->index, $3, get_next_quad(), yylineno);
 													$$ = emit_iftableitem($1);
                                         			$$->type = VAR_E;
 												}
 												else {
-													if($3->type == BOOLEXPR_E) {									
-														backpatch($3->truelist, get_next_quad());
-														backpatch($3->falselist, get_next_quad() + 2);
-														emit_branch_assign_quads($3);
+													if($1) {
+														if($3->type == BOOLEXPR_E) {									
+															backpatch($3->truelist, get_next_quad());
+															backpatch($3->falselist, get_next_quad() + 2);
+															emit_branch_assign_quads($3);
+														}
+														emit(ASSIGN_OP, $1, $3, NULL, get_next_quad(), yylineno);
+														$$ = new expr(VAR_E, newtemp(), $3, $3->value);
+														emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
 													}
-													emit(ASSIGN_OP, $1, $3, NULL, get_next_quad(), yylineno);
-													$$ = new expr(VAR_E, newtemp(), $3, $3->value);
-													emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
 												}
 											}
 											if(member_flag) {
@@ -439,8 +432,9 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 
 // Rule 7.
 primary		: lvalue					{	
-											print_rules("7.1 primary -> lvalue");							
-											$$ = emit_iftableitem($1);
+											print_rules("7.1 primary -> lvalue");
+											if($1)						
+												$$ = emit_iftableitem($1);
 										}
 			| call						{	
 											print_rules("7.2 primary -> call");
@@ -491,6 +485,7 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 											}
 											else if(st_entry_tmp["r8"] && st_entry_tmp["r8"]->type == LIB_FUNC){
 												yyerror("variable \'" + *$2 + "\' shadows lib function");
+												$$ = NULL;
 											}
 											else{
 												$$ = lvalue_expr (st_insert(*$2, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR));
@@ -507,7 +502,7 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 											if(!st_entry_tmp["r8"]){
 												yyerror("No global variable "+*$2+" exists.");
 												$$ = NULL;
-												assert(st_entry_tmp["r8"]);
+												// assert(st_entry_tmp["r8"]);
 											}
 											else {
 												$$ = lvalue_expr (st_entry_tmp["r8"]);
@@ -681,6 +676,7 @@ block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 	   		  stmts RCBRACK 			{
 											st_hide(st_get_scope());
 											st_decrease_scope();
+											
 											$$ = $3;
 										}
 			| LCBRACK RCBRACK			{	print_rules("18.2 block -> { }");
@@ -958,9 +954,14 @@ returnstmt 	: RETURN SEMICOLON 			{
 											if (func_stack.empty()){
 												yyerror("Use of 'return' while not in a function");
 											}else {
-												emit(RET_OP, $2, NULL, NULL, get_next_quad(), yylineno);
+												emit(RET_OP, NULL, NULL, $2, get_next_quad(), yylineno);
 												$$ = get_current_quad();// TODO check
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+												if($2->type == BOOLEXPR_E) {
+													backpatch($2->truelist, get_next_quad());
+													backpatch($2->falselist, get_next_quad() + 2);
+													emit_branch_assign_quads($2);
+												}
 											}
 										}
 			;
@@ -978,7 +979,9 @@ int yyerror(std:: string err){
 
 int main(int argc, char** argv) {
 	std::cout << "\033[37m";
+	int arg=0;
     if (argc > 1) {
+		(strcmp(argv[1], "-output") == 0) ? (arg = 1) : (arg = 0);
 		if (!(yyin = fopen(argv[1], "r"))) {
 			fprintf(stderr, "Cannot read file: %s\n", argv[1]);
 			return 1;
@@ -986,12 +989,15 @@ int main(int argc, char** argv) {
 	} else {
 		yyin = stdin;
 	}
+
 	st_initialize();
     yyparse();
 	validate_comments();
+	// st_print_table();
 	if (!hasError){
-		st_print_table();
-		print_quads();
+		print_line();
+		print_quads(arg);	/* arg = 1 -> typwnei se file, arg = 0 sthn konsola */
+		print_line();
 	} else {
 		std::cout << "One or more errors on compilation, aborting... \n";
 	}

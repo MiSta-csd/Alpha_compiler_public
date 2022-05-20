@@ -11,24 +11,9 @@ extern int yylineno;
 st_entry* newtemp() {
 	st_entry *st_tmp_entry;
 	std::string tmp_name;
-	// if(tmp_var_count)
-	// 	tmp_name = "^" + std::to_string(tmp_var_count-1);
-	// else
-	// 	tmp_name = newtempname();
-	// if(!(st_tmp_entry = st_lookup(tmp_name) )) {
-	// 	st_tmp_entry = st_insert(tmp_name, LOCAL_VAR);
-	// }	// Kwstas original code
 	tmp_name = newtempname();
 	st_tmp_entry = st_lookup(tmp_name, st_get_scope());
-	/* return (st_tmp_entry) ? st_tmp_entry : (st_tmp_entry = st_insert(tmp_name, LOCAL_VAR)); */
-	if(st_tmp_entry){
-		return st_tmp_entry;
-	}
-	else {
-		st_tmp_entry = st_insert(std::string(tmp_name), LOCAL_VAR);
-		return st_tmp_entry;
-	}
-
+	return (st_tmp_entry) ? st_tmp_entry : (st_tmp_entry = st_insert(tmp_name, LOCAL_VAR));
 }
 
 std::string newtempname() {
@@ -236,10 +221,10 @@ expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	expr_pt->sym = newtemp();
 	expr_pt->truelist = new std::vector<int>();
 	expr_pt->falselist = new std::vector<int>();
-	emit(opcode, NULL, arg1, arg2, get_next_quad(), yylineno);
-	expr_pt->truelist->push_back(get_current_quad()-1);
-	emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
-	expr_pt->falselist->push_back(get_current_quad()-1);
+	expr_pt->truelist->push_back(get_current_quad());
+	emit(opcode, NULL, arg1, arg2, get_next_quad() + 2, yylineno);
+	expr_pt->falselist->push_back(get_current_quad());
+	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
 	return expr_pt;
 }
 

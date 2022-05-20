@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <stack>
+#include <iostream>
+#include <fstream>
 
 std::vector<quad> quad_vec;
 
@@ -50,38 +52,53 @@ static bool can_jump(iopcode op) {
 	return false;
 }
 
-void print_quads() {
+void print_line(){
+	std::cout << " -------------------------------------------\n\n";
+	return;
+}
+
+
+
+void print_quads(int arg) {
 	std::string opcodes[] = {"ASSIGN_OP", "ADD_OP", "SUB_OP", "MUL_OP", "DIV_OP", "MOD_OP", "UMINUS_OP", "AND_OP",
 	"OR_OP", "NOT_OP", "IF_EQ_OP", "IF_NOTEQ_OP", "IF_LESSEQ_OP", "IF_GREATEREQ_OP", "IF_LESS_OP", "IF_GREATER_OP",
 	"CALL_OP", "PARAM_OP", "RET_OP", "GETRETVAL_OP", "FUNCSTART_OP", "FUNCEND_OP", "TABLECREATE_OP", "TABLEGETELEM_OP",
 	"TABLESETELEM_OP", "JUMP_OP"};
-	std::cout << " -------------------------------------------\n\n";
+
+	std::ofstream q_file;
+
+	if(arg == 1)
+    	q_file.open("quads.txt", std::ios::out);
+
+	std::ostream & outFile = (arg ? q_file : std::cout);
+
 	int i = 1;
     for (auto quad : quad_vec){
-		std::cout << i << ": " << opcodes[quad.op] << " ";
+		outFile << i << ": " << opcodes[quad.op] << " ";
 		if (quad.result != NULL) {
-			std::cout << quad.result->sym->name << " ";
+			outFile << quad.result->sym->name << " ";
 		}
 		if(quad.arg1) {
-			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E) {
-				std::cout << quad.arg1->sym->name << " ";
+			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E
+			&& quad.arg1->type != CONSTINT_E && quad.arg1->type != CONSTDOUBLE_E) {
+				outFile << quad.arg1->sym->name << " ";
 			}else {
 				switch (quad.arg1->type) {
 					case CONSTINT_E:
-						std::cout << quad.arg1->value.intConst << " ";
+						outFile << quad.arg1->value.intConst << " ";
 						break;
 					case CONSTDOUBLE_E:
-						std::cout << quad.arg1->value.doubleConst << " ";
+						outFile << quad.arg1->value.doubleConst << " ";
 						break;
 					case CONSTSTRING_E:
-						std::cout << *quad.arg1->value.strConst << " ";
+						outFile << *quad.arg1->value.strConst << " ";
 						break;
 					case CONSTBOOL_E:
 					case BOOLEXPR_E:
-						std::cout << (quad.arg1->value.boolConst == true? "'true'" : "'false'") << " ";
+						outFile << (quad.arg1->value.boolConst == true? "'true'" : "'false'") << " ";
 						break;
 					case NIL_E:
-						std::cout << "NIL ";
+						outFile << "NIL ";
 						break;
 					default:
 						assert(NULL);
@@ -89,24 +106,25 @@ void print_quads() {
 			}
 		}
 		if(quad.arg2) {
-			if(quad.arg2->sym) {
-				std::cout << quad.arg2->sym->name << " ";
+			if(quad.arg2->sym && quad.arg2->type != CONSTBOOL_E
+			&& quad.arg2->type != CONSTINT_E && quad.arg2->type != CONSTDOUBLE_E) {
+				outFile << quad.arg2->sym->name << " ";
 			}else {
 				switch (quad.arg2->type) {
 					case CONSTINT_E:
-						std::cout << quad.arg2->value.intConst << " ";
+						outFile << quad.arg2->value.intConst << " ";
 						break;
 					case CONSTDOUBLE_E:
-						std::cout << quad.arg2->value.doubleConst << " ";
+						outFile << quad.arg2->value.doubleConst << " ";
 						break;
 					case CONSTSTRING_E:
-						std::cout << *quad.arg2->value.strConst << " ";
+						outFile << *quad.arg2->value.strConst << " ";
 						break;
 					case CONSTBOOL_E:
-						std::cout << (quad.arg2->value.boolConst == true? "'true'" : "'false'") << " ";
+						outFile << (quad.arg2->value.boolConst == true? "'true'" : "'false'") << " ";
 						break;
 					case NIL_E:
-						std::cout << "NIL ";
+						outFile << "NIL ";
 						break;
 					default:
 						assert(NULL);
@@ -115,14 +133,25 @@ void print_quads() {
 		}
 		if(can_jump(quad.op)) {
 			if (quad.label){
-				std::cout << quad.label << " ";
+				outFile << quad.label << " ";
 			}
 		}
-		std::cout << "[line " << quad.line << "]\n";
+		outFile << "[line " << quad.line << "]\n";
 		i++;
     }
-    std::cout << " ------------------------------------------- \n";
+    /* std::cout << " ------------------------------------------- \n"; */
+	if(arg == 1)
+		q_file.close();
+	
+/* 	std::ifstream f("quads.txt");
+
+    if (f.is_open())
+        std::cout << f.rdbuf();
+
+	f.close(); */
+	return;
 }
+
 
 unsigned int get_current_quad() {
 	return quad_vec.size();
