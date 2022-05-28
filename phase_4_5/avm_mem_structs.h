@@ -12,18 +12,19 @@ enum avm_memcell_t {
         UNDEF_M
 };
 
-struct avm table;
+struct avm_table;
 typedef struct avm_memcell {
     avm_memcell_t   type;
-    union {
+    union data{
         double              numVal;
-        std::string*        strVal;
+        std::string        strVal;
         bool                boolVal;
         struct avm_table*   tableVal;
         unsigned            funcVal;
-        std::string*        libfuncVal;      
-    } data;
+        std::string        libfuncVal;     
+    }data;
 };
 
+#define AVM_WIPEOUT(m)  memset(&(m), 0, sizeof(m))
 
 static void avm_initstack (void);

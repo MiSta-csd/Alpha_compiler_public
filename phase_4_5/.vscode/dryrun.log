@@ -1,7 +1,7 @@
 make --dry-run --always-make --keep-going --print-directory
-make: Entering directory '/home/d10s/Desktop/CSD/HY340/2022/project_hy340/phase_4'
+make: Entering directory '/home/d10s/Desktop/CSD/HY340/2022/project_hy340/phase_4_5'
 bison parser.y
 flex --outfile=lex.yy.cpp scanner.l
 g++ lex.yy.cpp parser.cpp kostas_sym.cpp quads.cpp actions.cpp scoping.cpp -o hashmap_parser -g
-make: Leaving directory '/home/d10s/Desktop/CSD/HY340/2022/project_hy340/phase_4'
+make: Leaving directory '/home/d10s/Desktop/CSD/HY340/2022/project_hy340/phase_4_5'
  

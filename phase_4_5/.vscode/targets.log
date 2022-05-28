@@ -8,7 +8,7 @@ make: *** No rule to make target 'all'.  Stop.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Wed May 25 11:05:50 2022
+# Make data base, printed on Sat May 28 14:43:13 2022
 
 # Variables
 
@@ -25,13 +25,13 @@ SSH_AGENT_LAUNCHER = gnome-keyring
 # environment
 SNAP_INSTANCE_KEY = 
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-af4ab4ad-888d-49fa-90cf-3d09062b5fec.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-8117a4e5-fa5e-41ce-8ee9-87315eea23d7.sock
 # environment
 LC_NAME = el_GR.UTF-8
 # environment
 LC_NUMERIC = el_GR.UTF-8
 # environment
-VSCODE_CWD = /home/d10s/Desktop/CSD/HY340/2022/project_hy340/phase_4
+VSCODE_CWD = /home/d10s/Desktop/CSD/HY340/2022/project_hy340/phase_4_5
 # environment
 WINDOWPATH = 2
 # environment
@@ -51,7 +51,7 @@ VSCODE_HANDLES_UNCAUGHT_ERRORS = true
 # default
 .VARIABLES := 
 # environment
-PWD = /home/d10s/Desktop/CSD/HY340/2022/project_hy340/phase_4
+PWD = /home/d10s/Desktop/CSD/HY340/2022/project_hy340/phase_4_5
 # automatic
 %D = $(patsubst %/,%,$(dir $%))
 # environment
@@ -73,11 +73,11 @@ XAUTHORITY = /run/user/1000/gdm/Xauthority
 # default
 .INCLUDE_DIRS = /usr/local/include /usr/include /usr/include
 # environment
-GNOME_TERMINAL_SERVICE = :1.89
+GNOME_TERMINAL_SERVICE = :1.110
 # makefile
 MAKEFLAGS = pqrR
 # makefile
-CURDIR := /home/d10s/Desktop/CSD/HY340/2022/project_hy340/phase_4
+CURDIR := /home/d10s/Desktop/CSD/HY340/2022/project_hy340/phase_4_5
 # environment
 VSCODE_PIPE_LOGGING = true
 # environment
@@ -107,13 +107,13 @@ SNAP_REEXEC =
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
-VSCODE_PID = 2708
+VSCODE_PID = 12033
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
 ?D = $(patsubst %/,%,$(dir $?))
 # environment
-SESSION_MANAGER = local/d10s-Lenovo:@/tmp/.ICE-unix/1506,unix/d10s-Lenovo:/tmp/.ICE-unix/1506
+SESSION_MANAGER = local/d10s-Lenovo:@/tmp/.ICE-unix/1510,unix/d10s-Lenovo:/tmp/.ICE-unix/1510
 # automatic
 *F = $(notdir $*)
 # environment
@@ -137,7 +137,7 @@ XMODIFIERS = @im=ibus
 # environment
 SHLVL = 1
 # environment
-GNOME_TERMINAL_SCREEN = /org/gnome/Terminal/screen/ab1b8d6b_d8e5_4467_a512_d67c70175e38
+GNOME_TERMINAL_SCREEN = /org/gnome/Terminal/screen/d29b92d7_25ca_4d1a_8bfa_6571b3c203ed
 # environment
 MAKELEVEL := 0
 # default
@@ -145,7 +145,7 @@ MAKE = $(MAKE_COMMAND)
 # environment
 SNAP_COOKIE = _I5nuuDrkgwGUnTwdjcAog80v9oO9WMOxnGoej7RytMDvd17TCsa
 # environment
-PATH = /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin
+PATH = /home/d10s/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin
 # default
 MAKEFILES := 
 # environment
@@ -159,7 +159,7 @@ LC_TIME = el_GR.UTF-8
 # environment
 SNAP = /snap/code/97
 # environment
-INVOCATION_ID = f5c8ecacaa3b484e8d929ac0b7fe514e
+INVOCATION_ID = c33d972cb7bf4ebe9a126e8749b98a82
 # environment
 SNAP_REVISION = 97
 # environment
@@ -193,7 +193,7 @@ SNAP_ARCH = amd64
 # makefile
 .DEFAULT_GOAL := hashmap_parser
 # environment
-SYSTEMD_EXEC_PID = 2636
+SYSTEMD_EXEC_PID = 5387
 # environment
 DISPLAY = :0
 # environment
@@ -209,7 +209,7 @@ SNAP_DATA = /var/snap/code/97
 # environment
 SNAP_CONTEXT = _I5nuuDrkgwGUnTwdjcAog80v9oO9WMOxnGoej7RytMDvd17TCsa
 # environment
-MANAGERPID = 1117
+MANAGERPID = 1113
 # environment
 LC_MEASUREMENT = el_GR.UTF-8
 # environment
@@ -223,7 +223,7 @@ COLORTERM = truecolor
 # environment
 GDK_PIXBUF_MODULE_FILE = /home/d10s/snap/code/common/.cache/gdk-pixbuf-loaders.cache
 # environment
-JOURNAL_STREAM = 8:41266
+JOURNAL_STREAM = 8:58676
 # environment
 XDG_SESSION_CLASS = user
 # environment
@@ -281,13 +281,13 @@ SNAP_LIBRARY_PATH = /var/lib/snapd/lib/gl:/var/lib/snapd/lib/gl32:/var/lib/snapd
 
 # Directories
 
-# . (device 66313, inode 922113): 16 files, no impossibilities.
- 
+# . (device 66313, inode 922113): 21 files, no impossibilities.
 
-# 16 files, no impossibilities in 1 directories.
+# 21 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
+ 
 # No implicit rules.
 
 # Files
@@ -397,12 +397,12 @@ parser.y:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 26 / storage = 265 B / avg = 10 B
-# current buf: size = 8162 B / used = 265 B / count = 26 / avg = 10 B
+# strcache buffers: 1 (0) / strings = 31 / storage = 346 B / avg = 11 B
+# current buf: size = 8162 B / used = 346 B / count = 31 / avg = 11 B
 
-# strcache performance: lookups = 48 / hit rate = 45%
+# strcache performance: lookups = 53 / hit rate = 41%
 # hash-table stats:
-# Load=26/8192=0%, Rehash=0, Collisions=0/48=0%
-# Finished Make data base on Wed May 25 11:05:50 2022
+# Load=31/8192=0%, Rehash=0, Collisions=0/53=0%
+# Finished Make data base on Sat May 28 14:43:13 2022
 
  
