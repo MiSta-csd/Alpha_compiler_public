@@ -26,7 +26,6 @@ union values {
 	double doubleConst;
 	std::string *strConst;
 	bool boolConst;
-	union values (*f)();
 };
 
 struct quad;

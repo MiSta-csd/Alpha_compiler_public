@@ -17,7 +17,7 @@ st_entry *st_insert(std::string name, enum st_entry_type type) {
 	st_entry *new_entry;
 	assert(new_entry = new st_entry);
 	*new_entry = {true,  name, type,
-		// (type == USER_FUNC) ? new std::vector<st_entry *> : NULL,
+		// (type == USER_FUNC) ? new std::vector<st_entry > : NULL,
 		scope, (unsigned)yylineno};
 	symbol_table[scope][name].push_back(*new_entry);// works even if bucket~key==name is empty
 	return new_entry;
@@ -53,18 +53,18 @@ st_entry *check_arglist(std::string name_input) {
 }
 
 st_entry *st_lookup(std::string name_input) {
-	st_entry *tmp = NULL;
 	/* checking all current and lower scopes */
 	for (int i = st_get_scope(); i >= 0; i--) {
-		if(symbol_table[i].find(name_input) != symbol_table[i].end()){
-			for(int j = 0; j < symbol_table[i][name_input].size(); ++j){
-				if(symbol_table[i][name_input][j].active == true){
+		if(symbol_table[i].find(name_input) != symbol_table[i].end()) {
+			for(int j = 0; j < symbol_table[i][name_input].size(); ++j) {
+				if(symbol_table[i][name_input][j].active == true
+						&& name_input == symbol_table[i][name_input][j].name) {
 					return &symbol_table[i][name_input][j];
 				}
 			}
 		}
 	}
-	return tmp;
+	return NULL;
 }
 
 // for local purpose
@@ -72,7 +72,8 @@ st_entry *st_lookup(std::string name_input, unsigned int scope_input) {
 	st_entry *tmp = NULL;
 		if(symbol_table[scope_input].find(name_input) != symbol_table[scope_input].end()){
 			for(int j = 0; j < symbol_table[scope_input][name_input].size(); ++j){
-				if(symbol_table[scope_input][name_input][j].active == true){
+				if(symbol_table[scope_input][name_input][j].active == true
+						&& name_input == symbol_table[scope_input][name_input][j].name){
 					return &symbol_table[scope_input][name_input][j];
 				}
 			}

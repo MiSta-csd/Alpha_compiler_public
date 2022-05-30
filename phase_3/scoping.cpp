@@ -11,7 +11,7 @@ void resetformalargsoffset(void){
 	formalArgOffset = 0;
 }
 
-void resetfunctionlocalsoffset(void){
+void resetfunctionlocalsoffset(void) {
 	functionLocalOffset = 0;
 }
 
@@ -25,7 +25,7 @@ scope_space currscopespace(void){
 	}
 }
 
-unsigned currscopeoffset(){
+unsigned currscopeoffset() {
     switch(currscopespace())
     {
 	    case programvar:	return programVarOffset;
@@ -66,7 +66,7 @@ scope_space popscopeoffsetstack(){
         return programvar;
 	} else if(offset % 2 == 1){
         return formalarg;
-	} else{
+	} else {
         return functionlocal;
 	}
 }

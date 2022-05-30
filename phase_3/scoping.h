@@ -6,8 +6,8 @@
 enum scope_space
 {
     programvar,
-    functionlocal,
-    formalarg
+    formalarg,
+    functionlocal
 };
 typedef enum scope_space scope_space;
 
@@ -15,7 +15,7 @@ void resetformalargsoffset(void);
 
 void resetfunctionlocalsoffset(void);
 
-scope_space curr_scope_space();
+scope_space currscopespace();
 
 unsigned currscopeoffset(void);
 

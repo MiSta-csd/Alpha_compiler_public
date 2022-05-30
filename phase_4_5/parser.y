@@ -143,17 +143,19 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											if(!$1 && !$2)
-												$$ = NULL;
-											else if(!$1) {
-												$$ = $2;
-											}else if(!$2)
-												$$ = $1;
-											else {
-												$$ = new stmt_t();
-												$$->breakList = mergelist($1->breakList, $2->breakList);
-												$$->contList = mergelist($1->contList,  $2->contList);
-												$$->retList = mergelist($1->retList, $2->retList);
+											if(!hasError) {
+												if(!$1 && !$2)
+													$$ = NULL;
+												else if(!$1) {
+													$$ = $2;
+												}else if(!$2)
+													$$ = $1;
+												else {
+													$$ = new stmt_t();
+													$$->breakList = mergelist($1->breakList, $2->breakList);
+													$$->contList = mergelist($1->contList,  $2->contList);
+													$$->retList = mergelist($1->retList, $2->retList);
+												}
 											}
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
@@ -180,8 +182,10 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											$$ = $1;
 										}
 			| returnstmt				{	print_rules("3.5 stmt -> returnstmt");
-											$$ = new stmt_t();
-											$$->retList = newlist($1);
+											if(!hasError) {
+												$$ = new stmt_t();
+												$$->retList = newlist($1);
+											}
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");			
 											/* if(!loopcounter) { */
@@ -500,14 +504,14 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 															incfunctionLocalOffset();
 														}
 											}
-											else if( (st_entry_tmp["r8"]->scope != 0) && st_entry_tmp["r8"]->type != USER_FUNC
-													&& !func_stack.empty() && 
+											else if( (st_entry_tmp["r8"]->scope != 0) && 
+													st_entry_tmp["r8"]->type != USER_FUNC && !func_stack.empty() && 
 													(st_entry_tmp["r8"]->scope <= func_stack.top()->scope) ){
 												yyerror("Cannot access local var \'"+*$1+"\' inside function \'"
 												+func_stack.top()->name + "\'");
 												$$ = NULL;
 											}
-											else{
+											else {
 												$$ = lvalue_expr (st_entry_tmp["r8"]);
 											}
 										}
@@ -719,7 +723,8 @@ block		: LCBRACK 					{ 	print_rules("18.1 block -> { stmts }");
 											st_increase_scope();
 										}
 	   		  stmts RCBRACK 			{
-											st_hide(st_get_scope());
+											if(!hasError)
+												st_hide(st_get_scope());
 											st_decrease_scope();
 											
 											$$ = $3;
@@ -744,18 +749,18 @@ funcname    : ID						{
 												if(st_entry_tmp["r19"]->type == USER_FUNC) {// kseroume oti einai locally defined
 													yyerror("redefinition of user function defined in line "
 													+ std::to_string(st_entry_tmp["r19"]->line));
-													$$ = NULL;
+													/* $$ = NULL; */
 												}
 												else if(st_entry_tmp["r19"]->type == LIB_FUNC){
 													yyerror("function definition shadows lib function");
-													$$ = NULL;
+													/* $$ = NULL; */
 												}
 												else if(st_entry_tmp["r19"]->type == LOCAL_VAR
 														|| st_entry_tmp["r19"]->type == FORMAL_ARG
 														|| st_entry_tmp["r19"]->type == GLOBAL_VAR){
 													yyerror("variable \""+ *$$ + "\" already defined in line "
 													+std::to_string(st_entry_tmp["r19"]->line));
-													$$ = NULL;
+													/* $$ = NULL; */
 												}
 												else {
 													yyerror("UNHANDLED CASE ?\nonoma: " + st_entry_tmp["r19"]->name +
@@ -806,7 +811,7 @@ funcargs:   LPAREN idlist RPAREN  		{
             ;						
 funcbody    : block						{
 										    /* $$ = currscopeoffset(); */
-											if($1) {
+											if($1 && !hasError) {
 												$$ = $1->retList;
 											}
 											exitscopespace();
@@ -868,7 +873,8 @@ idlist		: ID 						{
 			| idlist COMMA ID 			{
 											print_rules("21.2 idlist -> idlist , ID");
 											st_entry_tmp["r21"] = st_lookup(*$3);
-											if(st_entry_tmp["r21"] && (st_entry_tmp["r21"]->type == FORMAL_ARG)){ // conflict
+											if(st_entry_tmp["r21"] && (st_entry_tmp["r21"]->type == FORMAL_ARG)
+													&& st_entry_tmp["r21"]->scope == st_get_scope()){ // conflict
 												yyerror("Argument "+ *$3 +" already exists.");
 											}
 											else if(st_entry_tmp["r21"] && st_entry_tmp["r21"]->type == LIB_FUNC){
@@ -1046,8 +1052,8 @@ int yyerror(std:: string err){
 	std::cout << "\033[31m" << "ERROR " << "\033[37m" <<
 	"in line " << yylineno << " : " << err << "\n";
 	hasError = true;
-	std::cout << "One or more errors on compilation, aborting... \n";
-	exit(1);
+	/* std::cout << "One or more errors on compilation, aborting... \n"; */
+	/* exit(1); */
 	return 1;
 }
 
@@ -1067,11 +1073,9 @@ int main(int argc, char** argv) {
 	st_initialize();
     yyparse();
 	validate_comments();
-	// st_print_table();
-	if (!hasError){
-		/* print_line(); */
+	/* st_print_table(); */
+	if (!hasError) {
 		print_quads(arg);	/* arg = 1 -> typwnei se file, arg = 0 sthn konsola */
-		/* print_line(); */
 	} else {
 		std::cout << "One or more errors on compilation, aborting... \n";
 	}

@@ -143,17 +143,19 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 // Rule 2.
 stmts		: stmts stmt 				{	
 											print_rules("2.1 stmts -> stmts stmt");
-											if(!$1 && !$2)
-												$$ = NULL;
-											else if(!$1) {
-												$$ = $2;
-											}else if(!$2)
-												$$ = $1;
-											else {
-												$$ = new stmt_t();
-												$$->breakList = mergelist($1->breakList, $2->breakList);
-												$$->contList = mergelist($1->contList,  $2->contList);
-												$$->retList = mergelist($1->retList, $2->retList);
+											if(!hasError) {
+												if(!$1 && !$2)
+													$$ = NULL;
+												else if(!$1) {
+													$$ = $2;
+												}else if(!$2)
+													$$ = $1;
+												else {
+													$$ = new stmt_t();
+													$$->breakList = mergelist($1->breakList, $2->breakList);
+													$$->contList = mergelist($1->contList,  $2->contList);
+													$$->retList = mergelist($1->retList, $2->retList);
+												}
 											}
 										}
 			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
@@ -502,9 +504,9 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 															incfunctionLocalOffset();
 														}
 											}
-											else if( (st_entry_tmp["r8"]->scope != 0) && st_entry_tmp["r8"]->type != USER_FUNC
-													&& !func_stack.empty() && 
-													(st_entry_tmp["r8"]->scope < st_get_scope()) ){
+											else if( (st_entry_tmp["r8"]->scope != 0) && 
+													st_entry_tmp["r8"]->type != USER_FUNC && !func_stack.empty() && 
+													(st_entry_tmp["r8"]->scope <= func_stack.top()->scope) ){
 												yyerror("Cannot access local var \'"+*$1+"\' inside function \'"
 												+func_stack.top()->name + "\'");
 												$$ = NULL;
@@ -809,7 +811,7 @@ funcargs:   LPAREN idlist RPAREN  		{
             ;						
 funcbody    : block						{
 										    /* $$ = currscopeoffset(); */
-											if($1) {
+											if($1 && !hasError) {
 												$$ = $1->retList;
 											}
 											exitscopespace();
@@ -1050,7 +1052,7 @@ int yyerror(std:: string err){
 	std::cout << "\033[31m" << "ERROR " << "\033[37m" <<
 	"in line " << yylineno << " : " << err << "\n";
 	hasError = true;
-	std::cout << "One or more errors on compilation, aborting... \n";
+	/* std::cout << "One or more errors on compilation, aborting... \n"; */
 	/* exit(1); */
 	return 1;
 }
@@ -1072,10 +1074,8 @@ int main(int argc, char** argv) {
     yyparse();
 	validate_comments();
 	/* st_print_table(); */
-	if (!hasError){
-		/* print_line(); */
+	if (!hasError) {
 		print_quads(arg);	/* arg = 1 -> typwnei se file, arg = 0 sthn konsola */
-		/* print_line(); */
 	} else {
 		std::cout << "One or more errors on compilation, aborting... \n";
 	}

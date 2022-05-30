@@ -17,13 +17,13 @@ typedef struct avm_memcell {
     avm_memcell_t   type;
     union data{
         double              numVal;
-        std::string        strVal;
+        std::string        *strVal;
         bool                boolVal;
         struct avm_table*   tableVal;
         unsigned            funcVal;
-        std::string        libfuncVal;     
+        std::string        *libfuncVal;     
     }data;
-};
+} avm_memcell;
 
 #define AVM_WIPEOUT(m)  memset(&(m), 0, sizeof(m))
 

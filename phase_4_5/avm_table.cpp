@@ -2,6 +2,12 @@
 #include <assert.h>
 #include <unordered_map>
 
+avm_table::avm_table () {
+	strIndexed = NULL;
+	numIndexed = NULL;
+	funcIndexed = NULL;
+}
+
 void avm_tableincrefcounter (avm_table* t) {
     ++t->refCounter;
 }
