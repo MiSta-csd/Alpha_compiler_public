@@ -503,15 +503,14 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 														}else{
 															incfunctionLocalOffset();
 														}
-											}
-											else if( (st_entry_tmp["r8"]->scope != 0) && 
-													st_entry_tmp["r8"]->type != USER_FUNC && !func_stack.empty() && 
+											}else if( (st_entry_tmp["r8"]->type == LOCAL_VAR || (st_entry_tmp["r8"]->type == FORMAL_ARG
+												&& st_entry_tmp["r8"]->scope != st_get_scope()))
+													&& !func_stack.empty() && 
 													(st_entry_tmp["r8"]->scope <= func_stack.top()->scope) ){
 												yyerror("Cannot access local var \'"+*$1+"\' inside function \'"
 												+func_stack.top()->name + "\'");
 												$$ = NULL;
-											}
-											else {
+											}else {
 												$$ = lvalue_expr (st_entry_tmp["r8"]);
 											}
 										}

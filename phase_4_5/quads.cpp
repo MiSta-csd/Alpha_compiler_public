@@ -132,11 +132,11 @@ void print_quads(int arg) {
 				}
 			}
 		}
-		// if(can_jump(quad.op)) {
+		if(can_jump(quad.op)) {
 			if (quad.label){
 				outFile << quad.label << " ";
 			}
-		// }
+		}
 		outFile << "[line " << quad.line << "]\n";
 		i++;
     }
