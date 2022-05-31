@@ -32,11 +32,10 @@ extern int yylex();
 extern unsigned tmp_var_count;
 union values emptyval;
 
-/* for short circuit eval purpose */
-
 /* Auxiliary var for storing each rule's id value (e.g. entry["rule8.1"] = id) returned
  * from lookup (e.g at $1) */
 std::unordered_map<std::string, struct st_entry*> st_entry_tmp;
+
 /* In alpha a funcdef can be inside a function's scope so we needed to know if we are
  * inside a function 
  */
