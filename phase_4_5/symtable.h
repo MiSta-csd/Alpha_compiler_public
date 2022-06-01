@@ -5,6 +5,7 @@
 #include <stack>
 #include <assert.h>
 #include <string>
+#include "scoping.h"
 
 enum st_entry_type {
 	GLOBAL_VAR = 0,
@@ -21,8 +22,10 @@ struct st_entry {
 	unsigned scope;
 	unsigned line;
 	unsigned totalLocals;
-	unsigned iaddress;
-	
+	unsigned iaddress; // instruction address
+	unsigned taddress; // target address
+	unsigned offset; // the offset of symbol's value in the global segment
+	enum scope_space space; // the global segment's spaces
 } typedef st_entry;
 
 st_entry *st_insert(std::string name_input, enum st_entry_type type_input);

@@ -1,3 +1,4 @@
+#pragma once
 #include <unordered_map>
 #include "avm_mem_structs.h"
 
@@ -23,8 +24,8 @@ typedef struct avm_table {
     avm_memcell>                    *numIndexed;
     std::unordered_map<avm_memcell (*)(),
     avm_memcell>                    *funcIndexed;
-    // std::unordered_map<avm_memcell,
-    // avm_memcell>                    *trollIndexed; /* allows keys of type : libfunc, bool, nil */
+    std::unordered_map<avm_memcell,
+    avm_memcell>                    *trollIndexed; /* allows keys of type : libfunc, bool, nil */
     unsigned        total; /* = strIndexed.size() + numIndexed.size() + */
                         /* funcIndexed.size() + trollIndexed.size(); */  /* total no of elems */
 	avm_table();

@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 
 enum avm_memcell_t {

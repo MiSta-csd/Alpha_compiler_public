@@ -36,6 +36,7 @@ struct expr {
 	union values value;
 	std::vector<int> *truelist;
 	std::vector<int> *falselist;
+	struct vminstruction *instr;
 	expr();
 	expr(expr_t type, st_entry *sym, expr *index, union values value);
 }typedef expr;
@@ -46,6 +47,7 @@ typedef struct quad {
 	expr *arg1;
  	expr *arg2;
 	unsigned label;
+	unsigned taddress;
 	unsigned line;
 }quad;
 

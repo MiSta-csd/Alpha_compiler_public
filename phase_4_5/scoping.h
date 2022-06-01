@@ -1,4 +1,4 @@
-
+#pragma once
 #include <iostream>
 #include <stack>
 #include <assert.h>
@@ -9,6 +9,7 @@ enum scope_space
     functionlocal,
     formalarg
 };
+
 typedef enum scope_space scope_space;
 
 void resetformalargsoffset(void);

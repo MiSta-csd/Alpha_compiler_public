@@ -17,7 +17,6 @@
 #include "actions.h"
 #include "scoping.h"
 #include <unordered_map>
-#include <utility>
 
 bool member_flag = false;// why?
 int yyerror(std::string message);
@@ -935,7 +934,7 @@ ifstmt		: ifprefix stmt				{
 												$2->contList = mergelist($2->contList,  $4->contList);
 												$2->retList = mergelist($2->retList, $4->retList);
 												$$ = $2;
-											}else{
+											}else {
 												$$=NULL;
 											}
 											
