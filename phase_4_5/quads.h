@@ -76,7 +76,7 @@ void patchlist (int list, int label);
 int mergelist (int l1, int l2);
 
 void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
-		unsigned line, unsigned taddress);
+		unsigned line);
 
 void print_quads(int arg);
 

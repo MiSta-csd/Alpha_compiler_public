@@ -17,14 +17,14 @@ unsigned tmp_var_max = 0;
 /* unsigned loop_scope = 0; */
 
 void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
-		unsigned line, unsigned taddress) {
+		unsigned line) {
 	quad_vec.push_back({.op = op,
 			.result = result,
 			.arg1 = arg1,
 			.arg2 = arg2,
 			.label = label,
-			.line = line,
-			.taddress = taddress});
+			.line = line
+			});
 }
 
 expr::expr() {

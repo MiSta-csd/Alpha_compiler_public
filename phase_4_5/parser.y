@@ -193,7 +193,7 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											}else {// we are in loop for sure
 												$$ = new stmt_t();
 												$$->breakList = get_current_quad();// newlist(get_next_quad();
-												emit(JUMP_OP, NULL, NULL, NULL, 0, 0/* get_current_instr? */, yylineno);
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
 										}
 			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");
@@ -204,7 +204,7 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											}else {// we are in loop for sure
 												$$ = new stmt_t();
 												$$->contList = newlist(get_current_quad());
-												emit(JUMP_OP, NULL, NULL, NULL, 0, 0/* get_current_instr? */, yylineno);
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
 										}
 			| block						{	print_rules("3.8 stmt -> block");
@@ -341,7 +341,7 @@ term		: LPAREN expr RPAREN		{
 												check_arith($2, "MINUS expr \%UMINUS");
 												$$ = newexpr(ARITHEXPR_E);
 												$$->sym = (istempexpr($2)) ? $2->sym : newtemp();
-												emit(UMINUS_OP, $$, $2, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
+												emit(UMINUS_OP, $$, $2, NULL, get_next_quad(), yylineno);
 											}
 										}
 
@@ -363,14 +363,14 @@ term		: LPAREN expr RPAREN		{
 											if($2) {
 												if($2->type == TABLEITEM_E) {
 													$$ = emit_iftableitem($2);
-													emit(ADD_OP, $$, newexpr_constint(1), $$, get_next_quad(), 0/* get_current_instr? */, yylineno);
-													emit(TABLESETELEM_OP, $2, $2->index, $$, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(ADD_OP, $$, newexpr_constint(1), $$, get_next_quad(), yylineno);
+													emit(TABLESETELEM_OP, $2, $2->index, $$, get_next_quad(), yylineno);
 												}
 												else {
-													emit(ADD_OP, $2, newexpr_constint(1), $2, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(ADD_OP, $2, newexpr_constint(1), $2, get_next_quad(), yylineno);
 													$$ = newexpr(ARITHEXPR_E);
 													$$->sym = newtemp();
-													emit(ASSIGN_OP, $$, $2, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(ASSIGN_OP, $$, $2, NULL, get_next_quad(), yylineno);
 												}
 											}
 										}
@@ -384,13 +384,13 @@ term		: LPAREN expr RPAREN		{
 												$$->sym = newtemp();
 												if($1->type == TABLEITEM_E) {
 													expr *val = emit_iftableitem($1);
-													emit(ASSIGN_OP, $$, val, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
-													emit(ADD_OP, val, newexpr_constint(1), val, get_next_quad(), 0/* get_current_instr? */, yylineno);
-													emit(TABLESETELEM_OP, $1, $1->index, val, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(ASSIGN_OP, $$, val, NULL, get_next_quad(), yylineno);
+													emit(ADD_OP, val, newexpr_constint(1), val, get_next_quad(), yylineno);
+													emit(TABLESETELEM_OP, $1, $1->index, val, get_next_quad(), yylineno);
 												}
 												else {
-													emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
-													emit(ADD_OP, $1, newexpr_constint(1), $1, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
+													emit(ADD_OP, $1, newexpr_constint(1), $1, get_next_quad(), yylineno);
 												}
 											}
 										}
@@ -402,14 +402,14 @@ term		: LPAREN expr RPAREN		{
 											if($2) {
 												if($2->type == TABLEITEM_E) {
 													$$ = emit_iftableitem($2);
-													emit(SUB_OP, $$, newexpr_constint(1), $$, get_next_quad(), 0/* get_current_instr? */, yylineno);
-													emit(TABLESETELEM_OP, $2, $2->index, $$, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(SUB_OP, $$, newexpr_constint(1), $$, get_next_quad(), yylineno);
+													emit(TABLESETELEM_OP, $2, $2->index, $$, get_next_quad(), yylineno);
 												}
 												else {
-													emit(SUB_OP, $2, newexpr_constint(1), $2, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(SUB_OP, $2, newexpr_constint(1), $2, get_next_quad(), yylineno);
 													$$ = newexpr(ARITHEXPR_E);
 													$$->sym = newtemp();
-													emit(ASSIGN_OP, $$, $2, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(ASSIGN_OP, $$, $2, NULL, get_next_quad(), yylineno);
 												}
 											}
 										}
@@ -423,13 +423,13 @@ term		: LPAREN expr RPAREN		{
 												$$->sym = newtemp();
 												if($1->type == TABLEITEM_E) {
 													expr *val = emit_iftableitem($1);
-													emit(ASSIGN_OP, $$, val, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
-													emit(SUB_OP, val, newexpr_constint(1), val, get_next_quad(), 0/* get_current_instr? */, yylineno);
-													emit(TABLESETELEM_OP, $1, $1->index, val, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(ASSIGN_OP, $$, val, NULL, get_next_quad(), yylineno);
+													emit(SUB_OP, val, newexpr_constint(1), val, get_next_quad(), yylineno);
+													emit(TABLESETELEM_OP, $1, $1->index, val, get_next_quad(), yylineno);
 												}
 												else {
-													emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
-													emit(SUB_OP, $1, newexpr_constint(1), $1, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
+													emit(SUB_OP, $1, newexpr_constint(1), $1, get_next_quad(), yylineno);
 												}
 											}
 										}
@@ -443,7 +443,7 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
 												if($1 && $1->type == TABLEITEM_E) {
-													emit(TABLESETELEM_OP, $1, $1->index, $3, get_next_quad(), 0/* get_current_instr? */, yylineno);
+													emit(TABLESETELEM_OP, $1, $1->index, $3, get_next_quad(), yylineno);
 													$$ = emit_iftableitem($1);
                                         			$$->type = VAR_E;
 												}
@@ -454,9 +454,9 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 															backpatch($3->falselist, get_next_quad() + 2);
 															emit_branch_assign_quads($3);
 														}
-														emit(ASSIGN_OP, $1, $3, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
+														emit(ASSIGN_OP, $1, $3, NULL, get_next_quad(), yylineno);
 														$$ = new expr(VAR_E, newtemp(), $3, $3->value);
-														emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
+														emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
 													}
 												}
 											}
@@ -658,7 +658,7 @@ objectdef	: LBRACK elist RBRACK 		{
 											print_rules("15.1 objectdef -> [ elist ]");
 											expr* t = newexpr(NEWTABLE_E);
 											t->sym = newtemp();
-											emit(TABLECREATE_OP, t, NULL, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
+											emit(TABLECREATE_OP, t, NULL, NULL, get_next_quad(), yylineno);
 
 											for(int i=0; i < ($2->size()); ++i){
 												emit(
@@ -666,7 +666,7 @@ objectdef	: LBRACK elist RBRACK 		{
 													t, 
 													newexpr_constint(i), 
 													(*$2)[i], 
-													get_next_quad(), 0/* get_current_instr? */, yylineno);
+													get_next_quad(), yylineno);
 											}
 											$$ = t;
 										}
@@ -674,7 +674,7 @@ objectdef	: LBRACK elist RBRACK 		{
 											print_rules("15.2 objectdef -> [ indexed ]");
 											expr* t = newexpr(NEWTABLE_E);
 											t->sym = newtemp();
-											emit(TABLECREATE_OP, t, NULL, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
+											emit(TABLECREATE_OP, t, NULL, NULL, get_next_quad(), yylineno);
 
 											for(int i=0; i < ($2->size()); ++i){
 												emit(
@@ -682,7 +682,7 @@ objectdef	: LBRACK elist RBRACK 		{
 													t, 
 													(*$2)[i]->first, 
 													(*$2)[i]->second, 
-													get_next_quad(), 0/* get_current_instr? */, yylineno);
+													get_next_quad(), yylineno);
 											}
 											$$ = t;
 										}
@@ -785,9 +785,9 @@ funcprefix  : FUNCTION funcname			{
 												st_entry_tmp["r19"] = $$;
 												func_stack.push($$);
 												expr *tmp_expr;
-												emit(JUMP_OP, NULL, NULL, NULL, 0, 0/* get_current_instr? */, yylineno);
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 												tmp_expr = new expr(PROGRAMFUNC_E, $$, NULL, emptyval);
-												emit(FUNCSTART_OP, tmp_expr, NULL, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
+												emit(FUNCSTART_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
 												pushscopeoffsetstack(currscopeoffset());
 												st_increase_scope();
 												enterscopespace();
@@ -825,7 +825,7 @@ funcdef		: funcprefix funcargs funcbody
 												$$ = $1;
 												expr *tmp_expr;
 												tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, emptyval);
-												emit(FUNCEND_OP, tmp_expr, NULL, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
+												emit(FUNCEND_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
 												if(st_entry_tmp["r19"]) {
 													func_stack.pop();
 												}
@@ -899,8 +899,8 @@ ifprefix	: IF LPAREN expr RPAREN		{
 													backpatch($3->truelist, get_next_quad());
 													backpatch($3->falselist, get_next_quad() + 2);
 													$3 = emit_branch_assign_quads($3);
-													emit(IF_EQ_OP, NULL, $3, newexpr_constbool(true), get_next_quad() + 2, 0/* get_current_instr? */, yylineno);
-													emit(JUMP_OP, NULL, NULL, NULL, 0, 0/* get_current_instr? */, yylineno);
+													emit(IF_EQ_OP, NULL, $3, newexpr_constbool(true), get_next_quad() + 2, yylineno);
+													emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 												}
 												$3->falselist = new std::vector<int>();
 												$3->falselist->push_back(get_current_quad()-1);// pushback the jump so i can backpatch
@@ -913,7 +913,7 @@ ifprefix	: IF LPAREN expr RPAREN		{
 elseprefix	: ELSE						{
 											print_rules("23.2 elseprefix -> else");
 											$$ = get_current_quad();
-											emit(JUMP_OP, NULL, NULL, NULL, 0, 0/* get_current_instr? */, yylineno);
+											emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			;
 
@@ -949,9 +949,9 @@ whilecond	: LPAREN expr RPAREN		{
 												$2 = true_test($2);
 												if($2->type == BOOLEXPR_E) {
 													$2 = handle_bool_e($2);
-													emit(IF_EQ_OP, NULL, $2, newexpr_constbool(true), get_next_quad()+2, 0/* get_current_instr? */, yylineno);
+													emit(IF_EQ_OP, NULL, $2, newexpr_constbool(true), get_next_quad()+2, yylineno);
 													$$ = get_current_quad();
-													emit(JUMP_OP, NULL, NULL, NULL, 0, 0/* get_current_instr? */, yylineno);
+													emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 												}else // case i have while(true) ...
 													$$ = get_current_quad()-1;
 												loop_stack.push(st_get_scope());
@@ -967,7 +967,7 @@ whilestmt	: whilestart whilecond stmt
 												$$ = $3;
 											}else
 												$$ = new stmt_t();
-											emit(JUMP_OP, NULL, NULL, NULL, $1, 0/* get_current_instr? */, yylineno);
+											emit(JUMP_OP, NULL, NULL, NULL, $1, yylineno);
 											patchlabel($2, get_next_quad());
 											loop_stack.pop();
 											/* --loopcounter; */
@@ -983,7 +983,7 @@ forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 												$$->test = $5;
 												expr* e = handle_bool_e($6);
 												$$->enter = get_current_quad();
-												emit(IF_EQ_OP, NULL, e, newexpr_constbool(true), 0, 0/* get_current_instr? */, yylineno);
+												emit(IF_EQ_OP, NULL, e, newexpr_constbool(true), 0, yylineno);
 											}else
 												$$ = NULL;
 										}
@@ -1009,7 +1009,7 @@ forstmt		: forprefix N elist RPAREN N stmt N
 
 N 			:							{
 											$$ = get_current_quad();
-                							emit(JUMP_OP, NULL, NULL, NULL, 0, 0/* get_current_instr? */, yylineno);
+                							emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 										}
 			;
 
@@ -1019,9 +1019,9 @@ returnstmt 	: RETURN SEMICOLON 			{
 											if (func_stack.empty()){
 												yyerror("Use of 'return' while not in a function");
 											}else {
-												emit(RET_OP, NULL, NULL, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
+												emit(RET_OP, NULL, NULL, NULL, get_next_quad(), yylineno);
 												$$ = get_current_quad();// TODO check
-												emit(JUMP_OP, NULL, NULL, NULL, 0, 0/* get_current_instr? */, yylineno);
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 											}
 										}
 			| RETURN expr SEMICOLON 	{
@@ -1029,9 +1029,9 @@ returnstmt 	: RETURN SEMICOLON 			{
 											if (func_stack.empty()){
 												yyerror("Use of 'return' while not in a function");
 											}else {
-												emit(RET_OP, NULL, NULL, $2, get_next_quad(), 0/* get_current_instr? */, yylineno);
+												emit(RET_OP, NULL, NULL, $2, get_next_quad(), yylineno);
 												$$ = get_current_quad();// TODO check
-												emit(JUMP_OP, NULL, NULL, NULL, 0, 0/* get_current_instr? */, yylineno);
+												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 												if($2 && $2->type == BOOLEXPR_E) {
 													backpatch($2->truelist, get_next_quad());
 													backpatch($2->falselist, get_next_quad() + 2);
