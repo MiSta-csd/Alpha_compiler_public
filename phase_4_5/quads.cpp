@@ -145,12 +145,6 @@ void print_quads(int arg) {
 	if(arg == 1)
 		q_file.close();
 	
-/* 	std::ifstream f("quads.txt");
-
-    if (f.is_open())
-        std::cout << f.rdbuf();
-
-	f.close(); */
 	return;
 }
 

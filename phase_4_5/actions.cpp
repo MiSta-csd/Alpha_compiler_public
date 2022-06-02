@@ -342,7 +342,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 		// }
 		res = newexpr(ARITHEXPR_E);
 		res->sym = newtemp();
-		emit(opcode, res, arg1, arg2, 0, yylineno);
+		emit(opcode, res, arg1, arg2, get_next_quad(), yylineno);
 		return res;
 	}
 	return NULL;
