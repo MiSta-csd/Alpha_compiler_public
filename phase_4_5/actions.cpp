@@ -150,8 +150,8 @@ expr * emit_iftableitem (expr *e) {
 			e,
 			e->index,
 			get_next_quad(),
-			yylineno
-			);
+			yylineno,
+			0);// quad's t(arget)address TODO
 		return result;
 	}
 }
@@ -159,9 +159,9 @@ expr * emit_iftableitem (expr *e) {
 expr* emit_branch_assign_quads(expr *ex) {
 	assert(ex);
 
-	emit(ASSIGN_OP, ex, newexpr_constbool(true), NULL, get_next_quad(), yylineno);
-	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
-	emit(ASSIGN_OP, ex, newexpr_constbool(false), NULL, get_next_quad(), yylineno);
+	emit(ASSIGN_OP, ex, newexpr_constbool(true), NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);// TODO check
+	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, 0/* get_current_instr? */, yylineno);
+	emit(ASSIGN_OP, ex, newexpr_constbool(false), NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
 
 	return ex;
 }
@@ -206,14 +206,15 @@ expr * make_call (expr* lv, std::vector<expr*> *expr_vec) {
 			(*expr_vec)[i],
 			NULL,
 			0,
+			0/* get_current_instr? */,
 			yylineno
 		);
 	}
 	
-	emit(CALL_OP, func, NULL, NULL, get_next_quad(), yylineno);
+	emit(CALL_OP, func, NULL, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
 	expr* result = newexpr(VAR_E);
 	result->sym = newtemp();
-	emit(GETRETVAL_OP, result, NULL, NULL, get_next_quad(), yylineno);
+	emit(GETRETVAL_OP, result, NULL, NULL, get_next_quad(), 0/* get_current_instr? */, yylineno);
 	return result;
 }
 
@@ -224,9 +225,9 @@ expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	expr_pt->truelist = new std::vector<int>();
 	expr_pt->falselist = new std::vector<int>();
 	expr_pt->truelist->push_back(get_current_quad());
-	emit(opcode, NULL, arg1, arg2, get_next_quad() + 2, yylineno);
+	emit(opcode, NULL, arg1, arg2, get_next_quad() + 2, 0/* get_current_instr? */, yylineno);
 	expr_pt->falselist->push_back(get_current_quad());
-	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, yylineno);
+	emit(JUMP_OP, NULL, NULL, NULL, get_next_quad() + 2, 0/* get_current_instr? */, yylineno);
 	return expr_pt;
 }
 
@@ -342,7 +343,7 @@ expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string 
 		// }
 		res = newexpr(ARITHEXPR_E);
 		res->sym = newtemp();
-		emit(opcode, res, arg1, arg2, 0, yylineno);
+		emit(opcode, res, arg1, arg2, 0, 0/* get_current_instr? */, yylineno);
 		return res;
 	}
 	return NULL;
@@ -421,9 +422,9 @@ expr* true_test(expr* ex) {
 		}
 		expr_pt->truelist = new std::vector<int>();
 		expr_pt->falselist = new std::vector<int>();
-		emit(IF_EQ_OP, NULL, expr_pt, newexpr_constbool(true), get_next_quad() + 2, yylineno);
+		emit(IF_EQ_OP, NULL, expr_pt, newexpr_constbool(true), get_next_quad() + 2, 0/* get_current_instr? */, yylineno);
 		expr_pt->truelist->push_back(get_current_quad()-1);
-		emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
+		emit(JUMP_OP, NULL, NULL, NULL, 0, 0/* get_current_instr? */, yylineno);
 		expr_pt->falselist->push_back(get_current_quad()-1);
 		return expr_pt;
 	}

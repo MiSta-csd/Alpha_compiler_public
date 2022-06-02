@@ -28,7 +28,6 @@ union values {
 	bool boolConst;
 };
 
-struct quad;
 struct expr {
 	expr_t type;
 	st_entry *sym;
@@ -47,8 +46,8 @@ typedef struct quad {
 	expr *arg1;
  	expr *arg2;
 	unsigned label;
-	unsigned taddress;
 	unsigned line;
+	unsigned taddress;
 }quad;
 
 typedef struct call {
@@ -58,7 +57,7 @@ typedef struct call {
 	call(std::string *name, unsigned char method, std::vector<expr*> *elist);
 }call;
 
-typedef struct for_stmt{
+typedef struct for_stmt {
     int test;
     int enter;
 }for_stmt;
@@ -77,7 +76,7 @@ void patchlist (int list, int label);
 int mergelist (int l1, int l2);
 
 void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
-		unsigned line);
+		unsigned line, unsigned taddress);
 
 void print_quads(int arg);
 
