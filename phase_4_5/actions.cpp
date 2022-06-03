@@ -8,6 +8,8 @@ extern unsigned tmp_var_count;
 extern unsigned tmp_var_max;
 extern std::vector<quad> quad_vec;
 extern int yylineno;
+extern bool hasError;
+extern int yyerror(std::string message);
 
 st_entry* newtemp() {
 	st_entry *st_tmp_entry;
@@ -78,8 +80,8 @@ bool check_arith (expr* e, std::string context) {
 		e->type == PROGRAMFUNC_E ||
 		e->type == LIBRARYFUNC_E ||
 		e->type == BOOLEXPR_E ) {
-		std::cout << "\033[31m" << "ERROR " << "\033[37m" <<
-		"Illegal expr " << exp_type_to_string(e) << " used in " << context << " line " << yylineno << std::endl;
+		yyerror(context);
+		hasError = true;
 		return false;
 	}
 	return true;

@@ -18,7 +18,7 @@
 #include "scoping.h"
 #include <unordered_map>
 
-bool member_flag = false;// why?
+
 int yyerror(std::string message);
 bool hasError = false;
 
@@ -29,6 +29,8 @@ extern char *yytext;
 extern FILE *yyin;
 extern int yylex();
 extern unsigned tmp_var_count;
+extern void generate();
+
 union values emptyval;
 
 /* Auxiliary var for storing each rule's id value (e.g. entry["rule8.1"] = id) returned
@@ -439,7 +441,7 @@ term		: LPAREN expr RPAREN		{
 			;
 // Rule 6.
 assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr");
-		   							 		if($1 && !member_flag && $1->sym && ($1->sym->type==LIB_FUNC || $1->sym->type==USER_FUNC) ) {
+		   							 		if($1 && $1->sym && ($1->sym->type==LIB_FUNC || $1->sym->type==USER_FUNC) ) {
 												yyerror("invalid assignment (lvalue is a function)");
 											}else {
 												if($1 && $1->type == TABLEITEM_E) {
@@ -459,9 +461,6 @@ assignexpr	: lvalue ASSIGN expr		{	print_rules("6.1 assignexpr -> lvalue = expr"
 														emit(ASSIGN_OP, $$, $1, NULL, get_next_quad(), yylineno);
 													}
 												}
-											}
-											if(member_flag) {
-												member_flag = false;
 											}
 										}
 			;
@@ -569,18 +568,15 @@ tableitem	: lvalue DOT ID				{
 // Rule 9.
 member		: tableitem					{
 											print_rules("9.1 member -> tableitem");
-											member_flag = true;
 											$$ = $1;
 										}
 			| call DOT ID				{
 											print_rules("9.2 member -> call . ID");
-											member_flag = true;
 											if($1)
 												$$ = member_item($1,$3);
 										}
 			| call LBRACK expr RBRACK 	{
 											print_rules("9.3 member -> call [ expr ]");
-											member_flag = true;
 											if($3) {
 												expr *e = handle_bool_e($3);
 												$$ = e;
@@ -1059,10 +1055,10 @@ int main(int argc, char** argv) {
 	int arg=0;
     if (argc > 1) {
 		(strcmp(argv[1], "-output") == 0) ? (arg = 1) : (arg = 0);
-		if (!(yyin = fopen(argv[1], "r"))) {
-			fprintf(stderr, "Cannot read file: %s\n", argv[1]);
-			return 1;
-		}
+		/* if (!(yyin = fopen(argv[2], "w"))) { */
+		/* 	fprintf(stderr, "Cannot read file: %s\n", argv[2]); */
+		/* 	return 1; */
+		/* } */
 	} else {
 		yyin = stdin;
 	}
@@ -1072,6 +1068,7 @@ int main(int argc, char** argv) {
 	validate_comments();
 	/* st_print_table(); */
 	if (!hasError) {
+		generate();
 		print_quads(arg);	/* arg = 1 -> typwnei se file, arg = 0 sthn konsola */
 	} else {
 		std::cout << "One or more errors on compilation, aborting... \n";

@@ -14,8 +14,6 @@ std::stack<int> loop_stack;
 unsigned tmp_var_count = 0;
 unsigned tmp_var_max = 0;
 
-/* unsigned loop_scope = 0; */
-
 void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 		unsigned line) {
 	quad_vec.push_back({.op = op,
@@ -56,7 +54,6 @@ static bool can_jump(iopcode op) {
 
 void print_line(){
 	std::cout << " -------------------------------------------\n\n";
-	return;
 }
 
 
@@ -138,10 +135,11 @@ void print_quads(int arg) {
 				outFile << quad.label << " ";
 			}
 		}
-		outFile << "[line " << quad.line << "]\n";
+		outFile << "[line " << quad.line << "]"; // TODO removed \n
+	outFile << " tadr " << quad.taddress << std::endl;
 		i++;
     }
-    /* std::cout << " ------------------------------------------- \n"; */
+    outFile << " ------------------------------------------- \n";
 	if(arg == 1)
 		q_file.close();
 	
