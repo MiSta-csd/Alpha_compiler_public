@@ -9,11 +9,11 @@ expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2);
 
 expr* expr_action_expr(expr *arg1, enum iopcode opcode, expr *arg2, std::string context);
 
-void backpatch(std::vector<int>*, unsigned label);
+void backpatch(std::vector<unsigned>*, unsigned label);
 
 void patchlabel (unsigned quadNo, unsigned label);
 
-std::vector<int>* merge(std::vector<int>* list1, std::vector<int>* list2);
+std::vector<unsigned>* merge(std::vector<unsigned>* list1, std::vector<unsigned>* list2);
 
 expr* true_test(expr*);
 

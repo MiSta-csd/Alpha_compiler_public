@@ -223,8 +223,8 @@ expr * make_call (expr* lv, std::vector<expr*> *expr_vec) {
 expr* expr_compare_expr(expr *arg1, enum iopcode opcode, expr *arg2) {
 	expr *expr_pt = newexpr(BOOLEXPR_E);
 	expr_pt->sym = newtemp();
-	expr_pt->truelist = new std::vector<int>();
-	expr_pt->falselist = new std::vector<int>();
+	expr_pt->truelist = new std::vector<unsigned>();
+	expr_pt->falselist = new std::vector<unsigned>();
 	expr_pt->truelist->push_back(get_current_quad());
 	emit(opcode, NULL, arg1, arg2, get_next_quad() + 2, yylineno);
 	expr_pt->falselist->push_back(get_current_quad());
@@ -355,13 +355,13 @@ void patchlabel (unsigned quadNo, unsigned label) {
 	quad_vec[quadNo].label = label;
 }
 
-void backpatch(std::vector<int> *vi, unsigned label){  
+void backpatch(std::vector<unsigned> *vi, unsigned label){  
 	for(int i = 0; i < vi->size(); ++i){
 		quad_vec[(*vi)[i]].label = label;
 	}
 }
 
-std::vector<int>* merge(std::vector<int>* list1, std::vector<int>* list2){
+std::vector<unsigned>* merge(std::vector<unsigned>* list1, std::vector<unsigned>* list2){
 	for(int i = 0; i < list2->size(); ++i){
 		list1->push_back((*list2)[i]);
 	}
@@ -421,8 +421,8 @@ expr* true_test(expr* ex) {
 			expr_pt->sym = newtemp();
 			expr_pt->value = val;
 		}
-		expr_pt->truelist = new std::vector<int>();
-		expr_pt->falselist = new std::vector<int>();
+		expr_pt->truelist = new std::vector<unsigned>();
+		expr_pt->falselist = new std::vector<unsigned>();
 		emit(IF_EQ_OP, NULL, expr_pt, newexpr_constbool(true), get_next_quad() + 2, yylineno);
 		expr_pt->truelist->push_back(get_current_quad()-1);
 		emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);

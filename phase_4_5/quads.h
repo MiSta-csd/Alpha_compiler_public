@@ -33,9 +33,8 @@ struct expr {
 	st_entry *sym;
 	expr *index;
 	union values value;
-	std::vector<int> *truelist;
-	std::vector<int> *falselist;
-	struct vminstruction *instr;
+	std::vector<unsigned> *truelist;
+	std::vector<unsigned> *falselist;
 	expr();
 	expr(expr_t type, st_entry *sym, expr *index, union values value);
 }typedef expr;

@@ -39,6 +39,11 @@ struct vminstruction {
     unsigned    srcLine;
 };
 
+struct incomplete_jump {
+	unsigned instrNo;
+	unsigned iaddress;
+}typedef incomplete_jump;
+
 struct userfunc {
     unsigned    address;
     unsigned    localSize;
@@ -46,3 +51,34 @@ struct userfunc {
 };
 
 void make_operand(expr* e, vmarg *arg);
+
+void generate_ASSIGN(quad*);
+void generate_ADD(quad*);
+void generate_SUB(quad*);
+void generate_MUL(quad*);
+void generate_DIV(quad*);
+void generate_MOD(quad*);
+void generate_NOP(quad*);// UMINUS i-code is handled with MUL -1 
+void generate_AND(quad*);
+void generate_OR(quad*);
+void generate_NOT(quad*);
+void generate_IF_EQ(quad*);
+void generate_IF_NOTEQ(quad*);
+void generate_IF_LESSEQ(quad*);
+void generate_IF_GREATEREQ(quad*);
+void generate_IF_LESS(quad*);
+void generate_IF_GREATER(quad*);
+void generate_CALL(quad*);
+void generate_PARAM(quad*);
+void generate_RET(quad*);
+void generate_GETRETVAL(quad*);
+void generate_FUNCSTART(quad*);
+void generate_FUNCEND(quad*);
+void generate_TABLECREATE(quad*);
+void generate_TABLEGETELEM(quad*);
+void generate_TABLESETELEM(quad*);
+void generate_JUMP(quad*);
+
+typedef void (*generator_func_t) (quad*);// generator_func_p is a pointer to func with param quad* ret/ing void
+
+void generate();

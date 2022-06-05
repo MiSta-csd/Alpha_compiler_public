@@ -1,5 +1,5 @@
-hashmap_parser: parser.cpp lex.yy.cpp kostas_sym.cpp quads.cpp actions.cpp scoping.cpp alpha_ph4_generate.cpp
-	g++ lex.yy.cpp parser.cpp kostas_sym.cpp quads.cpp actions.cpp scoping.cpp alpha_ph4_generate.cpp -o $@ -g
+hashmap_parser: parser.cpp lex.yy.cpp kostas_sym.cpp quads.cpp actions.cpp scoping.cpp avm_structures.cpp
+	g++ lex.yy.cpp parser.cpp kostas_sym.cpp quads.cpp actions.cpp scoping.cpp avm_structures.cpp -o $@ -g
 
 parser: parser.cpp lex.yy.cpp symtable.cpp quads.cpp actions.cpp
 	g++ lex.yy.cpp parser.cpp symtable.cpp quads.cpp actions.cpp scoping.cpp -o $@ -g

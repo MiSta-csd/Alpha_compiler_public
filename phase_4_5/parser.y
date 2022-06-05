@@ -350,8 +350,8 @@ term		: LPAREN expr RPAREN		{
 			| NOT expr					{	
 											print_rules("5.3 term -> NOT expr");
 											if($2) {
-												$$ = true_test($2);// TODO make it BOOLEXPR_E
-												std::vector<int> *tmp = $$->truelist;
+												$$ = true_test($2);
+												std::vector<unsigned> *tmp = $$->truelist;
 												$$->truelist = $$->falselist;
 												$$->falselist = tmp;
 												$$->type = BOOLEXPR_E;
@@ -898,7 +898,7 @@ ifprefix	: IF LPAREN expr RPAREN		{
 													emit(IF_EQ_OP, NULL, $3, newexpr_constbool(true), get_next_quad() + 2, yylineno);
 													emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 												}
-												$3->falselist = new std::vector<int>();
+												$3->falselist = new std::vector<unsigned>();
 												$3->falselist->push_back(get_current_quad()-1);// pushback the jump so i can backpatch
 												$$ = $3;
 											}else
@@ -1050,6 +1050,7 @@ int yyerror(std:: string err){
 	return 1;
 }
 
+extern void print_instructions();
 int main(int argc, char** argv) {
 	std::cout << "\033[37m";
 	int arg=0;
@@ -1070,6 +1071,7 @@ int main(int argc, char** argv) {
 	if (!hasError) {
 		generate();
 		print_quads(arg);	/* arg = 1 -> typwnei se file, arg = 0 sthn konsola */
+		print_instructions();
 	} else {
 		std::cout << "One or more errors on compilation, aborting... \n";
 	}

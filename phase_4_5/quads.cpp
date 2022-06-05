@@ -56,8 +56,6 @@ void print_line(){
 	std::cout << " -------------------------------------------\n\n";
 }
 
-
-
 void print_quads(int arg) {
 	std::string opcodes[] = {"ASSIGN_OP", "ADD_OP", "SUB_OP", "MUL_OP", "DIV_OP", "MOD_OP", "UMINUS_OP", "AND_OP",
 	"OR_OP", "NOT_OP", "IF_EQ_OP", "IF_NOTEQ_OP", "IF_LESSEQ_OP", "IF_GREATEREQ_OP", "IF_LESS_OP", "IF_GREATER_OP",
@@ -78,8 +76,9 @@ void print_quads(int arg) {
 			outFile << quad.result->sym->name << " ";
 		}
 		if(quad.arg1) {
-			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E && CONSTSTRING_E
-			&& quad.arg1->type != CONSTINT_E && quad.arg1->type != CONSTDOUBLE_E) {
+			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E && quad.arg1->type != CONSTSTRING_E
+					&& quad.arg1->type != CONSTINT_E && quad.arg1->type != CONSTDOUBLE_E &&
+					quad.arg1->type != BOOLEXPR_E) {
 				outFile << quad.arg1->sym->name << " ";
 			}else {
 				switch (quad.arg1->type) {
@@ -105,8 +104,9 @@ void print_quads(int arg) {
 			}
 		}
 		if(quad.arg2) {
-			if(quad.arg2->sym && quad.arg2->type != CONSTBOOL_E && CONSTSTRING_E
-			&& quad.arg2->type != CONSTINT_E && quad.arg2->type != CONSTDOUBLE_E) {
+			if(quad.arg2->sym && quad.arg2->type != CONSTBOOL_E && quad.arg2->type != CONSTSTRING_E
+					&& quad.arg2->type != CONSTINT_E && quad.arg2->type != CONSTDOUBLE_E &&
+					quad.arg2->type != BOOLEXPR_E) {
 				outFile << quad.arg2->sym->name << " ";
 			}else {
 				switch (quad.arg2->type) {
