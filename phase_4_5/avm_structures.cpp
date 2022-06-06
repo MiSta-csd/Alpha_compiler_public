@@ -92,33 +92,39 @@ vminstruction* new_instr(quad *q, vmopcode op) {
 	make_operand(q->arg2, &instr->arg2);
 	make_operand(q->result, &instr->result);
 	instr->srcLine = q->line;
-	instr_vec.push_back(instr);
-	q->taddress = get_current_instr();
+	q->taddress = get_current_instr() + 1;
+	return instr;
+}
+
+vminstruction* new_reljump(quad *q, vmopcode op) {
+	vminstruction *instr = new_instr(q, op);
+	instr->result.val = q->label;
+	instr->result.type = LABEL_A;// it was anyway
 	return instr;
 }
 
 void generate_ASSIGN(quad* q) {
-	vminstruction *instr = new_instr(q, ASSIGN_V);
+	instr_vec.push_back(new_instr(q, ASSIGN_V));
 	
 }
 void generate_ADD(quad* q) {
-	vminstruction *instr = new_instr(q, ADD_V);
+	instr_vec.push_back(new_instr(q, ADD_V));
 	
 }
 void generate_SUB(quad* q) {
-	vminstruction *instr = new_instr(q, SUB_V);
+	instr_vec.push_back(new_instr(q, SUB_V));
 	
 }
 void generate_MUL(quad* q) {
-	vminstruction *instr = new_instr(q, MUL_V);
+	instr_vec.push_back(new_instr(q, MUL_V));
 	
 }
 void generate_DIV(quad* q) {
-	vminstruction *instr = new_instr(q, DIV_V);
+	instr_vec.push_back(new_instr(q, DIV_V));
 	
 }
 void generate_MOD(quad* q) {
-	vminstruction *instr = new_instr(q, MOD_V);
+	instr_vec.push_back(new_instr(q, MOD_V));
 	
 }
 
@@ -127,102 +133,91 @@ extern expr *newexpr_constdouble(double);
 void generate_UMINUS(quad* q) {// It is multiplication with -1
 	vminstruction *instr = new_instr(q, MUL_V);
 	make_operand(newexpr_constdouble(-1), &instr->arg2);
-	
+	instr_vec.push_back(instr);
 }
 void generate_NOP(quad* q) {std::cout << "Entered generate_NOP\n";}
 
-void generate_AND(quad* q) {
-	vminstruction *instr = new_instr(q, AND_V);// TODO
+// void generate_AND(quad* q) {
+// 	instr_vec.push_back(new_instr(q, AND_V));// TODO
 
-}
-void generate_OR(quad* q) {
-	vminstruction *instr = new_instr(q, OR_V);// TODO
+// }
+// void generate_OR(quad* q) {
+// 	instr_vec.push_back(new_instr(q, OR_V));// TODO
 
-}
-void generate_NOT(quad* q) {
-	vminstruction *instr = new_instr(q, NOT_V);// TODO
-	
-}
+// }
+// void generate_NOT(quad* q) {
+// 	instr_vec.push_back(new_instr(q, NOT_V));// TODO
+// 	
+// } unused opcodes
 
 void generate_IF_EQ(quad* q) {// NOTE IF_EQ is the quad generated for every assign
-	vminstruction *instr = new_instr(q, JEQ_V);// TODO
+	instr_vec.push_back(new_reljump(q, JEQ_V));// TODO
 
 }
 void generate_IF_NOTEQ(quad* q) {
-	vminstruction *instr = new_instr(q, JNE_V);// TODO
+	instr_vec.push_back(new_reljump(q, JNE_V));// TODO
 
 }
 void generate_IF_LESSEQ(quad* q) {
-	vminstruction *instr = new_instr(q, JLE_V);// TODO
+	instr_vec.push_back(new_reljump(q, JLE_V));// TODO
 
 }
 void generate_IF_GREATEREQ(quad* q) {
-	vminstruction *instr = new_instr(q, JGE_V);// TODO
+	instr_vec.push_back(new_reljump(q, JGE_V));// TODO
 
 }
 void generate_IF_LESS(quad* q) {
-	vminstruction *instr = new_instr(q, JLT_V);// TODO
+	instr_vec.push_back(new_reljump(q, JLT_V));// TODO
 
 }
 void generate_IF_GREATER(quad* q) {
-	vminstruction *instr = new_instr(q, JGT_V);// TODO
+	instr_vec.push_back(new_reljump(q, JGT_V));// TODO
 
 }
 void generate_CALL(quad* q) {
-	vminstruction *instr = new_instr(q, CALL_V);// TODO
+	instr_vec.push_back(new_instr(q, CALL_V));// TODO
 
 	}
 void generate_PARAM(quad* q) {
-	vminstruction *instr = new_instr(q, PUSHARG_V);
+	instr_vec.push_back(new_instr(q, PUSHARG_V));
 
 	
 }
 void generate_RET(quad* q) {
-	vminstruction *instr = new vminstruction();//TODO
-	// instr->opcode = ;// TODO
-
+	// instr_vec.push_back(new vminstruction());//TODO
+	std::cout << "Write sth first in generate_RET\n";
 	
 }
 void generate_GETRETVAL(quad* q) {
-	vminstruction *instr = new vminstruction();// instr->opcode = // TODO
-
+	// instr_vec.push_back(// TODO
+	std::cout << "Write sth first in generate_GETRETVAL\n";
 	
 }
 void generate_FUNCSTART(quad* q) {
-	vminstruction *instr = new_instr(q, FUNCENTER_V);// TODO
+	instr_vec.push_back(new_instr(q, FUNCENTER_V));// TODO
 
 	
 }
 void generate_FUNCEND(quad* q) {
-	vminstruction *instr = new_instr(q, FUNCEXIT_V);// TODO
+	instr_vec.push_back(new_instr(q, FUNCEXIT_V));// TODO
 
 	
 }
 void generate_TABLECREATE(quad* q) {
-	vminstruction *instr = new_instr(q, NEWTABLE_V);// TODO
+	instr_vec.push_back(new_instr(q, NEWTABLE_V));// TODO
 
 	
 }
 void generate_TABLEGETELEM(quad* q) {
-	vminstruction *instr = new_instr(q, TABLEGETELEM_V);// TODO
+	instr_vec.push_back(new_instr(q, TABLEGETELEM_V));// TODO
 
-	
 }
 void generate_TABLESETELEM(quad* q) {
-	vminstruction *instr = new_instr(q, TABLESETELEM_V);// TODO
+	instr_vec.push_back(new_instr(q, TABLESETELEM_V));// TODO
 
-
-	instr_vec.push_back(instr);
 }
 void generate_JUMP(quad* q) {
-	vminstruction *instr = new vminstruction();
-	instr->opcode = JUMP_V;
-	instr->arg1.val = instr->arg2.val = -1;
-	instr->result.val = q->label;
-	instr->result.type = LABEL_A;// it was anyway
-	instr->srcLine = q->line;
-	instr_vec.push_back(instr);
-	q->taddress = get_current_instr();
+	instr_vec.push_back(new_instr(q, JUMP_V));
 }
 
 generator_func_t generators[] {
