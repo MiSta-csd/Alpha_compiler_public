@@ -10,7 +10,8 @@ enum vmopcode {
     JLE_V,          JGE_V,          JLT_V,
     JGT_V,          CALL_V,         PUSHARG_V,
     FUNCENTER_V,    FUNCEXIT_V,     NEWTABLE_V,
-    TABLEGETELEM_V, TABLESETELEM_V, NOP_V
+    TABLEGETELEM_V, TABLESETELEM_V, JUMP_V,
+	NOP_V
 };
 enum vmarg_t {
     LABEL_A,
@@ -23,7 +24,8 @@ enum vmarg_t {
     NIL_A,
     USERFUNC_A,
     LIBFUNC_A,
-    RETVAL_A/* ,    UNDEF_A */
+    RETVAL_A,
+	UNDEF_A
 };
 
 typedef struct vmarg {
@@ -41,7 +43,7 @@ struct vminstruction {
 
 struct incomplete_jump {
 	unsigned instrNo;
-	unsigned iaddress;
+	unsigned taddress;
 }typedef incomplete_jump;
 
 struct userfunc {
