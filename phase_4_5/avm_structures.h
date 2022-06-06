@@ -30,7 +30,7 @@ enum vmarg_t {
 
 typedef struct vmarg {
     vmarg_t     type;
-    unsigned val;
+    unsigned 	val;
 }vmarg;
 
 struct vminstruction {

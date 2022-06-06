@@ -1,5 +1,6 @@
 // #include <cstdio>
 #include "avm_structures.h"
+#include "actions.h"
 
 std::vector<double>			numConsts;
 unsigned        			totalNumConsts = 0;
@@ -68,9 +69,11 @@ void make_operand(expr* e, vmarg *arg) {
 		case PROGRAMFUNC_E:
 			arg->type = USERFUNC_A;
 			arg->val = e->sym->taddress;// TODO not sure if that's correct
+			break;
 		case LIBRARYFUNC_E:
 			arg->type = LIBFUNC_A;
 			arg->val = consts_newused(e->sym->name);
+			break;
 		default:
 			assert(0);
 	}
@@ -184,9 +187,16 @@ void generate_PARAM(quad* q) {
 	
 }
 void generate_RET(quad* q) {
-	// instr_vec.push_back(new vminstruction());//TODO
-	std::cout << "Write sth first in generate_RET\n";
-	
+	// TODO if q has value to be returned assign it to the appropriate register
+	if(q->arg2) {
+		vminstruction *instr = new vminstruction;
+		instr->result.type = RETVAL_A;
+		instr->opcode = ASSIGN_V;
+		make_operand(q->arg2, &instr->arg2);
+		instr->srcLine = q->line;
+		instr_vec.push_back(instr);
+		q->taddress = get_current_instr();
+	}
 }
 void generate_GETRETVAL(quad* q) {
 	// instr_vec.push_back(// TODO
@@ -217,7 +227,7 @@ void generate_TABLESETELEM(quad* q) {
 
 }
 void generate_JUMP(quad* q) {
-	instr_vec.push_back(new_instr(q, JUMP_V));
+	instr_vec.push_back(new_reljump(q, JUMP_V));
 }
 
 generator_func_t generators[] {
@@ -267,7 +277,8 @@ void print_instructions () {// for debug
 	for (int i = 0; i < instr_vec.size(); ++i) {
 		std::cout << i+1 << ": " << instrCodes[instr_vec[i]->opcode] << " ";
 		if(instr_vec[i]->result.val != (unsigned)-1)
-			std::cout << argCodes[instr_vec[i]->result.type] << " ";
+			std::cout << argCodes[instr_vec[i]->result.type] << (instr_vec[i]->opcode == JUMP_V?
+						"->" + std::to_string(instr_vec[i]->result.val) + " ":  " ");
 		else
 			std::cout << "unused_result" << " ";
 		if(instr_vec[i]->arg1.val != (unsigned)-1)
