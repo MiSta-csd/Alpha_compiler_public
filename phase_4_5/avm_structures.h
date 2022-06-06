@@ -41,10 +41,10 @@ struct vminstruction {
     unsigned    srcLine;
 };
 
-struct incomplete_jump {
-	unsigned instrNo;
-	unsigned taddress;
-}typedef incomplete_jump;
+// struct incomplete_jump {
+// 	unsigned instrNo;
+// 	unsigned iaddress;
+// }typedef incomplete_jump;
 
 struct userfunc {
     unsigned    address;

@@ -22,7 +22,7 @@ typedef struct avm_table {
     avm_memcell>                    *strIndexed;
     std::unordered_map<int,
     avm_memcell>                    *numIndexed;
-    std::unordered_map<avm_memcell (*)(),
+    std::unordered_map<avm_memcell (*)(...),
     avm_memcell>                    *funcIndexed;
     std::unordered_map<avm_memcell,
     avm_memcell>                    *trollIndexed; /* allows keys of type : libfunc, bool, nil */

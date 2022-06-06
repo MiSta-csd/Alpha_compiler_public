@@ -16,9 +16,23 @@ std::stack<struct st_entry *> func_stack;
 st_entry *st_insert(std::string name, enum st_entry_type type) {
 	st_entry *new_entry;
 	assert(new_entry = new st_entry);
-	*new_entry = {true,  name, type,
-		// (type == USER_FUNC) ? new std::vector<st_entry > : NULL,
-		scope, (unsigned)yylineno};
+	scope_space space;
+	switch(type) {
+		case FORMAL_ARG:space = formalarg;break;
+		default:
+			if(func_stack.empty()) {
+				space = programvar;
+			}else {
+				space = functionlocal;
+			}
+	}
+	*new_entry = {.active = true,
+			.name =  name,
+			.type = type,
+			.scope = scope,
+			.line = (unsigned)yylineno,
+			.space = space
+	};
 	symbol_table[scope][name].push_back(*new_entry);// works even if bucket~key==name is empty
 	return new_entry;
 }
