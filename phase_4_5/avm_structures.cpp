@@ -91,8 +91,9 @@ vminstruction* new_instr(quad *q, vmopcode op) {
 	make_operand(q->arg1, &instr->arg1);
 	make_operand(q->arg2, &instr->arg2);
 	make_operand(q->result, &instr->result);
+	instr->srcLine = q->line;
 	instr_vec.push_back(instr);
-	instr->srcLine = q->line;q->taddress = get_current_instr();
+	q->taddress = get_current_instr();
 	return instr;
 }
 
@@ -214,8 +215,14 @@ void generate_TABLESETELEM(quad* q) {
 	instr_vec.push_back(instr);
 }
 void generate_JUMP(quad* q) {
-	vminstruction *instr = new_instr(q, JUMP_V);
-	
+	vminstruction *instr = new vminstruction();
+	instr->opcode = JUMP_V;
+	instr->arg1.val = instr->arg2.val = -1;
+	instr->result.val = q->label;
+	instr->result.type = LABEL_A;// it was anyway
+	instr->srcLine = q->line;
+	instr_vec.push_back(instr);
+	q->taddress = get_current_instr();
 }
 
 generator_func_t generators[] {
@@ -266,10 +273,16 @@ void print_instructions () {// for debug
 		std::cout << i+1 << ": " << instrCodes[instr_vec[i]->opcode] << " ";
 		if(instr_vec[i]->result.val != (unsigned)-1)
 			std::cout << argCodes[instr_vec[i]->result.type] << " ";
+		else
+			std::cout << "unused_result" << " ";
 		if(instr_vec[i]->arg1.val != (unsigned)-1)
 			std::cout << argCodes[instr_vec[i]->arg1.type] << " ";
+		else
+			std::cout << "unused_arg1" << " ";
 		if(instr_vec[i]->arg2.val != (unsigned)-1)
 			std::cout << argCodes[instr_vec[i]->arg2.type] << " ";
+		else
+			std::cout << "unused_arg2" << " ";
 		std::cout << instr_vec[i]->srcLine << std::endl;
 	}
 	std::cout << " -------------------------------------------\n";
