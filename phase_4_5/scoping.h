@@ -12,11 +12,20 @@ enum scope_space
 
 typedef enum scope_space scope_space;
 
+struct function_offsets
+{
+    unsigned formalArgOffset = 0;
+    unsigned functionLocalOffset = 0;
+    unsigned curScopeSpace = 0;
+} typedef function_offsets;
+
+
+
 void resetformalargsoffset(void);
 
 void resetfunctionlocalsoffset(void);
 
-scope_space curr_scope_space();
+scope_space currscopespace();
 
 unsigned currscopeoffset(void);
 
@@ -24,11 +33,13 @@ void enterscopespace(void);
 
 void exitscopespace(void);
 
-void pushscopeoffsetstack(unsigned);
+void pushscopeoffsetstack(void);
 
-scope_space popscopeoffsetstack(void);
+void restorecurrscopeoffset(void);
 
-void restorecurrscopeoffset(unsigned n);
+void popscopeoffsetstack(void);
+
+unsigned getTotalLocals();
 
 void incprogramVarOffset();
 
@@ -38,3 +49,4 @@ void incfunctionLocalOffset();
 
 bool scopeOffsetStackEmpty();
 
+unsigned returncurrentspace();

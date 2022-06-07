@@ -12,6 +12,10 @@ std::vector<userfunc*> 		userFuncs;
 unsigned        			totalUserFuncs = 0;
 
 unsigned userfuncs_newfunc (userfunc* f) {
+	for(int i = 0; i < userFuncs.size(); ++i) {
+		if ((userFuncs[i]->id) == f->id)
+			return i;
+	}
 	userFuncs.push_back(f);
 	return totalUserFuncs++;
 }
@@ -88,7 +92,7 @@ void make_operand(expr* e, vmarg *arg) {
 			struct userfunc *uf;
 			uf = new struct userfunc;
 			uf->id = e->sym->name;
-			// TODO uf->address
+			uf->address = e->sym->iaddress + 2;
 			uf->localSize = e->sym->totalLocals;// mhpws totalLocals * size of memcell
 			arg->val = userfuncs_newfunc(uf);
 			break;
@@ -330,14 +334,15 @@ void print_file_identifiers() {
 		std::cout << numConsts[i] << " ";
 	}
 	std::cout << std::endl;
-	std::cout << "userfunc_table_size: " << totalUserFuncs << std::endl;
-	for(int i = 0; i < totalUserFuncs; ++i) {
-		std::cout << userFuncs[i] << " ";
-	}
-	std::cout << std::endl;
 	std::cout << "libfunc_table_size: " << totalNamedLibfuncs << std::endl;
 	for(int i = 0; i < totalNamedLibfuncs; ++i) {
 		std::cout << namedLibFuncs[i] << " ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "userfunc_table_size: " << totalUserFuncs << std::endl;
+	for(int i = 0; i < totalUserFuncs; ++i) {
+		std::cout << userFuncs[i]->address << "->" << userFuncs[i]->address << " ";
 	}
 	std::cout << std::endl;
 	//instructions

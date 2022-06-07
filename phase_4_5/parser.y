@@ -503,11 +503,11 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 											st_entry_tmp["r8"] = st_lookup(*$1);
 											if(!st_entry_tmp["r8"]) {
 												$$ = lvalue_expr (st_insert(*$1, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR));
-												if (scopeOffsetStackEmpty()){
+												if (returncurrentspace() == 0){
 															incprogramVarOffset();
-														}else{
+												}else if(returncurrentspace() == 2){
 															incfunctionLocalOffset();
-														}
+												}
 											}else if( (st_entry_tmp["r8"]->type == LOCAL_VAR || (st_entry_tmp["r8"]->type == FORMAL_ARG
 												&& st_entry_tmp["r8"]->scope != st_get_scope()))
 													&& !func_stack.empty() && 
@@ -531,11 +531,11 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 											}
 											else{
 												$$ = lvalue_expr (st_insert(*$2, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR));
-												if (scopeOffsetStackEmpty()){
+												if (returncurrentspace() == 0){
 															incprogramVarOffset();
-														}else{
+												}else if(returncurrentspace() == 2){
 															incfunctionLocalOffset();
-														}
+												}
 											}
 										}
 			| COLONCOLON ID				{
@@ -743,7 +743,11 @@ funcname    : ID						{
 												&& (st_entry_tmp["r19"]->type != LIB_FUNC) ) )
 											{
 												st_entry_tmp["r19"] = st_insert(*$$, USER_FUNC);
-												incprogramVarOffset();// added by kostas
+												if (returncurrentspace() == 0){
+															incprogramVarOffset();
+												}else if(returncurrentspace() == 2){
+															incfunctionLocalOffset();
+												} // modified 
 												func_stack.push(st_entry_tmp["r19"]);// push to func stack mono an einai valid
 											}
 											else
@@ -777,7 +781,11 @@ funcname    : ID						{
 											$$ = new std::string();
 											*$$ = st_godfather();
 											st_insert(*$$, USER_FUNC);
-											incprogramVarOffset();// added by kostas. User func names value as program vars
+											if (returncurrentspace() == 0){
+															incprogramVarOffset();
+												}else if(returncurrentspace() == 2){
+															incfunctionLocalOffset();
+											}// added by kostas. User func names value as program vars modified
 										}
 			;
 
@@ -793,11 +801,10 @@ funcprefix  : FUNCTION funcname			{
 												expr *tmp_expr;
 												emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 												tmp_expr = new expr(PROGRAMFUNC_E, $$, NULL, emptyval);
+												pushscopeoffsetstack();
 												emit(FUNCSTART_OP, tmp_expr, NULL, NULL, get_next_quad(), yylineno);
-												pushscopeoffsetstack(currscopeoffset());
 												st_increase_scope();
-												enterscopespace();
-												resetformalargsoffset();
+												enterscopespace();												
 											}
 										}
 			;
@@ -807,9 +814,8 @@ funcargs:   LPAREN idlist RPAREN  		{
 											// if(st_entry_tmp["r19"]){
 											// 	offload_arglist(st_entry_tmp["r19"]);
 											// }
-											enterscopespace();
-											resetfunctionlocalsoffset();
 											st_decrease_scope();
+											enterscopespace();			
                                 		}
             ;						
 funcbody    : block						{
@@ -820,15 +826,14 @@ funcbody    : block						{
 											exitscopespace();
 										}
 			;
-funcdef		: funcprefix funcargs funcbody  
+funcdef		: funcprefix funcargs funcbody
 		 								{	
 											if(!hasError) {
+												$1->totalLocals = getTotalLocals();
+												std::cout << "I have: " << $1->totalLocals << " locals \n";
 												exitscopespace();
+												popscopeoffsetstack();
 												patchlist($3, get_next_quad());
-												$1->totalLocals = currscopeoffset();
-												$1->totalArgs = $2;
-												int offset = popscopeoffsetstack();
-												restorecurrscopeoffset(offset);
 												$$ = $1;
 												expr *tmp_expr;
 												tmp_expr = new expr(PROGRAMFUNC_E, $1, NULL, emptyval);
