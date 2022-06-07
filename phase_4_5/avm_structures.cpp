@@ -6,23 +6,40 @@ std::vector<double>			numConsts;
 unsigned        			totalNumConsts = 0;
 std::vector<std::string*> 	stringConsts;
 unsigned        			totalStringConsts = 0;
-std::vector<std::string> 	namedLibfuncs;
+std::vector<std::string> 	namedLibFuncs;
 unsigned        			totalNamedLibfuncs = 0;
 std::vector<userfunc*> 		userFuncs;
 unsigned        			totalUserFuncs = 0;
 
+unsigned userfuncs_newfunc (userfunc* f) {
+	userFuncs.push_back(f);
+	return totalUserFuncs++;
+}
+
 unsigned consts_newstring(std::string *str) {
+	for(int i = 0; i < stringConsts.size(); ++i) {
+		if ((*stringConsts[i]) == *str)
+			return i;
+	}
 	stringConsts.push_back(str);
 	return totalStringConsts++;
 }
 
 unsigned consts_newnumber(double n) {
+	for(int i = 0; i < numConsts.size(); ++i) {
+		if (numConsts[i] == n)
+			return i;
+	}
 	numConsts.push_back(n);
 	return totalNumConsts++;
 }
 
 unsigned consts_newused(std::string str) {
-	namedLibfuncs.push_back(str);
+	for(int i = 0; i < namedLibFuncs.size(); ++i) {
+		if (namedLibFuncs[i] == str)
+			return i;
+	}
+	namedLibFuncs.push_back(str);
 	return totalNamedLibfuncs++;
 }
 
@@ -68,7 +85,12 @@ void make_operand(expr* e, vmarg *arg) {
 			break;
 		case PROGRAMFUNC_E:
 			arg->type = USERFUNC_A;
-			arg->val = e->sym->taddress;// TODO not sure if that's correct
+			struct userfunc *uf;
+			uf = new struct userfunc;
+			uf->id = e->sym->name;
+			// TODO uf->address
+			uf->localSize = e->sym->totalLocals;// mhpws totalLocals * size of memcell
+			arg->val = userfuncs_newfunc(uf);
 			break;
 		case LIBRARYFUNC_E:
 			arg->type = LIBFUNC_A;
@@ -82,7 +104,6 @@ void make_operand(expr* e, vmarg *arg) {
 extern std::vector<quad> quad_vec;
 
 std::vector<vminstruction*> instr_vec;
-// std::vector<incomplete_jump> inc_j_vec;
 
 unsigned get_current_instr() {
 	return instr_vec.size();
@@ -141,49 +162,48 @@ void generate_UMINUS(quad* q) {// It is multiplication with -1
 void generate_NOP(quad* q) {std::cout << "Entered generate_NOP\n";}
 
 // void generate_AND(quad* q) {
-// 	instr_vec.push_back(new_instr(q, AND_V));// TODO
+// 	instr_vec.push_back(new_instr(q, AND_V));
 
 // }
 // void generate_OR(quad* q) {
-// 	instr_vec.push_back(new_instr(q, OR_V));// TODO
+// 	instr_vec.push_back(new_instr(q, OR_V));
 
 // }
 // void generate_NOT(quad* q) {
-// 	instr_vec.push_back(new_instr(q, NOT_V));// TODO
+// 	instr_vec.push_back(new_instr(q, NOT_V));
 // 	
 // } unused opcodes
 
 void generate_IF_EQ(quad* q) {// NOTE IF_EQ is the quad generated for every assign
-	instr_vec.push_back(new_reljump(q, JEQ_V));// TODO
+	instr_vec.push_back(new_reljump(q, JEQ_V));
 
 }
 void generate_IF_NOTEQ(quad* q) {
-	instr_vec.push_back(new_reljump(q, JNE_V));// TODO
+	instr_vec.push_back(new_reljump(q, JNE_V));
 
 }
 void generate_IF_LESSEQ(quad* q) {
-	instr_vec.push_back(new_reljump(q, JLE_V));// TODO
+	instr_vec.push_back(new_reljump(q, JLE_V));
 
 }
 void generate_IF_GREATEREQ(quad* q) {
-	instr_vec.push_back(new_reljump(q, JGE_V));// TODO
+	instr_vec.push_back(new_reljump(q, JGE_V));
 
 }
 void generate_IF_LESS(quad* q) {
-	instr_vec.push_back(new_reljump(q, JLT_V));// TODO
+	instr_vec.push_back(new_reljump(q, JLT_V));
 
 }
 void generate_IF_GREATER(quad* q) {
-	instr_vec.push_back(new_reljump(q, JGT_V));// TODO
+	instr_vec.push_back(new_reljump(q, JGT_V));
 
 }
 void generate_CALL(quad* q) {
-	instr_vec.push_back(new_instr(q, CALL_V));// TODO
+	instr_vec.push_back(new_instr(q, CALL_V));
 
 	}
 void generate_PARAM(quad* q) {
 	instr_vec.push_back(new_instr(q, PUSHARG_V));
-
 	
 }
 static void new_ret_instr(quad* q) {
@@ -209,26 +229,23 @@ void generate_GETRETVAL(quad* q) {
 	
 }
 void generate_FUNCSTART(quad* q) {
-	instr_vec.push_back(new_instr(q, FUNCENTER_V));// TODO
+	instr_vec.push_back(new_instr(q, FUNCENTER_V));
 
-	
 }
 void generate_FUNCEND(quad* q) {
-	instr_vec.push_back(new_instr(q, FUNCEXIT_V));// TODO
+	instr_vec.push_back(new_instr(q, FUNCEXIT_V));
 
-	
 }
 void generate_TABLECREATE(quad* q) {
-	instr_vec.push_back(new_instr(q, NEWTABLE_V));// TODO
+	instr_vec.push_back(new_instr(q, NEWTABLE_V));
 
-	
 }
 void generate_TABLEGETELEM(quad* q) {
-	instr_vec.push_back(new_instr(q, TABLEGETELEM_V));// TODO
+	instr_vec.push_back(new_instr(q, TABLEGETELEM_V));
 
 }
 void generate_TABLESETELEM(quad* q) {
-	instr_vec.push_back(new_instr(q, TABLESETELEM_V));// TODO
+	instr_vec.push_back(new_instr(q, TABLESETELEM_V));
 
 }
 void generate_JUMP(quad* q) {
@@ -269,6 +286,16 @@ void generate() {
 		// TODO den m aresei. Isws xreiastei na kanw refine to <quad> se <quad*> GTPM logw gnwstou bug twn vect apo ph3
 		generators[quad_vec[i].op](&quad_vec[i]);
 	}
+}
+
+void print_file_identifiers() {
+	std::string header = "avmbinaryfile: magicnumber globaloffset arrays code";
+	unsigned magic_num = 340200501;
+	unsigned globaloffset = 0;
+}
+
+void write_output(std::string outname) {
+
 }
 
 void print_instructions () {// for debug

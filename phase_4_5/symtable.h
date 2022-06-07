@@ -23,7 +23,6 @@ struct st_entry {
 	unsigned line;
 	unsigned totalLocals;
 	unsigned iaddress; // instruction address
-	unsigned taddress; // target address
 	unsigned offset; // the offset of symbol's value in the global segment
 	enum scope_space space; // the global segment's spaces
 } typedef st_entry;

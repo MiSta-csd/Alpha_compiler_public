@@ -1066,22 +1066,28 @@ int main(int argc, char** argv) {
 	std::string outname;
 	int arg = 1, opt, num_files;
 	FILE **files = NULL;
-    if (argc > 1) {
-		while((opt = getopt(argc, argv, "o:i")) != -1){
-			switch(opt){
-				case 'i':
-					arg = 0;
-					break;
-				case 'o':
-					outname = optarg;
-					break;
-				case '?':
-					std::cout << "\033[33mTerminating\n";
-				default:
-					return 1;
-			}
+
+	while((opt = getopt(argc, argv, "o:i")) != -1){
+		switch(opt){
+			case 'i':
+				arg = 0;
+				break;
+			case 'o':
+				outname = optarg;
+				break;
+			case '?':
+				std::cout << "\033[33mTerminating\n";
+			default:
+				return 1;
 		}
-		num_files = argc - optind;
+	}
+	num_files = argc - optind;
+	
+	if(!num_files) {
+		yyin = stdin;
+		arg = 0;
+	}
+	else {
 		files = (FILE**) malloc(num_files*sizeof(FILE*));
 		for(int i = 0; optind < argc; ++optind, ++i) {
 			if ( (files[i] = fopen(argv[optind], "r")) == NULL) {
@@ -1089,12 +1095,9 @@ int main(int argc, char** argv) {
 				std::cout << "\033[33mTerminating\n";
 				return 1;
 			}
-        	/* std::cout << argv[optind] << std::endl; */
-    	}
-	} else {
-		yyin = stdin;
+			/* std::cout << argv[optind] << std::endl; */
+		}
 	}
-
 	validate_comments();
 	st_initialize();
 	if(yyin != stdin) {
@@ -1105,14 +1108,15 @@ int main(int argc, char** argv) {
 				if( arg && outname.empty()) {
 					outname = "alpha.out";
 				}
-				generate();
-				print_quads(arg, outname);
-				print_instructions();// for debug
 			} else {
 				std::cout << __FILE__ << ": One or more errors on compilation, aborting... \n";
 				return 1;
 			}
+			fclose(files[i]);
 		}
+		generate();
+		print_quads(arg, outname);
+		print_instructions();// for debug
 	}else {
 		yyparse();
 		validate_comments();

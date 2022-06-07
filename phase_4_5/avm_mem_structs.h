@@ -1,5 +1,8 @@
 #pragma once
 #include <iostream>
+#include <cstring>
+#define AVM_STACKSIZE   4096
+#define AVM_WIPEOUT(m)  memset(&(m), 0, sizeof(m))
 
 enum avm_memcell_t {
         NUMBER_M    =0,
