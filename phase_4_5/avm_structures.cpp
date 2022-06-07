@@ -186,7 +186,7 @@ void generate_PARAM(quad* q) {
 
 	
 }
-static void new_ret_instr(quad* q, vmopcode op) {
+static void new_ret_instr(quad* q) {
 	vminstruction *instr = new vminstruction;
 	instr->result.type = RETVAL_A;
 	instr->opcode = ASSIGN_V;
@@ -198,12 +198,14 @@ static void new_ret_instr(quad* q, vmopcode op) {
 void generate_RET(quad* q) {
 	// TODO if q has value to be returned assign it to the appropriate register
 	if(q->arg2) {
-		new_ret_instr(q, ASSIGN_V);
+		new_ret_instr(q);
 	}
 }
 void generate_GETRETVAL(quad* q) {
-	new_ret_instr(q, ASSIGN_V);
-	// std::cout << "Write sth first in generate_GETRETVAL\n";
+	// TODO capture the register's value and pass it somewhere.
+	// Thought: pass it to a register that is for param call args if we are about to call func
+	// else idk
+	new_ret_instr(q);
 	
 }
 void generate_FUNCSTART(quad* q) {
@@ -259,13 +261,12 @@ generator_func_t generators[] {
 	generate_TABLECREATE,
 	generate_TABLEGETELEM,
 	generate_TABLESETELEM,
-	generate_JUMP,
-	generate_NOP
+	generate_JUMP
 };
 
 void generate() {
 	for (unsigned i = 0; i < quad_vec.size(); ++i) {
-		// TODO den m aresei. Isws xreiastei na kanw refine to <quad> se <quad*> GTPM logw gnwstou bug apo ph3
+		// TODO den m aresei. Isws xreiastei na kanw refine to <quad> se <quad*> GTPM logw gnwstou bug twn vect apo ph3
 		generators[quad_vec[i].op](&quad_vec[i]);
 	}
 }

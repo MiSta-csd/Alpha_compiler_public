@@ -16,6 +16,7 @@
 #include "quads.h"
 #include "actions.h"
 #include "scoping.h"
+#include <unistd.h>
 #include <unordered_map>
 
 
@@ -1061,28 +1062,72 @@ int yyerror(std:: string err){
 
 extern void print_instructions();
 int main(int argc, char** argv) {
-	std::cout << "\033[37m";
-	int arg=0;
+	std::cout << "\033[37m";// output is colored white
+	std::string outname;
+	int arg = 1, opt, num_files;
+	FILE **files = NULL;
     if (argc > 1) {
-		(strcmp(argv[1], "-output") == 0) ? (arg = 1) : (arg = 0);
-		/* if (!(yyin = fopen(argv[2], "w"))) { */
-		/* 	fprintf(stderr, "Cannot read file: %s\n", argv[2]); */
-		/* 	return 1; */
-		/* } */
+		while((opt = getopt(argc, argv, "o:i")) != -1){
+			switch(opt){
+				case 'i':
+					arg = 0;
+					break;
+				case 'o':
+					outname = optarg;
+					break;
+				case '?':
+					std::cout << "\033[33mTerminating\n";
+				default:
+					return 1;
+			}
+		}
+		num_files = argc - optind;
+		files = (FILE**) malloc(num_files*sizeof(FILE*));
+		for(int i = 0; optind < argc; ++optind, ++i) {
+			if ( (files[i] = fopen(argv[optind], "r")) == NULL) {
+				std::cout << argv[0] << ": Incorrect filename specified -- " << argv[optind] << std::endl;
+				std::cout << "\033[33mTerminating\n";
+				return 1;
+			}
+        	/* std::cout << argv[optind] << std::endl; */
+    	}
 	} else {
 		yyin = stdin;
 	}
 
-	st_initialize();
-    yyparse();
 	validate_comments();
-	/* st_print_table(); */
-	if (!hasError) {
-		generate();
-		print_quads(arg);	/* arg = 1 -> typwnei se file, arg = 0 sthn konsola */
-		print_instructions();
-	} else {
-		std::cout << "One or more errors on compilation, aborting... \n";
+	st_initialize();
+	if(yyin != stdin) {
+		for ( int i = 0; i < num_files; ++i) {
+			yyin = files[i];
+			yyparse();
+			if (!hasError) {
+				if( arg && outname.empty()) {
+					outname = "alpha.out";
+				}
+				generate();
+				print_quads(arg, outname);
+				print_instructions();// for debug
+			} else {
+				std::cout << __FILE__ << ": One or more errors on compilation, aborting... \n";
+				return 1;
+			}
+		}
+	}else {
+		yyparse();
+		validate_comments();
+		/* st_print_table(); */
+		if (!hasError) {
+			if( arg && outname.empty()) {
+				outname = "alpha.out";
+			}
+			generate();
+			print_quads(arg, outname);
+			print_instructions();// for debug
+		} else {
+			std::cout << "One or more errors on compilation, aborting... \n";
+			return 1;
+		}
 	}
     return 0;
 }
