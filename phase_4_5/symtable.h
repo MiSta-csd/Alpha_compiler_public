@@ -21,6 +21,7 @@ struct st_entry {
 	enum st_entry_type type;
 	unsigned scope;
 	unsigned line;
+	unsigned totalArgs;
 	unsigned totalLocals;
 	unsigned iaddress; // instruction address
 	unsigned offset; // the offset of symbol's value in the global segment

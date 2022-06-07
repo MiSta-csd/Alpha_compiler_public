@@ -4,7 +4,7 @@
 
 std::vector<double>			numConsts;
 unsigned        			totalNumConsts = 0;
-std::vector<std::string*> 	stringConsts;
+std::vector<std::string> 	stringConsts;
 unsigned        			totalStringConsts = 0;
 std::vector<std::string> 	namedLibFuncs;
 unsigned        			totalNamedLibfuncs = 0;
@@ -18,10 +18,10 @@ unsigned userfuncs_newfunc (userfunc* f) {
 
 unsigned consts_newstring(std::string *str) {
 	for(int i = 0; i < stringConsts.size(); ++i) {
-		if ((*stringConsts[i]) == *str)
+		if ((stringConsts[i]) == *str)
 			return i;
 	}
-	stringConsts.push_back(str);
+	stringConsts.push_back(*str);
 	return totalStringConsts++;
 }
 
@@ -103,14 +103,14 @@ void make_operand(expr* e, vmarg *arg) {
 
 extern std::vector<quad> quad_vec;
 
-std::vector<vminstruction*> instr_vec;
+std::vector<instruction*> instr_vec;
 
 unsigned get_current_instr() {
 	return instr_vec.size();
 }
 
-vminstruction* new_instr(quad *q, vmopcode op) {
-	vminstruction *instr = new vminstruction();
+instruction* new_instr(quad *q, vmopcode op) {
+	instruction *instr = new instruction();
 	instr->opcode = op;
 	make_operand(q->arg1, &instr->arg1);
 	make_operand(q->arg2, &instr->arg2);
@@ -120,8 +120,8 @@ vminstruction* new_instr(quad *q, vmopcode op) {
 	return instr;
 }
 
-vminstruction* new_reljump(quad *q, vmopcode op) {
-	vminstruction *instr = new_instr(q, op);
+instruction* new_reljump(quad *q, vmopcode op) {
+	instruction *instr = new_instr(q, op);
 	instr->result.val = q->label;
 	instr->result.type = LABEL_A;// it was anyway
 	return instr;
@@ -155,7 +155,7 @@ void generate_MOD(quad* q) {
 extern expr *newexpr_constdouble(double);
 
 void generate_UMINUS(quad* q) {// It is multiplication with -1
-	vminstruction *instr = new_instr(q, MUL_V);
+	instruction *instr = new_instr(q, MUL_V);
 	make_operand(newexpr_constdouble(-1), &instr->arg2);
 	instr_vec.push_back(instr);
 }
@@ -207,7 +207,7 @@ void generate_PARAM(quad* q) {
 	
 }
 static void new_ret_instr(quad* q) {
-	vminstruction *instr = new vminstruction;
+	instruction *instr = new instruction;
 	instr->result.type = RETVAL_A;
 	instr->opcode = ASSIGN_V;
 	make_operand(q->arg2, &instr->arg2);
@@ -283,18 +283,67 @@ generator_func_t generators[] {
 
 void generate() {
 	for (unsigned i = 0; i < quad_vec.size(); ++i) {
-		// TODO den m aresei. Isws xreiastei na kanw refine to <quad> se <quad*> GTPM logw gnwstou bug twn vect apo ph3
+		// TODO den m aresei. Isws xreiastei na kanw refine to <quad> se <quad*> logw gnwstou bug twn vect apo ph3
 		generators[quad_vec[i].op](&quad_vec[i]);
 	}
 }
+/*
+avmbinaryfile:  magicnumber globaloffset arrays code
+magicnumber:    340200501
+globaloffseT: 	globaloffset
+arrays:     strings numbers userfunctions libfunctions
+strings:    total (string)*
+total:      unsigned
+string:     size (char)*
+size:       unsigned
+numbers:    total(double*)
+userfunctions:  total(userfunc)*
+userfunc:       address localsize id
+address:        unsigned
+localsize:      unsigned
+id:             string
+libfunctions:   strings
+code:           total(instruction)*
+instruction:    opcode operand operand operand
+opcode:         byte
+operand:        type value
+type:           byte
+value:          unsigned
+*/
+extern unsigned programVarOffset;
+extern unsigned formalArgOffset;
+extern unsigned functionLocalOffset;
+extern unsigned curScopeSpace;
 
 void print_file_identifiers() {
-	std::string header = "avmbinaryfile: magicnumber globaloffset arrays code";
+	std::string header = "avmbinaryfile: magicnumber globaloffset arrays code\n";
 	unsigned magic_num = 340200501;
-	unsigned globaloffset = 0;
+	unsigned globaloffset = programVarOffset;
+	std::cout << header << "magic_num: " << magic_num << std::endl << "globaloffset: " <<  globaloffset << std::endl
+	<< "string_table_size: " << totalStringConsts << std::endl;
+	for(int i = 0; i < totalStringConsts; ++i) {
+		std::cout << stringConsts[i] << " ";
+	}
+	std::cout << std::endl;
+	std::cout << "num_table_size: " << totalNumConsts << std::endl;
+	for(int i = 0; i < totalNumConsts; ++i) {
+		std::cout << numConsts[i] << " ";
+	}
+	std::cout << std::endl;
+	std::cout << "userfunc_table_size: " << totalUserFuncs << std::endl;
+	for(int i = 0; i < totalUserFuncs; ++i) {
+		std::cout << userFuncs[i] << " ";
+	}
+	std::cout << std::endl;
+	std::cout << "libfunc_table_size: " << totalNamedLibfuncs << std::endl;
+	for(int i = 0; i < totalNamedLibfuncs; ++i) {
+		std::cout << namedLibFuncs[i] << " ";
+	}
+	std::cout << std::endl;
+	//instructions
 }
 
-void write_output(std::string outname) {
+void generate_binary(std::string outname) {// TODO
 
 }
 
@@ -305,6 +354,7 @@ void print_instructions () {// for debug
 	"TABLESETELEM_V", "JUMP_V", "NOP_V"};
 	std::string argCodes[] = {"LABEL_A", "GLOBAL_A", "FORMAL_A", "LOCAL_A", "NUMBER_A", "STRING_A", "BOOL_A",
 	"NIL_A", "USERFUNC_A", "LIBFUNC_A", "RETVAL_A"};
+	print_file_identifiers();
 	for (int i = 0; i < instr_vec.size(); ++i) {
 		std::cout << i+1 << ": " << instrCodes[instr_vec[i]->opcode] << " ";
 		if(instr_vec[i]->result.val != (unsigned)-1)

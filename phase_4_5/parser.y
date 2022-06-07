@@ -743,6 +743,7 @@ funcname    : ID						{
 												&& (st_entry_tmp["r19"]->type != LIB_FUNC) ) )
 											{
 												st_entry_tmp["r19"] = st_insert(*$$, USER_FUNC);
+												incprogramVarOffset();// added by kostas
 												func_stack.push(st_entry_tmp["r19"]);// push to func stack mono an einai valid
 											}
 											else
@@ -776,6 +777,7 @@ funcname    : ID						{
 											$$ = new std::string();
 											*$$ = st_godfather();
 											st_insert(*$$, USER_FUNC);
+											incprogramVarOffset();// added by kostas. User func names value as program vars
 										}
 			;
 
@@ -824,6 +826,7 @@ funcdef		: funcprefix funcargs funcbody
 												exitscopespace();
 												patchlist($3, get_next_quad());
 												$1->totalLocals = currscopeoffset();
+												$1->totalArgs = $2;
 												int offset = popscopeoffsetstack();
 												restorecurrscopeoffset(offset);
 												$$ = $1;

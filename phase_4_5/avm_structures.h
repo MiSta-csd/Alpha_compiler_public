@@ -33,7 +33,7 @@ typedef struct vmarg {
     unsigned 	val;
 }vmarg;
 
-struct vminstruction {
+struct instruction {
     vmopcode    opcode;
     vmarg       result;
     vmarg       arg1;
