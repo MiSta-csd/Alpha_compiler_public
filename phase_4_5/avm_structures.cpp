@@ -186,21 +186,24 @@ void generate_PARAM(quad* q) {
 
 	
 }
+static void new_ret_instr(quad* q, vmopcode op) {
+	vminstruction *instr = new vminstruction;
+	instr->result.type = RETVAL_A;
+	instr->opcode = ASSIGN_V;
+	make_operand(q->arg2, &instr->arg2);
+	instr->srcLine = q->line;
+	instr_vec.push_back(instr);
+	q->taddress = get_current_instr();
+}
 void generate_RET(quad* q) {
 	// TODO if q has value to be returned assign it to the appropriate register
 	if(q->arg2) {
-		vminstruction *instr = new vminstruction;
-		instr->result.type = RETVAL_A;
-		instr->opcode = ASSIGN_V;
-		make_operand(q->arg2, &instr->arg2);
-		instr->srcLine = q->line;
-		instr_vec.push_back(instr);
-		q->taddress = get_current_instr();
+		new_ret_instr(q, ASSIGN_V);
 	}
 }
 void generate_GETRETVAL(quad* q) {
-	// instr_vec.push_back(// TODO
-	std::cout << "Write sth first in generate_GETRETVAL\n";
+	new_ret_instr(q, ASSIGN_V);
+	// std::cout << "Write sth first in generate_GETRETVAL\n";
 	
 }
 void generate_FUNCSTART(quad* q) {

@@ -23,7 +23,7 @@ int yyerror(std::string message);
 bool hasError = false;
 
 extern std::vector<quad> quad_vec;
-extern std::stack<int> loop_stack;
+/* extern std::stack<int> loop_stack; */
 extern int yylineno;
 extern char *yytext;
 extern FILE *yyin;
@@ -188,8 +188,8 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											}
 										}
 			| BREAK SEMICOLON			{	print_rules("3.6 stmt -> BREAK ;");			
-											/* if(!loopcounter) { */
-											if(loop_stack.empty()) {
+											if(!loopcounter) {
+											/* if(loop_stack.empty()) { */
 												yyerror("break stmt outside loop has no use");
 												$$ = NULL;
 											}else {// we are in loop for sure
@@ -199,8 +199,8 @@ stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
 											}
 										}
 			| CONTINUE SEMICOLON		{	print_rules("3.7 stmt -> CONTINUE ;");
-											/* if(!loopcounter) { */
-											if(loop_stack.empty()) {
+											if(!loopcounter) {
+											/* if(loop_stack.empty()) { */
 												yyerror("continue stmt outside loop has no use");
 												$$ = NULL;
 											}else {// we are in loop for sure
@@ -354,7 +354,14 @@ term		: LPAREN expr RPAREN		{
 												std::vector<unsigned> *tmp = $$->truelist;
 												$$->truelist = $$->falselist;
 												$$->falselist = tmp;
-												$$->type = BOOLEXPR_E;
+												$$->type = BOOLEXPR_E;// if not boolexpr it won't be patched
+												/* if($$->type != BOOLEXPR_E) { */
+												/* 	backpatch($$->truelist, get_next_quad()); */
+												/* 	backpatch($$->falselist, get_next_quad() + 2); */
+												/* 	expr *e = newexpr(VAR_E); */
+												/* 	e->sym = newtemp(); */
+												/* 	emit_branch_assign_quads(e); */
+												/* } */
 											}
 										}
 			| PLUSPLUS lvalue			{
@@ -938,7 +945,7 @@ ifstmt		: ifprefix stmt				{
 			;
 			
 // Rule 24.
-whilestart	: WHILE						{	/* ++loopcounter; */	$$ = get_next_quad();}
+whilestart	: WHILE						{	++loopcounter;	$$ = get_next_quad();}
 		   	;
 whilecond	: LPAREN expr RPAREN		{
 											if($2) {
@@ -950,7 +957,7 @@ whilecond	: LPAREN expr RPAREN		{
 													emit(JUMP_OP, NULL, NULL, NULL, 0, yylineno);
 												}else // case i have while(true) ...
 													$$ = get_current_quad()-1;
-												loop_stack.push(st_get_scope());
+												/* loop_stack.push(st_get_scope()); */
 											}
 										}
 			;
@@ -965,15 +972,16 @@ whilestmt	: whilestart whilecond stmt
 												$$ = new stmt_t();
 											emit(JUMP_OP, NULL, NULL, NULL, $1, yylineno);
 											patchlabel($2, get_next_quad());
-											loop_stack.pop();
-											/* --loopcounter; */
+											/* loop_stack.pop(); */
+											--loopcounter;
 										}
 			;
 // Rule 25.
 forprefix	: FOR LPAREN elist SEMICOLON M expr SEMICOLON
 										{
 											print_rules("25.0 forprefix -> for ( elist ; expr ;");
-											loop_stack.push(st_get_scope());
+											++loopcounter;
+											/* loop_stack.push(st_get_scope()); */
 											if($6) {
 												$$ = new for_stmt();
 												$$->test = $5;
@@ -999,7 +1007,8 @@ forstmt		: forprefix N elist RPAREN N stmt N
 											}else{
 												$$ = NULL;
 											}
-											loop_stack.pop();
+											--loopcounter;
+											/* loop_stack.pop(); */
 										}
 			;
 

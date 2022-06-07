@@ -9,7 +9,7 @@
 
 std::vector<quad> quad_vec;
 
-std::stack<int> loop_stack;
+// std::stack<int> loop_stack;
 
 unsigned tmp_var_count = 0;
 unsigned tmp_var_max = 0;
@@ -77,8 +77,7 @@ void print_quads(int arg) {
 		}
 		if(quad.arg1) {
 			if(quad.arg1->sym && quad.arg1->type != CONSTBOOL_E && quad.arg1->type != CONSTSTRING_E
-					&& quad.arg1->type != CONSTINT_E && quad.arg1->type != CONSTDOUBLE_E &&
-					quad.arg1->type != BOOLEXPR_E) {
+					&& quad.arg1->type != CONSTINT_E && quad.arg1->type != CONSTDOUBLE_E) {
 				outFile << quad.arg1->sym->name << " ";
 			}else {
 				switch (quad.arg1->type) {
@@ -105,8 +104,7 @@ void print_quads(int arg) {
 		}
 		if(quad.arg2) {
 			if(quad.arg2->sym && quad.arg2->type != CONSTBOOL_E && quad.arg2->type != CONSTSTRING_E
-					&& quad.arg2->type != CONSTINT_E && quad.arg2->type != CONSTDOUBLE_E &&
-					quad.arg2->type != BOOLEXPR_E) {
+					&& quad.arg2->type != CONSTINT_E && quad.arg2->type != CONSTDOUBLE_E) {
 				outFile << quad.arg2->sym->name << " ";
 			}else {
 				switch (quad.arg2->type) {
