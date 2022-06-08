@@ -20,25 +20,25 @@ void resetcurScopeSpace(void){
 	curScopeSpace = 0;
 }
 
-// scope_space currscopespace(void){
-//     if(curScopeSpace == 0){
-//         return programvar;
-// 	} else if(curScopeSpace == 1){
-//         return formalarg;
-// 	} else{
-//         return functionlocal;
-// 	}
-// }
+scope_space currscopespace(void){
+    if(curScopeSpace == 0){
+        return programvar;
+	} else if(curScopeSpace == 1){
+        return formalarg;
+	} else{
+        return functionlocal;
+	}
+}
 
-// unsigned currscopeoffset(){
-//     switch(currscopespace())
-//     {
-// 	    case programvar:	return programVarOffset;
-// 	    case functionlocal:	return functionLocalOffset; 
-// 	    case formalarg:		return formalArgOffset; 
-//         default:            assert(0);
-//     }
-// }
+unsigned currscopeoffset(){
+    switch(currscopespace())
+    {
+	    case programvar:	return programVarOffset;
+	    case functionlocal:	return functionLocalOffset; 
+	    case formalarg:		return formalArgOffset; 
+        default:            assert(0);
+    }
+}
 
 // void restorecurrscopeoffset(unsigned n){
 //     switch (currscopespace())

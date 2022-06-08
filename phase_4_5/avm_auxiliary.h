@@ -51,3 +51,6 @@ tostring_func_t tostringFuncs[] = {
     undef_tostring
 };
 
+
+userfunc* avm_get_funcinfo (unsigned address); /* TODO */
+

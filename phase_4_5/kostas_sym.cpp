@@ -13,6 +13,8 @@ std::vector<std::unordered_map<std::string, std::vector<st_entry>>> symbol_table
 std::vector<struct st_entry *> f_arg_list;
 std::stack<struct st_entry *> func_stack;
 
+static unsigned sym_offset_counter = 0;
+
 st_entry *st_insert(std::string name, enum st_entry_type type) {
 	st_entry *new_entry;
 	assert(new_entry = new st_entry);
@@ -31,6 +33,7 @@ st_entry *st_insert(std::string name, enum st_entry_type type) {
 			.type = type,
 			.scope = scope,
 			.line = (unsigned)yylineno,
+			.offset = (space == programvar?sym_offset_counter++:0),
 			.space = space
 	};
 	symbol_table[scope][name].push_back(*new_entry);// works even if bucket~key==name is empty

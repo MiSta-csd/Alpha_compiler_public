@@ -93,9 +93,57 @@ std::string string_tostring (avm_memcell* m)
     return s;
 }
 
-std::string bool_tostring (avm_memcell* m);
-std::string table_tostring (avm_memcell* m);
-std::string userfunc_tostring (avm_memcell* m);
-std::string libfunc_tostring (avm_memcell* m);
-std::string nil_tostring (avm_memcell* m);
-std::string undef_tostring (avm_memcell* m);
+std::string bool_tostring (avm_memcell* m)
+{
+    assert(m && m->type == BOOL_M);
+    bool b = avm_get_boolVal(m);
+    if(b)   /* std::to_string(b) -> prints 1 or 0 */
+        return "true";
+    else
+        return "false";
+}
+
+std::string table_tostring (avm_memcell* m)
+{
+    assert(m && m->type == TABLE_M);
+    return "I am a table.";
+    /* TODO */
+}
+
+std::string userfunc_tostring (avm_memcell* m)
+
+{
+    assert(m && m->type == USERFUNC_M);
+    return "Function address: " + std::to_string(m->data.funcVal);
+    /* May need to elaborate. */
+}
+
+
+std::string libfunc_tostring (avm_memcell* m)
+{
+    assert(m && m->type == LIBFUNC_M);
+    return *(new std::string(*(m->data.libfuncVal)));
+}
+
+std::string nil_tostring (avm_memcell* m)
+{
+    assert(m && m->type == NIL_M);
+    return "nil";
+}
+
+std::string undef_tostring (avm_memcell* m)
+{
+    assert(m && m->type == UNDEF_M);
+    return "undef";
+}
+
+userfunc* avm_get_funcinfo (unsigned address)
+{       
+    
+    assert(stack[address].type == USERFUNC_M ||
+           stack[address].type == LIBFUNC_M
+           );
+
+    return &(stack[address].data.funcVal);
+
+}

@@ -150,3 +150,125 @@ unsigned avm_get_envvalue(unsigned i){
     assert(stack[i].data.numVal == val);
     return val;
 }
+
+void execute_call (instruction* instr)
+{
+    avm_memcell* func = avm_translate_operand(&instr->result, &reg_AX);
+    assert(func);
+    avm_callsaveenvironment();
+
+    switch (func->type)
+    {
+        case USERFUNC_M: 
+        {
+            pc = func->data.funcVal;
+            assert(pc < AVM_ENDING_PC);
+            assert(code[pc].opcode == FUNCENTER_V);
+            break;
+        }
+        
+        case STRING_M:
+        {
+            char* cstr = new char[(*(func->data.strVal)).length() + 1];
+            strcpy(cstr, (*(func->data.strVal)).c_str());
+            avm_calllibfunc(cstr);//wraia des aftes tis grammes // 2 me8doi h .length() k h .c_str(). H 2h paragei apo std::string 
+            //ena const char* , to opoio isws sou kanei omorfa!
+            /* Des file ti anagkazomai na kanw epeidh o mhtsos 
+            den phre xabari oti den xrhsimopoioume char* */
+            delete [] cstr;
+        }
+
+        case LIBFUNC_M:
+        {
+            char* cstr = new char[(*(func->data.libfuncVal)).length() + 1];
+            strcpy(cstr, (*(func->data.libfuncVal)).c_str());
+            avm_calllibfunc(cstr);
+            /* Des file ti anagkazomai na kanw epeidh o mhtsos 
+            den phre xabari oti den xrhsimopoioume char* */
+            delete [] cstr;
+        } 
+        
+        default:
+        {
+            std::string* s = new std::string(avm_tostring(func));
+            avm_error("call: cannot bind "+ *s +" to function!");
+            delete s;
+            executionFinished = 1;
+        }
+        
+    }
+}
+
+void execute_funcenter (instruction* instr)
+{
+    avm_memcell* func = avm_translate_operand(&instr->result, &reg_AX);
+    assert(func);
+    assert(pc == func->data.funcVal); /* Func addr should match PC */
+
+    /* Callee actions here. */
+    totalActuals = 0;
+    userfunc* funcInfo = avm_get_funcinfo(pc);
+    topsp =top;
+    top = top - funcInfo->localSize;
+
+}
+
+void execute_funcexit (instruction* unused)
+{
+    unsigned oldTop = top;
+    top     = avm_get_envvalue(topsp + AVM_SAVEDTOP_OFFSET);
+    pc      = avm_get_envvalue(topsp + AVM_SAVEDPC_OFFSET);
+    topsp   = avm_get_envvalue(topsp + AVM_SAVEDTOPSP_OFFSET);
+    
+    while (++oldTop <= top) /* Intentionally ignering first. */
+        avm_memcellclear(&stack[oldTop]);
+}
+
+void execute_pusharg (instruction* instr)
+{
+    avm_memcell* arg = avm_translate_operand(&instr->arg1, &reg_AX);
+    assert(arg);
+
+    /*  This is actually stack[top] = arg, but we have to
+        use avm_assign
+     */
+
+    avm_assign(&stack[top], arg);
+    ++totalActuals;
+    avm_dec_top();
+}
+
+double add_impl (double x, double y) { return x + y; }
+double sub_impl (double x, double y) { return x - y; }
+double mul_impl (double x, double y) { return x * y; }
+double div_impl (double x, double y) 
+{
+    assert(y != 0);
+    return x / y; 
+}
+double mod_impl (double x, double y) 
+{ 
+    return ((int) x) % ((int) y);   /* no further error checking */ 
+}
+
+void execute_arithmetic (instruction* instr)
+{
+    avm_memcell* lv  = avm_translate_operand(&instr->result, (avm_memcell*) 0);
+    avm_memcell* rv1 = avm_translate_operand(&instr->arg1, &reg_AX); 
+    avm_memcell* rv2 = avm_translate_operand(&instr->arg2, &reg_BX);
+
+    assert(lv && (&stack[N-1] >= lv && lv > &stack[top] || lv==&reg_RETVAL));
+    assert(rv1 && rv2);
+
+    if (rv1->type != NUMBER_M || rv2->type != NUMBER_M) {
+        avm_error("not a number in arithmetic!");
+        executionFinished = 1;
+    }
+    else {
+        arithmetic_func_t op = arithmeticFuncs[instr->opcode - ADD_V];
+        avm_memcellclear(lv);
+        lv->type           = NUMBER_M;
+        lv->data.numVal = (*op) (rv1->data.numVal, rv2->data.numVal);
+    }
+}
+

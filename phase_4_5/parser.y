@@ -819,7 +819,7 @@ funcargs:   LPAREN idlist RPAREN  		{
                                 		}
             ;						
 funcbody    : block						{
-										    /* $$ = currscopeoffset(); */
+										    $$ = currscopeoffset();
 											if($1 && !hasError) {
 												$$ = $1->retList;
 											}
@@ -830,7 +830,7 @@ funcdef		: funcprefix funcargs funcbody
 		 								{	
 											if(!hasError) {
 												$1->totalLocals = getTotalLocals();
-												std::cout << "I have: " << $1->totalLocals << " locals \n";
+
 												exitscopespace();
 												popscopeoffsetstack();
 												patchlist($3, get_next_quad());
@@ -878,6 +878,10 @@ idlist		: ID 						{
 											}
 											incformalArgOffset();
 											$$ = currscopeoffset();
+											$$ = st_get_scope();// kostas autosxediasmos gia na epistrefoume kati
+											/* Afto pou egrapse aftos den doulevei? Oxi to afairese
+											ok
+											 */ //kia sthn 902 to idio // :()
 										}
 			| idlist COMMA ID 			{
 											print_rules("21.2 idlist -> idlist , ID");
@@ -895,10 +899,12 @@ idlist		: ID 						{
 											}
 											incformalArgOffset();
 											$$ = currscopeoffset();
+											$$ = st_get_scope();
 										}
 			|							{
 											print_rules("21.3 empty id_list");
 											$$ = currscopeoffset();
+											$$ = st_get_scope(); // aytosxediasmos epishs
 										}
 			;
 

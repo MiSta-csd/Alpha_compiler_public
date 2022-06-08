@@ -1,4 +1,4 @@
-// #include <cstdio>
+#include <unordered_map>
 #include "avm_structures.h"
 #include "actions.h"
 
@@ -319,14 +319,25 @@ extern unsigned formalArgOffset;
 extern unsigned functionLocalOffset;
 extern unsigned curScopeSpace;
 
+extern std::vector<std::unordered_map<std::string, std::vector<st_entry>>> symbol_table;
 void print_file_identifiers() {
 	std::string header = "avmbinaryfile: magicnumber globaloffset arrays code\n";
 	unsigned magic_num = 340200501;
 	unsigned globaloffset = programVarOffset;
-	std::cout << header << "magic_num: " << magic_num << std::endl << "globaloffset: " <<  globaloffset << std::endl
-	<< "string_table_size: " << totalStringConsts << std::endl;
+	std::cout << header << "magic_num: " << magic_num << std::endl << "globaloffset: " <<  globaloffset << std::endl;
+	for (auto map : symbol_table) {
+		for ( auto pair : map) {
+			for ( auto entry : pair.second) {
+				if(entry.space == programvar) {
+					std::cout << entry.name << "," << entry.scope << "," << entry.offset << " ";
+				}
+			}
+		}
+	}
+	std::cout << "\n";
+	std::cout << "string_table_size: " << totalStringConsts << std::endl;
 	for(int i = 0; i < totalStringConsts; ++i) {
-		std::cout << stringConsts[i] << " ";
+		std::cout <<  stringConsts[i].size() << "," << stringConsts[i] << " ";
 	}
 	std::cout << std::endl;
 	std::cout << "num_table_size: " << totalNumConsts << std::endl;
@@ -336,20 +347,78 @@ void print_file_identifiers() {
 	std::cout << std::endl;
 	std::cout << "libfunc_table_size: " << totalNamedLibfuncs << std::endl;
 	for(int i = 0; i < totalNamedLibfuncs; ++i) {
-		std::cout << namedLibFuncs[i] << " ";
+		std::cout << namedLibFuncs[i] << " ";// names
 	}
 	std::cout << std::endl;
 
 	std::cout << "userfunc_table_size: " << totalUserFuncs << std::endl;
 	for(int i = 0; i < totalUserFuncs; ++i) {
-		std::cout << userFuncs[i]->address << "->" << userFuncs[i]->address << " ";
+		std::cout << userFuncs[i]->id << "->" << userFuncs[i]->address << " ";
 	}
 	std::cout << std::endl;
 	//instructions
 }
 
-void generate_binary(std::string outname) {// TODO
+#include <fstream>
+void generate_binary(std::string outname) {
+	std::ofstream outfile;
+	outfile.open(outname, "w");
+	char* magic_num = "340200501";
+	outfile.write(magic_num, 10); outfile.write("\n", 1);
+	outfile.write(programVarOffset, sizeof(unsigned));outfile.write("\n", 1);
+	for (auto map : symbol_table) {
+		for ( auto pair : map) {
+			for ( auto entry : pair.second) {
+				if(entry.space == programvar) {
+					outfile.write(entry.name, entry.name.size());outfile.write(",", 1);
+					outfile.write(entry.scope, sizeof(unsigned));outfile.write(",", 1);
+					outfile.write(entry.offset, sizeof(unsigned));outfile.write(" ", 1);
+				}
+			}
+		}
+	}
+	outfile.write("\n", 1);
+	outfile.write(totalStringConsts, sizeof(unsigned));outfile.write("\n", 1);
+	for(int i = 0; i < totalStringConsts; ++i) {
+		outfile.write(stringConsts[i].size(), sizeof(unsigned));outfile.write(",", 1);
+		outfile.write(stringConsts[i], stringConsts[i].size());outfile.write(" ", 1);
+	}
+	outfile.write("\n", 1);
+	outfile.write(totalNumConsts, sizeof(unsigned));outfile.write("\n", 1);
+	for(int i = 0; i < totalNumConsts; ++i) {
+		outfile.write(numConsts[i], sizeof(double));outfile.write(" ", 1);
+	}
+	outfile.write("\n", 1);
+	outfile.write(totalNamedLibfuncs, sizeof(unsigned));outfile.write("\n", 1);
+	for(int i = 0; i < totalNamedLibfuncs; ++i) {
+		outfile.write(namedLibFuncs[i], namedLibFuncs[i].size());outfile.write(" ", 1);// names
+	}
+	outfile.write(" ", 1);
 
+	outfile.write(totalUserFuncs, sizeof(unsigned));outfile.write(" ", 1);
+	for(int i = 0; i < totalUserFuncs; ++i) {
+		outfile.write(userFuncs[i]->id, userFuncs[i]->id.size());outfile.write(",", 1);
+		outfile.write(userFuncs[i]->address, sizeof(unsigned));outfile.write(" ", 1);
+	}
+	outfile.write("\n", 1);
+	// instructions
+	for (int i = 0; i < instr_vec.size(); ++i) {
+		outfile.write(instrCodes[instr_vec[i]->opcode], sizeof(enum vmopcode));// opcode is enum
+		if(instr_vec[i]->result.val != (unsigned)-1)
+			std::cout << argCodes[instr_vec[i]->result.type] << (instr_vec[i]->opcode == JUMP_V?
+						"->" + std::to_string(instr_vec[i]->result.val) + " ":  " ");
+		else
+			std::cout << "unused_result" << " ";
+		if(instr_vec[i]->arg1.val != (unsigned)-1)
+			std::cout << argCodes[instr_vec[i]->arg1.type] << " ";
+		else
+			std::cout << "unused_arg1" << " ";
+		if(instr_vec[i]->arg2.val != (unsigned)-1)
+			std::cout << argCodes[instr_vec[i]->arg2.type] << " ";
+		else
+			std::cout << "unused_arg2" << " ";
+		std::cout << instr_vec[i]->srcLine << std::endl;
+	}
 }
 
 void print_instructions () {// for debug

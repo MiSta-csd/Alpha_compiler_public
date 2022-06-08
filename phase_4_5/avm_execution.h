@@ -3,12 +3,9 @@
 #include "avm_structures.h"
 #include "avm_table.h"
 #include "avm_auxiliary.h"
+#include "avm_libfuncs.h"
 
 
-#define AVM_STACKENV_SIZE   4
-avm_memcell reg_AX, reg_BX, reg_CX;
-avm_memcell reg_RETVAL;
-unsigned    top,topsp;
 
 double  consts_getnumber (unsigned index);
 std::string consts_getstring (unsigned index);
@@ -107,6 +104,34 @@ unsigned avm_get_envvalue(unsigned i);
 
 // void avm_registerlibfunc (char* id, library_func_t addr);
 
+void execute_call (instruction* instr);
+
+void execute_funcenter (instruction* instr);
+
+void execute_funcexit (instruction* unused);
+void execute_pusharg (instruction* instr);
+
+typedef double (*arithmetic_func_t) (double x, double y);
+
+double add_impl (double x, double y);
+double sub_impl (double x, double y);
+double mul_impl (double x, double y);
+double div_impl (double x, double y);
+double mod_impl (double x, double y);
 
 
+#define execute_add execute_arithmetic
+#define execute_sub execute_arithmetic
+#define execute_mul execute_arithmetic
+#define execute_div execute_arithmetic
+#define execute_mod execute_arithmetic
 
+arithmetic_func_t arithmeticFuncs[] = {
+    add_impl,
+    sub_impl,
+    mul_impl,
+    div_impl,
+    mod_impl
+};
+
+void execute_arithmetic (instruction* inst);
