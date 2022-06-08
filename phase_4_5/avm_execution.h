@@ -16,8 +16,13 @@ std::string libfuncs_getused (unsigned index);
 
 avm_memcell* avm_translate_operand (vmarg* arg, avm_memcell* reg);
 
+#define N 4096
+#define AVM_MAX_INSTRUCTIONS (unsigned) NOP_V
+#define AVM_NUMACTUALS_OFFSET   +4
+#define AVM_SAVEDPC_OFFSET      +3
+#define AVM_SAVEDTOP_OFFSET     +2
+#define AVM_SAVEDTOPSP_OFFSET   +1
 
-#define AVM_MAX_INSTRUCTIONS (unsigned) NOP_V;
 
 void execute_assign (instruction*);
 void execute_add (instruction*);
@@ -86,7 +91,7 @@ unsigned        currLine = 0;
 unsigned        codeSize = 0;
 instruction*    code = (instruction*) 0;
 
-#define AVM_ENDING_PC codeSize;
+#define AVM_ENDING_PC codeSize
 
 void execute_cycle (void);
 
@@ -97,6 +102,8 @@ void execute_assign (instruction* instr);
 unsigned avm_totalactuals(void);
 
 avm_memcell* avm_getactual (unsigned i);
+
+unsigned avm_get_envvalue(unsigned i);
 
 // void avm_registerlibfunc (char* id, library_func_t addr);
 

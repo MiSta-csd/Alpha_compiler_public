@@ -20,10 +20,12 @@ memclear_func_t memclearFuncs[] = {
     0
 };
 
+std::string typeStrings[] = {"number", "string", "bool", "table", "userfunc", "libfunc", "nil", "undef"};
+
 void avm_memcellclear (avm_memcell* m);
 
-void avm_warning (std::string s);
-void avm_error (std::string s);
+void avm_warning (std::string s, ...);
+void avm_error (std::string s, ...);
 
 std::string avm_tostring (avm_memcell* m);
 

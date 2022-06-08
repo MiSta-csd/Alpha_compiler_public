@@ -112,7 +112,8 @@ void avm_assign (avm_memcell* lv, avm_memcell* rv)
 
     avm_memcellclear(lv);   /* Clear old cell contents */
 
-    memccpy(lv, rv, sizeof(avm_memcell));   /* In C++ dispatch instead */
+    //memccpy(lv, rv, sizeof(avm_memcell));   /* In C++ dispatch instead */
+    *lv = *rv;
 
     /* Now take care of copied values or reference counting */
     if (lv->type == STRING_M)
@@ -128,8 +129,8 @@ void execute_assign (instruction* instr)
     avm_memcell* lv = avm_translate_operand(&instr->result, (avm_memcell*) 0);
     avm_memcell* rv = avm_translate_operand(&instr->arg1, &reg_AX);
 
-    assert(lv && (&stack[N-1] >= lv > &stack[top] || lv == &reg_RETVAL));
-    assert(rv)/* should do similar assertion test here */
+    assert(lv && (&stack[N-1] >= lv && &stack[top] || lv == &reg_RETVAL)); // care - changed!
+    assert(rv);/* should do similar assertion test here */ // added semicolon
 
     avm_assign(lv, rv);
 }
@@ -141,4 +142,11 @@ unsigned avm_totalactuals(void){
 avm_memcell* avm_getactual (unsigned i){
     assert(i < avm_totalactuals());
     return &stack[topsp + AVM_STACKENV_SIZE + 1 + i];
+}
+
+unsigned avm_get_envvalue(unsigned i){
+    assert(stack[i].type == NUMBER_M);
+    unsigned val = (unsigned)stack[i].data.numVal;
+    assert(stack[i].data.numVal == val);
+    return val;
 }

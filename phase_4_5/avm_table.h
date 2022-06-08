@@ -28,6 +28,7 @@ typedef struct avm_table {
     avm_memcell>                    *trollIndexed; /* allows keys of type : libfunc, bool, nil */
     unsigned        total; /* = strIndexed.size() + numIndexed.size() + */
                         /* funcIndexed.size() + trollIndexed.size(); */  /* total no of elems */
+    avm_memcell** keys;
 	avm_table();
 } avm_table;
 

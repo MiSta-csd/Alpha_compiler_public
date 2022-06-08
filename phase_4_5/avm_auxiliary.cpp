@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 
+
 void memclear_string (avm_memcell* m)
 {
     assert(m->data.strVal);
@@ -28,13 +29,13 @@ void avm_memcellclear (avm_memcell* m)
     
 }
 
-void avm_warning (std::string s)
+void avm_warning (std::string s, ...)
 {
 
     std::cout << "\033[33m" << "WARNING: " << s << "\033[37m" << std::endl;
 }
 
-void avm_error (std::string s)
+void avm_error (std::string s, ...)
 {
     std::cout << "\033[31m" << "ERROR :" << s << "\033[37m" << std::endl;
 }
