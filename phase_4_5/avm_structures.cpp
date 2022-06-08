@@ -1,3 +1,4 @@
+#include <string>
 #include <unordered_map>
 #include "avm_structures.h"
 #include "actions.h"
@@ -361,25 +362,29 @@ void print_file_identifiers() {
 
 #include <fstream>
 void generate_binary(std::string outname) {
-	std::ofstream outfile;
-	outfile.open(outname, "w");
-	char* magic_num = "340200501";
+	std::ofstream outfile(outname);
+	unsigned magic_num = 340200501;
 	outfile.write(magic_num, 10); outfile.write("\n", 1);
-	outfile.write(programVarOffset, sizeof(unsigned));outfile.write("\n", 1);
+	std::string uns2str = std::to_string(programVarOffset);
+	outfile.write(uns2str.c_str(), uns2str.size());outfile.write("\n", 1);
 	for (auto map : symbol_table) {
 		for ( auto pair : map) {
 			for ( auto entry : pair.second) {
 				if(entry.space == programvar) {
-					outfile.write(entry.name, entry.name.size());outfile.write(",", 1);
-					outfile.write(entry.scope, sizeof(unsigned));outfile.write(",", 1);
-					outfile.write(entry.offset, sizeof(unsigned));outfile.write(" ", 1);
+					outfile.write(entry.name.c_str(), entry.name.size());outfile.write(",", 1);
+					uns2str = std::to_string(entry.scope);
+					outfile.write(uns2str.c_str(), uns2str.size());outfile.write(",", 1);
+					uns2str = std::to_string(entry.offset);
+					outfile.write(uns2str.c_str(), uns2str.size());outfile.write(" ", 1);
 				}
 			}
 		}
 	}
 	outfile.write("\n", 1);
-	outfile.write(totalStringConsts, sizeof(unsigned));outfile.write("\n", 1);
+	uns2str = std::to_string(totalStringConsts);
+	outfile.write(uns2str.c_str(), uns2str.size());outfile.write("\n", 1);
 	for(int i = 0; i < totalStringConsts; ++i) {
+		uns2str = std::to_string(
 		outfile.write(stringConsts[i].size(), sizeof(unsigned));outfile.write(",", 1);
 		outfile.write(stringConsts[i], stringConsts[i].size());outfile.write(" ", 1);
 	}
