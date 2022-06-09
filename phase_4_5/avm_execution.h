@@ -111,6 +111,7 @@ void execute_funcenter (instruction* instr);
 void execute_funcexit (instruction* unused);
 void execute_pusharg (instruction* instr);
 
+/* arithmetics */
 typedef double (*arithmetic_func_t) (double x, double y);
 
 double add_impl (double x, double y);
@@ -135,3 +136,25 @@ arithmetic_func_t arithmeticFuncs[] = {
 };
 
 void execute_arithmetic (instruction* inst);
+
+/* relationals */
+bool avm_compare_jeq(avm_memcell* rv1,avm_memcell* rv2);
+bool avm_compare_jne(avm_memcell* rv1,avm_memcell* rv2);
+bool avm_compare_jle(avm_memcell* rv1,avm_memcell* rv2);
+bool avm_compare_jlt(avm_memcell* rv1,avm_memcell* rv2);
+bool avm_compare_jge(avm_memcell* rv1,avm_memcell* rv2);
+bool avm_compare_jgt(avm_memcell* rv1,avm_memcell* rv2);
+
+typedef bool (*cmp_func_t) (avm_memcell* rv1,avm_memcell* rv2);
+
+/* dispatcher for comparison funcs */
+cmp_func_t comparisonFuncs[] = {
+    avm_compare_jeq,
+    avm_compare_jne,
+    avm_compare_jle,
+    avm_compare_jge,
+    avm_compare_jlt,
+    avm_compare_jgt
+};
+
+void execute_comparison (instruction* instr);

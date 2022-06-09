@@ -27,6 +27,11 @@ void avm_memcellclear (avm_memcell* m);
 void avm_warning (std::string s, ...);
 void avm_error (std::string s, ...);
 
+double avm_get_numVal(avm_memcell* m);
+std::string avm_get_stringVal(avm_memcell* m);
+bool avm_get_boolVal(avm_memcell* m);
+userfunc avm_get_funcVal(avm_memcell* m);
+
 std::string avm_tostring (avm_memcell* m);
 
 typedef std::string (*tostring_func_t) (avm_memcell*);

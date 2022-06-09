@@ -132,7 +132,7 @@ void libfunc_objectmemberkeys(void)
 	}
 }
 
-library_func_t avm_getlibraryfunc(char* id)
+library_func_t avm_getlibraryfunc(std::string id)
 {
 	assert(id);
 	assert(lib_h_table);
@@ -156,7 +156,7 @@ library_func_t avm_getlibraryfunc(char* id)
 }
 
 
-void avm_calllibfunc(char *id){
+void avm_calllibfunc(std::string id){
     library_func_t f = avm_getlibraryfunc(id);
     if(!f){
         avm_error("Unsupported library function %s called!", id);

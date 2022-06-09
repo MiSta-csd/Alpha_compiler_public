@@ -360,69 +360,53 @@ void print_file_identifiers() {
 	//instructions
 }
 
-#include <fstream>
 void generate_binary(std::string outname) {
-	std::ofstream outfile(outname);
+	FILE *outf = fopen(outname.c_str(), "w");
 	unsigned magic_num = 340200501;
-	outfile.write(magic_num, 10); outfile.write("\n", 1);
-	std::string uns2str = std::to_string(programVarOffset);
-	outfile.write(uns2str.c_str(), uns2str.size());outfile.write("\n", 1);
+	// TODO fwrite(char [], size, how_many, outfile)
+	fprintf(outf, "%u\n", magic_num);
+	fprintf(outf, "%u\n", programVarOffset);
 	for (auto map : symbol_table) {
 		for ( auto pair : map) {
 			for ( auto entry : pair.second) {
 				if(entry.space == programvar) {
-					outfile.write(entry.name.c_str(), entry.name.size());outfile.write(",", 1);
-					uns2str = std::to_string(entry.scope);
-					outfile.write(uns2str.c_str(), uns2str.size());outfile.write(",", 1);
-					uns2str = std::to_string(entry.offset);
-					outfile.write(uns2str.c_str(), uns2str.size());outfile.write(" ", 1);
+					fprintf(outf, "%s,%u,%u ", entry.name.c_str(), entry.scope, entry.offset);
 				}
 			}
 		}
 	}
-	outfile.write("\n", 1);
-	uns2str = std::to_string(totalStringConsts);
-	outfile.write(uns2str.c_str(), uns2str.size());outfile.write("\n", 1);
+	fprintf(outf, "\n%u\n", totalStringConsts);
 	for(int i = 0; i < totalStringConsts; ++i) {
-		uns2str = std::to_string(
-		outfile.write(stringConsts[i].size(), sizeof(unsigned));outfile.write(",", 1);
-		outfile.write(stringConsts[i], stringConsts[i].size());outfile.write(" ", 1);
+		fprintf(outf, "%u,%s ",stringConsts[i].size(), stringConsts[i].c_str());
 	}
-	outfile.write("\n", 1);
-	outfile.write(totalNumConsts, sizeof(unsigned));outfile.write("\n", 1);
+	fprintf(outf, "\n%u\n", totalNumConsts);
 	for(int i = 0; i < totalNumConsts; ++i) {
-		outfile.write(numConsts[i], sizeof(double));outfile.write(" ", 1);
+		fprintf(outf, "%lf ", numConsts[i]);
 	}
-	outfile.write("\n", 1);
-	outfile.write(totalNamedLibfuncs, sizeof(unsigned));outfile.write("\n", 1);
+	fprintf(outf, "\n%u\n", totalNamedLibfuncs);
 	for(int i = 0; i < totalNamedLibfuncs; ++i) {
-		outfile.write(namedLibFuncs[i], namedLibFuncs[i].size());outfile.write(" ", 1);// names
+		fprintf(outf, "%s ", namedLibFuncs[i].c_str());
 	}
-	outfile.write(" ", 1);
-
-	outfile.write(totalUserFuncs, sizeof(unsigned));outfile.write(" ", 1);
+	fprintf(outf, "\n%u\n",totalUserFuncs);
 	for(int i = 0; i < totalUserFuncs; ++i) {
-		outfile.write(userFuncs[i]->id, userFuncs[i]->id.size());outfile.write(",", 1);
-		outfile.write(userFuncs[i]->address, sizeof(unsigned));outfile.write(" ", 1);
+		fprintf(outf, "%s,%u ", userFuncs[i]->id.c_str(), userFuncs[i]->address);
 	}
-	outfile.write("\n", 1);
+	fprintf(outf, "\n");
+
 	// instructions
 	for (int i = 0; i < instr_vec.size(); ++i) {
-		outfile.write(instrCodes[instr_vec[i]->opcode], sizeof(enum vmopcode));// opcode is enum
+		fprintf(outf, "%b", instr_vec[i]->opcode);
 		if(instr_vec[i]->result.val != (unsigned)-1)
-			std::cout << argCodes[instr_vec[i]->result.type] << (instr_vec[i]->opcode == JUMP_V?
-						"->" + std::to_string(instr_vec[i]->result.val) + " ":  " ");
-		else
-			std::cout << "unused_result" << " ";
+			fprintf(outf, "%5b", instr_vec[i]->result.type);
+
+
 		if(instr_vec[i]->arg1.val != (unsigned)-1)
-			std::cout << argCodes[instr_vec[i]->arg1.type] << " ";
-		else
-			std::cout << "unused_arg1" << " ";
+			fprintf(outf, "%5b", instr_vec[i]->arg1.type);
+
 		if(instr_vec[i]->arg2.val != (unsigned)-1)
-			std::cout << argCodes[instr_vec[i]->arg2.type] << " ";
-		else
-			std::cout << "unused_arg2" << " ";
-		std::cout << instr_vec[i]->srcLine << std::endl;
+			fprintf(outf, "%5b", instr_vec[i]->arg2.type);
+
+		fprintf(outf, "%u\n", instr_vec[i]->srcLine);
 	}
 }
 

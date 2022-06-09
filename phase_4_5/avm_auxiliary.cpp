@@ -71,6 +71,14 @@ bool avm_get_boolVal(avm_memcell* m)
 } */
 
 
+userfunc avm_get_funcVal(avm_memcell* m)
+{
+    assert(m);
+    assert(m->type == USERFUNC_M);
+    return m->data.funcVal;
+}
+
+
 /* String Convertors */
 
 std::string avm_tostring (avm_memcell* m){
@@ -114,7 +122,7 @@ std::string userfunc_tostring (avm_memcell* m)
 
 {
     assert(m && m->type == USERFUNC_M);
-    return "Function address: " + std::to_string(m->data.funcVal);
+    return "Function: " + m->data.funcVal.id;
     /* May need to elaborate. */
 }
 

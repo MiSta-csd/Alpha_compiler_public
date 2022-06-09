@@ -272,3 +272,99 @@ void execute_arithmetic (instruction* instr)
     }
 }
 
+/* relationals */
+bool avm_compare_jeq(avm_memcell* rv1,avm_memcell* rv2)
+{
+    assert(rv1 && rv2 && (rv1->type == rv2->type));
+
+    switch (rv1->type)
+    {
+        case NUMBER_M:
+            return (rv1->data.numVal - rv2->data.numVal) ? false : true;
+        
+        case STRING_M:
+            return (rv1->data.strVal->compare(*(rv2->data.strVal))) ? false : true;
+        
+        case BOOL_M:
+            return (rv1->data.boolVal == rv2->data.boolVal);
+        
+        case TABLE_M:
+            return (rv1->data.tableVal == rv2->data.tableVal);
+        
+        case USERFUNC_M:
+            return (rv1->data.funcVal.address == rv2->data.funcVal.address);
+        
+        case LIBFUNC_M:
+            return (rv1->data.libfuncVal->compare(*(rv2->data.libfuncVal))) ? false : true;
+        
+        case NIL_M:
+            return true;
+    
+        case UNDEF_M:
+            return false;
+        
+        default:
+            assert(0);
+    }
+}
+
+bool avm_compare_jne(avm_memcell* rv1,avm_memcell* rv2)
+{
+    return !avm_compare_jeq(rv1, rv2);
+}
+
+bool avm_compare_jle(avm_memcell* rv1,avm_memcell* rv2)
+{
+    assert(rv1 && rv2 && (rv1->type == rv2->type) && rv1->type == NUMBER_M);
+    return (avm_get_numVal(rv1) <= avm_get_numVal(rv2));
+}
+
+bool avm_compare_jlt(avm_memcell* rv1,avm_memcell* rv2)
+{
+    assert(rv1 && rv2 && (rv1->type == rv2->type) && rv1->type == NUMBER_M);
+    return (avm_get_numVal(rv1) < avm_get_numVal(rv2));
+}
+
+bool avm_compare_jge(avm_memcell* rv1,avm_memcell* rv2)
+{
+    assert(rv1 && rv2 && (rv1->type == rv2->type) && rv1->type == NUMBER_M);
+    return (avm_get_numVal(rv1) >= avm_get_numVal(rv2));
+}
+
+bool avm_compare_jgt(avm_memcell* rv1,avm_memcell* rv2)
+{
+    assert(rv1 && rv2 && (rv1->type == rv2->type) && rv1->type == NUMBER_M);
+    return (avm_get_numVal(rv1) > avm_get_numVal(rv2));
+}
+
+void execute_comparison (instruction* instr){
+    
+    assert(instr->result.type == LABEL_A);
+    /* commentized cos not needed I believe, instead assertion*/
+    assert(instr->result.type == LABEL_A);
+    // avm_memcell* lv  = avm_translate_operand(&instr->result, (avm_memcell*) 0);
+    avm_memcell* rv1 = avm_translate_operand(&instr->arg1, &reg_AX);
+    avm_memcell* rv2 = avm_translate_operand(&instr->arg2, &reg_BX);
+
+    assert(rv1 && rv2); /* Maybe more checks needed */
+
+    bool res;
+    if(rv1->type != rv2->type)
+    {
+        avm_error("comparison between different types not allowed.");
+        executionFinished = 1;
+    }
+    else if (rv1->type == UNDEF_M || rv2->type == UNDEF_M)
+    {
+        avm_error("comparison involving UNDEF type not allowed.");
+        executionFinished = 1;
+    }
+    else
+        res = comparisonFuncs[instr->opcode - JEQ_V];
+
+    if(res && !executionFinished)
+        pc = instr->result.val;
+
+    /* Minos TODO: check L15: 29 */
+
+}
