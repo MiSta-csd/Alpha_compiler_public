@@ -41,13 +41,13 @@ avm_memcell* avm_translate_operand (vmarg* arg, avm_memcell* reg)
 
         case USERFUNC_A: {
             reg->type = USERFUNC_M;
-            reg->data.funcVal = arg->val; /* Address already stored */
+            reg->data.funcVal->address = arg->val; /* Address already stored */
             return reg;
         }
 
         case LIBFUNC_A: {
             reg->type = LIBFUNC_M;
-            reg->data.libfuncVal = &(libfuncs_getused(arg->val));
+            reg->data.libfuncVal = new std::string((libfuncs_getused(arg->val)));
             return reg;
         }
 
@@ -161,7 +161,7 @@ void execute_call (instruction* instr)
     {
         case USERFUNC_M: 
         {
-            pc = func->data.funcVal;
+            pc = func->data.funcVal->address;
             assert(pc < AVM_ENDING_PC);
             assert(code[pc].opcode == FUNCENTER_V);
             break;
@@ -203,7 +203,7 @@ void execute_funcenter (instruction* instr)
 {
     avm_memcell* func = avm_translate_operand(&instr->result, &reg_AX);
     assert(func);
-    assert(pc == func->data.funcVal); /* Func addr should match PC */
+    assert(pc == func->data.funcVal->address); /* Func addr should match PC */
 
     /* Callee actions here. */
     totalActuals = 0;

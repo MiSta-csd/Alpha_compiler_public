@@ -11,4 +11,4 @@ lex.yy.cpp: scanner.l
 	flex --outfile=lex.yy.cpp scanner.l
 
 clean:
-	rm -f parser hashmap_parser lex.yy.cpp parser.cpp parser.hpp
+	rm -f parser hashmap_parser lex.yy.cpp parser.cpp parser.hpp alpha.bin alpha.bin4debug

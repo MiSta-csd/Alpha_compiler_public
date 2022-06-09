@@ -1,6 +1,6 @@
 #pragma once
-#include "avm_mem_structs.h"
 #include "avm_structures.h"
+#include "avm_mem_structs.h"
 #include "avm_table.h"
 #include "avm_auxiliary.h"
 #include "avm_libfuncs.h"

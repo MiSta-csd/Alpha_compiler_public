@@ -749,7 +749,7 @@ funcname    : ID						{
 												}else if(returncurrentspace() == 2){
 															incfunctionLocalOffset();
 												} // modified 
-												func_stack.push(st_entry_tmp["r19"]);// push to func stack mono an einai valid
+												// func_stack.push(st_entry_tmp["r19"]);// kaneis push sto funcprefix
 											}
 											else
 											{
@@ -786,7 +786,7 @@ funcname    : ID						{
 															incprogramVarOffset();
 												}else if(returncurrentspace() == 2){
 															incfunctionLocalOffset();
-											}// added by kostas. User func names value as program vars modified
+											}
 										}
 			;
 
@@ -1078,14 +1078,14 @@ int yyerror(std:: string err){
 
 int main(int argc, char** argv) {
 	std::cout << "\033[37m";// output is colored white
-	std::string outname;
-	int arg = 1, opt, num_files;
+	std::string outname = "alpha.bin";
+	int opt, num_files;
 	FILE **files = NULL;
 
 	while((opt = getopt(argc, argv, "o:i")) != -1){
 		switch(opt){
 			case 'i':
-				arg = 0;
+				outname = "";
 				break;
 			case 'o':
 				outname = optarg;
@@ -1109,7 +1109,6 @@ int main(int argc, char** argv) {
 				std::cout << "\033[33mTerminating\n";
 				return 1;
 			}
-			/* std::cout << argv[optind] << std::endl; */
 		}
 	}
 	validate_comments();
@@ -1124,29 +1123,33 @@ int main(int argc, char** argv) {
 			}
 			fclose(files[i]);
 		}
+		st_print_table();
 		generate();
-		/* print_quads(arg, outname); */
-		if(arg) {
-			outname  = "alpha.bin";
-			generate_binary(fopen(outname.c_str(), "w"));
+		FILE *outf;
+		if(outname != "") {
+			outf = fopen(outname.c_str(), "w");
 		}else {
-			generate_binary(stdout);
+			outf = stdout;
 		}
-		print_instructions();// for debug
+		generate_binary_readable(outname);
+		generate_binary(outf);
+		print_quads(outname);
+		/* print_instructions();// for debug */
 	}else {
 		yyparse();
-		validate_comments();
-		/* st_print_table(); */
 		if (!hasError) {
+			st_print_table();
 			generate();
-			if(arg) {
-				outname  = "alpha.bin";
-				generate_binary(fopen(outname.c_str(), "w"));
+			FILE *outf;
+			if(outname != "") {
+				outf = fopen(outname.c_str(), "w");
 			}else {
-				generate_binary(stdout);
+				outf = stdout;
 			}
-			/* print_quads(arg, outname); */
-			print_instructions();// for debug
+			generate_binary_readable(outname);
+			generate_binary(outf);
+			print_quads(outname);
+			/* print_instructions(); */
 		} else {
 			std::cout << "One or more errors on compilation, aborting... \n";
 			return 1;

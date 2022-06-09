@@ -1,3 +1,4 @@
+#include "quads.h"
 #include "symtable.h"
 #include "scoping.h"
 #include <unordered_map>
@@ -142,19 +143,15 @@ void st_print_table() {
 	std::string st_type_print[] = {"global variable", "formal argument",
 		"local variable", "library function",
 		"user function"};
-	std::cout << "\n";
-	int i = 0;
-	for (auto map : symbol_table) {
-		std::cout << " -----------      scope #" << i++ << "      ----------- "
-			<< std::endl;
-		for (auto pair : map) {
-			for (int j = 0; j < pair.second.size(); j++){
+	for (int i =0; i < symbol_table.size(); ++i) {
+		std::cout << "\n -----------      scope #" << i << "      -----------\n";
+		for (auto pair : symbol_table[i]) {
+			for (int j = 0; j < pair.second.size(); ++j) {
 				std::cout << "\"" << pair.first << "\" [" << st_type_print[pair.second[j].type] << "] "
 				<< "(line " << pair.second[j].line << ") (scope " << pair.second[j].scope << ")\n";
 			}
 		}
-		std::cout << std::endl;
+		print_line();
 	}
-	std::cout << " ------------------------------------------- \n";
-	std::cout << "\"name\"  [type]   (line)  (scope)   \n";
+	std::cout << "\"name\"  [type]   (line)  (scope)\n";
 }

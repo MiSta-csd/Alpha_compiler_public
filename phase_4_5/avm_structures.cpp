@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include "avm_structures.h"
 #include "actions.h"
+#include "quads.h"
 
 std::vector<double>			numConsts;
 unsigned        			totalNumConsts = 0;
@@ -302,6 +303,7 @@ extern std::vector<std::unordered_map<std::string, std::vector<st_entry>>> symbo
 void print_file_identifiers() {
 	unsigned magic_num = 340200501;
 	unsigned globaloffset = programVarOffset-1;
+	print_line();
 	std::cout << "magic_num: " << magic_num << std::endl << "globaloffset: " <<  globaloffset << std::endl;
 	for (auto map : symbol_table) {
 		for ( auto pair : map) {
@@ -338,9 +340,14 @@ void print_file_identifiers() {
 }
 
 void generate_binary_readable (std::string outname) {
-	FILE *outf = fopen((outname + "4debug").c_str(), "w");
+	FILE *outf;
+	if(outname != ""){
+		outf = fopen((outname + "4debug").c_str(), "w");
+	}else {
+		outf = stdout;
+	}
 	unsigned magic_num = 340200501;
-	// TODO fwrite(char [], size, how_many, outfile)
+	
 	fprintf(outf, "%u\n", magic_num);
 	fprintf(outf, "%u\n", programVarOffset-1);
 	for (auto map : symbol_table) {
@@ -354,7 +361,7 @@ void generate_binary_readable (std::string outname) {
 	}
 	fprintf(outf, "\n%u\n", totalStringConsts);
 	for(int i = 0; i < totalStringConsts; ++i) {
-		fprintf(outf, "%lu,%s ",stringConsts[i].size(), stringConsts[i].c_str());
+		fprintf(outf, "%lu,%s ",stringConsts[i].size()-2, stringConsts[i].c_str());
 	}
 	fprintf(outf, "\n%u\n", totalNumConsts);
 	for(int i = 0; i < totalNumConsts; ++i) {
@@ -373,66 +380,89 @@ void generate_binary_readable (std::string outname) {
 	// instructions
 	for (int i = 0; i < instr_vec.size(); ++i) {
 		fprintf(outf, "%d", instr_vec[i]->opcode);
-		if(instr_vec[i]->result.val != (unsigned)-1)
+		if(instr_vec[i]->result.val != (unsigned)-1) {
 			fprintf(outf, "%d", instr_vec[i]->result.type);
+			fprintf(outf, "%d", instr_vec[i]->result.val);
+		}
 
-
-		if(instr_vec[i]->arg1.val != (unsigned)-1)
+		if(instr_vec[i]->arg1.val != (unsigned)-1) {
 			fprintf(outf, "%d", instr_vec[i]->arg1.type);
-
-		if(instr_vec[i]->arg2.val != (unsigned)-1)
+			fprintf(outf, "%d", instr_vec[i]->arg1.val);
+		}
+		if(instr_vec[i]->arg2.val != (unsigned)-1) {
 			fprintf(outf, "%d", instr_vec[i]->arg2.type);
-
+			fprintf(outf, "%d", instr_vec[i]->arg2.val);
+		}
 		fprintf(outf, "%u\n", instr_vec[i]->srcLine);
 	}
 }
 void generate_binary(FILE *outf) {
 	assert(outf);
-	unsigned magic_num = 340200501;
-	// TODO fwrite(char [], size, how_many, outfile)
-	fprintf(outf, "%u\n", magic_num);
-	fprintf(outf, "%u\n", programVarOffset-1);
+	unsigned magic_num = 340200501, globaloffset = programVarOffset-1;
+
+	fwrite(&magic_num, sizeof(unsigned), 1, outf);
+	fwrite(&globaloffset, sizeof(unsigned), 1, outf);
 	for (auto map : symbol_table) {
 		for ( auto pair : map) {
 			for ( auto entry : pair.second) {
-				if(entry.space == programvar) {
-					fprintf(outf, "%s,%u,%u ", entry.name.c_str(), entry.scope, entry.offset);
+				if(entry.space == programvar) {// TODO check gia to -2 oti einai to swsto
+					fwrite(entry.name.c_str(), entry.name.size()-2, 1, outf);
+					fwrite(",", 1, 1, outf);
+					fwrite(&entry.scope, sizeof(unsigned), 1, outf);
+					fwrite(",", 1, 1, outf);
+					fwrite(&entry.offset, sizeof(unsigned), 1, outf);
+					fwrite(" ", 1, 1, outf);
 				}
 			}
 		}
 	}
-	fprintf(outf, "\n%u\n", totalStringConsts);
+
+	fwrite("\n", 1, 1, outf);
+	fwrite(&totalStringConsts, sizeof(unsigned), 1, outf);
+	fwrite("\n", 1, 1, outf);
 	for(int i = 0; i < totalStringConsts; ++i) {
-		fprintf(outf, "%lu,%s ",stringConsts[i].size(), stringConsts[i].c_str());
+		unsigned str_size = stringConsts[i].size()-2;
+		fwrite(&str_size, sizeof(unsigned), 1, outf);
+		fwrite(",", 1, 1, outf);
+		fwrite(stringConsts[i].c_str(), stringConsts[i].size()-2, 1, outf);
+		fwrite(" ", 1, 1, outf);
 	}
-	fprintf(outf, "\n%u\n", totalNumConsts);
+	fwrite("\n", 1, 1, outf);
+	fwrite(&totalNumConsts, sizeof(unsigned), 1, outf);
+	fwrite("\n", 1, 1, outf);
 	for(int i = 0; i < totalNumConsts; ++i) {
-		fprintf(outf, "%lf ", numConsts[i]);
+		fwrite(&numConsts[i], sizeof(double), 1, outf);
+		fwrite(" ", 1, 1, outf);
 	}
 	fprintf(outf, "\n%u\n", totalNamedLibfuncs);
 	for(int i = 0; i < totalNamedLibfuncs; ++i) {
 		fprintf(outf, "%s ", namedLibFuncs[i].c_str());
 	}
-	fprintf(outf, "\n%u\n",totalUserFuncs);
+	fwrite("\n", 1, 1, outf);
+	fwrite(&totalUserFuncs, sizeof(unsigned), 1, outf);
+	fwrite("\n", 1, 1, outf);
 	for(int i = 0; i < totalUserFuncs; ++i) {
-		fprintf(outf, "%s,%u ", userFuncs[i]->id.c_str(), userFuncs[i]->address);
+		fwrite(userFuncs[i]->id.c_str(), userFuncs[i]->id.size()-2, 1, outf);
+		fwrite(",", 1, 1, outf);
+		fwrite(&userFuncs[i]->address, sizeof(unsigned), 1, outf);
+		fwrite(" ", 1, 1, outf);
 	}
-	fprintf(outf, "\n");
+	fwrite("\n", 1, 1, outf);
 
 	// instructions
 	for (int i = 0; i < instr_vec.size(); ++i) {
-		fprintf(outf, "%d", instr_vec[i]->opcode);
+		fwrite(&instr_vec[i]->opcode, sizeof(enum vmopcode), 1, outf);
 		if(instr_vec[i]->result.val != (unsigned)-1)
-			fprintf(outf, "%d", instr_vec[i]->result.type);
-
+			fwrite(&instr_vec[i]->result, sizeof(struct vmarg), 1, outf);
 
 		if(instr_vec[i]->arg1.val != (unsigned)-1)
-			fprintf(outf, "%d", instr_vec[i]->arg1.type);
+			fwrite(&instr_vec[i]->arg1, sizeof(struct vmarg), 1, outf);
 
 		if(instr_vec[i]->arg2.val != (unsigned)-1)
-			fprintf(outf, "%d", instr_vec[i]->arg2.type);
+			fwrite(&instr_vec[i]->arg2, sizeof(struct vmarg), 1, outf);
 
-		fprintf(outf, "%u\n", instr_vec[i]->srcLine);
+		fwrite(&instr_vec[i]->srcLine, sizeof(unsigned), 1, outf);
+		fwrite("\n", 1, 1, outf);
 	}
 }
 
@@ -443,7 +473,9 @@ void print_instructions () {// for debug
 	"TABLESETELEM_V", "JUMP_V", "NOP_V"};
 	std::string argCodes[] = {"LABEL_A", "GLOBAL_A", "FORMAL_A", "LOCAL_A", "NUMBER_A", "STRING_A", "BOOL_A",
 	"NIL_A", "USERFUNC_A", "LIBFUNC_A", "RETVAL_A"};
-	print_file_identifiers();
+
+	// print_file_identifiers();
+
 	for (int i = 0; i < instr_vec.size(); ++i) {
 		std::cout << i+1 << ": " << instrCodes[instr_vec[i]->opcode] << " ";
 		if(instr_vec[i]->result.val != (unsigned)-1)
@@ -461,7 +493,7 @@ void print_instructions () {// for debug
 			std::cout << "unused_arg2" << " ";
 		std::cout << instr_vec[i]->srcLine << std::endl;
 	}
-	std::cout << " -------------------------------------------\n";
+	print_line();
 }
 // int main () {
 // 	// FILE  *q_inter_f;

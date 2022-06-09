@@ -77,7 +77,7 @@ int mergelist (int l1, int l2);
 void emit(iopcode op, expr *result, expr *arg1, expr *arg2, unsigned label,
 		unsigned line);
 
-void print_quads(int arg, std::string);
+void print_quads(std::string);
 
 unsigned int get_current_quad();
 

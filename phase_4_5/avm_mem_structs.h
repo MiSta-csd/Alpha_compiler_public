@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <cstring>
-
+#include "avm_structures.h"
 
 
 enum avm_memcell_t {
@@ -15,22 +15,27 @@ enum avm_memcell_t {
         UNDEF_M
 };
 
+#pragma pack(push)
+#pragma pack(1)
+
 struct avm_table; // defined in avm_table.h
 typedef struct avm_memcell {
     avm_memcell_t   type;
-    union data{
+    union data {
         double              numVal;
         std::string        *strVal;
         bool                boolVal;
         struct avm_table   *tableVal;
         userfunc            funcVal;    /* changed from unsigned */
-        std::string        *libfuncVal;     
+        std::string        *libfuncVal;
     }data;
 } avm_memcell;
 
+
+
 #define AVM_STACKSIZE   4096
 #define AVM_WIPEOUT(m)  memset(&(m), 0, sizeof(m))
-avm_memcell stack[AVM_STACKSIZE];
+avm_memcell stack[AVM_STACKSIZE];// It is what it is!
 
 #define AVM_STACKENV_SIZE   4
 avm_memcell reg_AX, reg_BX, reg_CX;
@@ -44,3 +49,6 @@ unsigned totalActuals = 0;
 void avm_dec_top (void);
 void avm_push_envvalue (unsigned val);
 void avm_callsaveenvironment (void);
+
+
+#pragma pack(pop)
