@@ -80,4 +80,4 @@ typedef void (*generator_func_t) (quad*);// generator_func_p is a pointer to fun
 
 void print_instructions ();
 void generate();
-void generate_binary(std::string);
+void generate_binary(FILE *outf);

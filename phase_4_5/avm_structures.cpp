@@ -300,10 +300,9 @@ extern unsigned curScopeSpace;
 
 extern std::vector<std::unordered_map<std::string, std::vector<st_entry>>> symbol_table;
 void print_file_identifiers() {
-	std::string header = "avmbinaryfile: magicnumber globaloffset arrays code\n";
 	unsigned magic_num = 340200501;
-	unsigned globaloffset = programVarOffset;
-	std::cout << header << "magic_num: " << magic_num << std::endl << "globaloffset: " <<  globaloffset << std::endl;
+	unsigned globaloffset = programVarOffset-1;
+	std::cout << "magic_num: " << magic_num << std::endl << "globaloffset: " <<  globaloffset << std::endl;
 	for (auto map : symbol_table) {
 		for ( auto pair : map) {
 			for ( auto entry : pair.second) {
@@ -338,12 +337,61 @@ void print_file_identifiers() {
 	//instructions
 }
 
-void generate_binary(std::string outname) {
-	FILE *outf = fopen(outname.c_str(), "w");
+void generate_binary_readable (std::string outname) {
+	FILE *outf = fopen((outname + "4debug").c_str(), "w");
 	unsigned magic_num = 340200501;
 	// TODO fwrite(char [], size, how_many, outfile)
 	fprintf(outf, "%u\n", magic_num);
-	fprintf(outf, "%u\n", programVarOffset);
+	fprintf(outf, "%u\n", programVarOffset-1);
+	for (auto map : symbol_table) {
+		for ( auto pair : map) {
+			for ( auto entry : pair.second) {
+				if(entry.space == programvar) {
+					fprintf(outf, "%s,%u,%u ", entry.name.c_str(), entry.scope, entry.offset);
+				}
+			}
+		}
+	}
+	fprintf(outf, "\n%u\n", totalStringConsts);
+	for(int i = 0; i < totalStringConsts; ++i) {
+		fprintf(outf, "%lu,%s ",stringConsts[i].size(), stringConsts[i].c_str());
+	}
+	fprintf(outf, "\n%u\n", totalNumConsts);
+	for(int i = 0; i < totalNumConsts; ++i) {
+		fprintf(outf, "%lf ", numConsts[i]);
+	}
+	fprintf(outf, "\n%u\n", totalNamedLibfuncs);
+	for(int i = 0; i < totalNamedLibfuncs; ++i) {
+		fprintf(outf, "%s ", namedLibFuncs[i].c_str());
+	}
+	fprintf(outf, "\n%u\n",totalUserFuncs);
+	for(int i = 0; i < totalUserFuncs; ++i) {
+		fprintf(outf, "%s,%u ", userFuncs[i]->id.c_str(), userFuncs[i]->address);
+	}
+	fprintf(outf, "\n");
+
+	// instructions
+	for (int i = 0; i < instr_vec.size(); ++i) {
+		fprintf(outf, "%d", instr_vec[i]->opcode);
+		if(instr_vec[i]->result.val != (unsigned)-1)
+			fprintf(outf, "%d", instr_vec[i]->result.type);
+
+
+		if(instr_vec[i]->arg1.val != (unsigned)-1)
+			fprintf(outf, "%d", instr_vec[i]->arg1.type);
+
+		if(instr_vec[i]->arg2.val != (unsigned)-1)
+			fprintf(outf, "%d", instr_vec[i]->arg2.type);
+
+		fprintf(outf, "%u\n", instr_vec[i]->srcLine);
+	}
+}
+void generate_binary(FILE *outf) {
+	assert(outf);
+	unsigned magic_num = 340200501;
+	// TODO fwrite(char [], size, how_many, outfile)
+	fprintf(outf, "%u\n", magic_num);
+	fprintf(outf, "%u\n", programVarOffset-1);
 	for (auto map : symbol_table) {
 		for ( auto pair : map) {
 			for ( auto entry : pair.second) {

@@ -22,10 +22,10 @@ st_entry *st_insert(std::string name, enum st_entry_type type) {
 	switch(type) {
 		case FORMAL_ARG:space = formalarg;break;
 		default:
-			if(func_stack.empty()) {
-				space = programvar;
-			}else {
+			if(!func_stack.empty()) {
 				space = functionlocal;
+			}else if(type != LIB_FUNC){
+				space = programvar;
 			}
 	}
 	*new_entry = {.active = true,

@@ -337,6 +337,11 @@ bool avm_compare_jgt(avm_memcell* rv1,avm_memcell* rv2)
     return (avm_get_numVal(rv1) > avm_get_numVal(rv2));
 }
 
+/*  Comparison includes all cmp jmp instr s 
+ *  JEQ , JNE
+ *  JGT , JLT
+ *  JGE , JLE   except plain JMP
+ */
 void execute_comparison (instruction* instr){
     
     assert(instr->result.type == LABEL_A);
@@ -346,26 +351,97 @@ void execute_comparison (instruction* instr){
     assert(rv1 && rv2); /* Maybe more checks needed */
 
     bool res;
+
+    if (rv1->type == UNDEF_M || rv2->type == UNDEF_M)
+    {
+        avm_error("comparison involving UNDEF type not allowed.");
+        executionFinished = 1;
+    }
+    else
+    if (rv1->type == NIL_M || rv2->type == NIL_M)
+    {
+        res = (rv1->type == NIL_M && rv2->type == NIL_M);
+    }
+    else 
+    if (rv1->type == BOOL_M || rv2->type == BOOL_M)
+    {
+        res = (avm_tobool(rv1) == avm_tobool(rv2));
+    }
+    else
     if(rv1->type != rv2->type)
     {
         avm_error("comparison between different types not allowed.");
         executionFinished = 1;
     }
-    else if (rv1->type == UNDEF_M || rv2->type == UNDEF_M)
-    {
-        avm_error("comparison involving UNDEF type not allowed.");
-        executionFinished = 1;
-    }
-    else if (rv1->type == BOOL_M || rv2->type == BOOL_M)
-    {
-/*         res = (avm_tobool(rv1) == avm_tobool(rv2));
- */    }
     else
         res = comparisonFuncs[instr->opcode - JEQ_V];
 
     if(res && !executionFinished)
         pc = instr->result.val;
 
-    /* Minos TODO: check L15: 29 */
-
 }
+
+/* table instrs */
+avm_memcell*    avm_tablegetelem (
+                                    avm_table* table,
+                                    avm_memcell* index
+                                 )
+{
+    assert(table && index);
+
+    switch (index->type)
+    {
+        case NUMBER_M:
+        {
+            /* code */;
+            break;
+        }
+        case STRING_M:
+        {
+            /* code */;
+            break;
+        }
+        case BOOL_M:
+        {
+            /* code */;
+            break;
+        }
+        case TABLE_M:
+        {
+            /* code */;
+            break;
+        }
+        case USERFUNC_M:
+        {
+            /* code */;
+            break;
+        }
+        case LIBFUNC_M:
+        {
+            /* code */;
+            break;
+        }
+        case NIL_M:
+        {
+            /* code */;
+            break;
+        }
+        case UNDEF_M:
+        {
+            avm_error("Element cannot be cannot have UNDEF type!");
+            break;
+        }
+
+        default:
+            break;
+    }
+}
+
+void            avm_tablesetelem (
+                                    avm_table*  table,
+                                    avm_memcell* index,
+                                    avm_memcell* content
+                                 );
+void            execute_newtable (instruction* instr);
+void            execute_tablegetelem (instruction* instr);
+void            execute_tablesetelem (instruction* instr);

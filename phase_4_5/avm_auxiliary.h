@@ -56,8 +56,30 @@ tostring_func_t tostringFuncs[] = {
     undef_tostring
 };
 
-
-userfunc* avm_get_funcinfo (unsigned address); /* TODO */
+userfunc* avm_get_funcinfo (unsigned address);
 
 /* bool convertors */
 typedef bool (*tobool_func_t) (avm_memcell*);
+
+
+bool number_tobool (avm_memcell* m) { return m->data.numVal != 0; }
+bool string_tobool (avm_memcell* m) { return !(m->data.strVal->empty()); }
+bool bool_tobool (avm_memcell* m) { return m->data.boolVal; }
+bool table_tobool (avm_memcell* m) { return true; }
+bool userfunc_tobool (avm_memcell* m) { return true; }
+bool libfunc_tobool (avm_memcell* m) { return true; }
+bool nil_tobool (avm_memcell* m) { return false; }
+bool undef_tobool (avm_memcell* m) { assert(0); return false; }
+
+tobool_func_t toboolFuncs[] = {
+    number_tobool,
+    string_tobool,
+    bool_tobool,
+    table_tobool,
+    userfunc_tobool,
+    libfunc_tobool, 
+    nil_tobool,
+    undef_tobool
+};
+
+bool avm_tobool (avm_memcell* m);

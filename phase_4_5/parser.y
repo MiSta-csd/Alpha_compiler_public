@@ -1100,7 +1100,6 @@ int main(int argc, char** argv) {
 	
 	if(!num_files) {
 		yyin = stdin;
-		arg = 0;
 	}
 	else {
 		files = (FILE**) malloc(num_files*sizeof(FILE*));
@@ -1119,11 +1118,7 @@ int main(int argc, char** argv) {
 		for ( int i = 0; i < num_files; ++i) {
 			yyin = files[i];
 			yyparse();
-			if (!hasError) {
-				if( arg && outname.empty()) {
-					outname = "alpha.out";
-				}
-			} else {
+			if (hasError) {
 				std::cout << argv[0] << ": One or more errors on compilation, aborting... \n";
 				return 1;
 			}
@@ -1131,18 +1126,25 @@ int main(int argc, char** argv) {
 		}
 		generate();
 		/* print_quads(arg, outname); */
-		generate_binary(outname);
+		if(arg) {
+			outname  = "alpha.bin";
+			generate_binary(fopen(outname.c_str(), "w"));
+		}else {
+			generate_binary(stdout);
+		}
 		print_instructions();// for debug
 	}else {
 		yyparse();
 		validate_comments();
 		/* st_print_table(); */
 		if (!hasError) {
-			if( arg && outname.empty()) {
-				outname = "alpha.out";
-			}
 			generate();
-			generate_binary(outname);
+			if(arg) {
+				outname  = "alpha.bin";
+				generate_binary(fopen(outname.c_str(), "w"));
+			}else {
+				generate_binary(stdout);
+			}
 			/* print_quads(arg, outname); */
 			print_instructions();// for debug
 		} else {

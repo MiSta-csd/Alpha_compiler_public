@@ -155,3 +155,9 @@ userfunc* avm_get_funcinfo (unsigned address)
     return &(stack[address].data.funcVal);
 
 }
+
+bool avm_tobool (avm_memcell* m)
+{
+    assert(m->type >= 0 && m->type < UNDEF_M);
+    return (*toboolFuncs[m->type]) (m);
+}
