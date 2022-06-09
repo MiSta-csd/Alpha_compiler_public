@@ -78,4 +78,6 @@ void generate_JUMP(quad*);
 
 typedef void (*generator_func_t) (quad*);// generator_func_p is a pointer to func with param quad* ret/ing void
 
+void print_instructions ();
 void generate();
+void generate_binary(std::string);

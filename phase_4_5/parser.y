@@ -16,6 +16,7 @@
 #include "quads.h"
 #include "actions.h"
 #include "scoping.h"
+#include "avm_structures.h"
 #include <unistd.h>
 #include <unordered_map>
 
@@ -1074,7 +1075,7 @@ int yyerror(std:: string err){
 	return 1;
 }
 
-extern void print_instructions();
+
 int main(int argc, char** argv) {
 	std::cout << "\033[37m";// output is colored white
 	std::string outname;
@@ -1114,7 +1115,7 @@ int main(int argc, char** argv) {
 	}
 	validate_comments();
 	st_initialize();
-	if(yyin != stdin) {
+	if(num_files) {
 		for ( int i = 0; i < num_files; ++i) {
 			yyin = files[i];
 			yyparse();
@@ -1123,13 +1124,14 @@ int main(int argc, char** argv) {
 					outname = "alpha.out";
 				}
 			} else {
-				std::cout << __FILE__ << ": One or more errors on compilation, aborting... \n";
+				std::cout << argv[0] << ": One or more errors on compilation, aborting... \n";
 				return 1;
 			}
 			fclose(files[i]);
 		}
 		generate();
-		print_quads(arg, outname);
+		/* print_quads(arg, outname); */
+		generate_binary(outname);
 		print_instructions();// for debug
 	}else {
 		yyparse();
@@ -1140,7 +1142,8 @@ int main(int argc, char** argv) {
 				outname = "alpha.out";
 			}
 			generate();
-			print_quads(arg, outname);
+			generate_binary(outname);
+			/* print_quads(arg, outname); */
 			print_instructions();// for debug
 		} else {
 			std::cout << "One or more errors on compilation, aborting... \n";

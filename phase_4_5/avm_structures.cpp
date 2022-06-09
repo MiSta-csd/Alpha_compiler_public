@@ -292,29 +292,7 @@ void generate() {
 		generators[quad_vec[i].op](&quad_vec[i]);
 	}
 }
-/*
-avmbinaryfile:  magicnumber globaloffset arrays code
-magicnumber:    340200501
-globaloffseT: 	globaloffset
-arrays:     strings numbers userfunctions libfunctions
-strings:    total (string)*
-total:      unsigned
-string:     size (char)*
-size:       unsigned
-numbers:    total(double*)
-userfunctions:  total(userfunc)*
-userfunc:       address localsize id
-address:        unsigned
-localsize:      unsigned
-id:             string
-libfunctions:   strings
-code:           total(instruction)*
-instruction:    opcode operand operand operand
-opcode:         byte
-operand:        type value
-type:           byte
-value:          unsigned
-*/
+
 extern unsigned programVarOffset;
 extern unsigned formalArgOffset;
 extern unsigned functionLocalOffset;
@@ -377,7 +355,7 @@ void generate_binary(std::string outname) {
 	}
 	fprintf(outf, "\n%u\n", totalStringConsts);
 	for(int i = 0; i < totalStringConsts; ++i) {
-		fprintf(outf, "%u,%s ",stringConsts[i].size(), stringConsts[i].c_str());
+		fprintf(outf, "%lu,%s ",stringConsts[i].size(), stringConsts[i].c_str());
 	}
 	fprintf(outf, "\n%u\n", totalNumConsts);
 	for(int i = 0; i < totalNumConsts; ++i) {
@@ -395,16 +373,16 @@ void generate_binary(std::string outname) {
 
 	// instructions
 	for (int i = 0; i < instr_vec.size(); ++i) {
-		fprintf(outf, "%b", instr_vec[i]->opcode);
+		fprintf(outf, "%d", instr_vec[i]->opcode);
 		if(instr_vec[i]->result.val != (unsigned)-1)
-			fprintf(outf, "%5b", instr_vec[i]->result.type);
+			fprintf(outf, "%d", instr_vec[i]->result.type);
 
 
 		if(instr_vec[i]->arg1.val != (unsigned)-1)
-			fprintf(outf, "%5b", instr_vec[i]->arg1.type);
+			fprintf(outf, "%d", instr_vec[i]->arg1.type);
 
 		if(instr_vec[i]->arg2.val != (unsigned)-1)
-			fprintf(outf, "%5b", instr_vec[i]->arg2.type);
+			fprintf(outf, "%d", instr_vec[i]->arg2.type);
 
 		fprintf(outf, "%u\n", instr_vec[i]->srcLine);
 	}

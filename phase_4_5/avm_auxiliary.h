@@ -59,3 +59,5 @@ tostring_func_t tostringFuncs[] = {
 
 userfunc* avm_get_funcinfo (unsigned address); /* TODO */
 
+/* bool convertors */
+typedef bool (*tobool_func_t) (avm_memcell*);

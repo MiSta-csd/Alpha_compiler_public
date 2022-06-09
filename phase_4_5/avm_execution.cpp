@@ -340,9 +340,6 @@ bool avm_compare_jgt(avm_memcell* rv1,avm_memcell* rv2)
 void execute_comparison (instruction* instr){
     
     assert(instr->result.type == LABEL_A);
-    /* commentized cos not needed I believe, instead assertion*/
-    assert(instr->result.type == LABEL_A);
-    // avm_memcell* lv  = avm_translate_operand(&instr->result, (avm_memcell*) 0);
     avm_memcell* rv1 = avm_translate_operand(&instr->arg1, &reg_AX);
     avm_memcell* rv2 = avm_translate_operand(&instr->arg2, &reg_BX);
 
@@ -359,6 +356,10 @@ void execute_comparison (instruction* instr){
         avm_error("comparison involving UNDEF type not allowed.");
         executionFinished = 1;
     }
+    else if (rv1->type == BOOL_M || rv2->type == BOOL_M)
+    {
+/*         res = (avm_tobool(rv1) == avm_tobool(rv2));
+ */    }
     else
         res = comparisonFuncs[instr->opcode - JEQ_V];
 
