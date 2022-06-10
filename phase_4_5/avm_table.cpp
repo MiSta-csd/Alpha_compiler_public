@@ -4,10 +4,10 @@
 
 avm_table::avm_table ()
 {
-	this->strIndexed = new std::unordered_map<avm_memcell,avm_memcell>();
-	this->numIndexed = new std::unordered_map<avm_memcell,avm_memcell>();
-	this->funcIndexed = new std::unordered_map<avm_memcell,avm_memcell>();
-    this->trollIndexed = new std::unordered_map<avm_memcell,avm_memcell>();
+	this->strIndexed = new std::unordered_map<std::string,avm_memcell>();
+	this->numIndexed = new std::unordered_map<double,avm_memcell>();
+	this->funcIndexed = new std::unordered_map<unsigned,avm_memcell>();
+    this->trollIndexed = new std::unordered_map<std::string,avm_memcell>();
     this->avm_table_elem_count();
 }
 
@@ -64,7 +64,7 @@ avm_memcell*    avm_tablegetelem (
     {
         case NUMBER_M:
         {
-            return &(table->numIndexed->at(*index));// isodynamo fainetai
+            return &(table->numIndexed->at(index->data.numVal));// isodynamo fainetai
             break;                                    
         }
         case STRING_M:          
