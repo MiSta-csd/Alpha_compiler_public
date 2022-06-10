@@ -44,7 +44,7 @@ struct instruction {
 struct userfunc {
     unsigned    address;
     unsigned    localSize;
-    std::string       id;
+    std::string       *id;
 };
 
 void make_operand(expr* e, vmarg *arg);

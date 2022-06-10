@@ -15,10 +15,9 @@ enum avm_memcell_t {
         UNDEF_M
 };
 
-#pragma pack(push)
-#pragma pack(1)
+// #pragma pack(push)
+// #pragma pack(1)
 
-struct avm_table; // defined in avm_table.h
 typedef struct avm_memcell {
     avm_memcell_t   type;
     union data {
@@ -28,9 +27,13 @@ typedef struct avm_memcell {
         struct avm_table   *tableVal;
         userfunc            funcVal;    /* changed from unsigned */
         std::string        *libfuncVal;
+        data() {memset( this, 0, sizeof( data ) );}
+        ~data() {memset( this, 0, sizeof( data ) );}
     }data;
+    avm_memcell();
+    ~avm_memcell();
+    avm_memcell(avm_memcell_t type, void* data);
 } avm_memcell;
-
 
 
 #define AVM_STACKSIZE   4096
@@ -51,4 +54,4 @@ void avm_push_envvalue (unsigned val);
 void avm_callsaveenvironment (void);
 
 
-#pragma pack(pop)
+// #pragma pack(pop)

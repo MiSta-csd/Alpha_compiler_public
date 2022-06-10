@@ -15,7 +15,7 @@ unsigned        			totalUserFuncs = 0;
 
 unsigned userfuncs_newfunc (userfunc* f) {
 	for(int i = 0; i < userFuncs.size(); ++i) {
-		if ((userFuncs[i]->id) == f->id)
+		if ((*userFuncs[i]->id) == *f->id)
 			return i;
 	}
 	userFuncs.push_back(f);
@@ -93,7 +93,7 @@ void make_operand(expr* e, vmarg *arg) {
 			arg->type = USERFUNC_A;
 			struct userfunc *uf;
 			uf = new struct userfunc;
-			uf->id = e->sym->name;
+			uf->id = new std::string(e->sym->name);
 			uf->address = e->sym->iaddress + 2;
 			uf->localSize = e->sym->totalLocals;// mhpws totalLocals * size of memcell
 			arg->val = userfuncs_newfunc(uf);
@@ -289,7 +289,6 @@ generator_func_t generators[] {
 
 void generate() {
 	for (unsigned i = 0; i < quad_vec.size(); ++i) {
-		// TODO den m aresei. Isws xreiastei na kanw refine to <quad> se <quad*> logw gnwstou bug twn vect apo ph3
 		generators[quad_vec[i].op](&quad_vec[i]);
 	}
 }
@@ -300,6 +299,7 @@ extern unsigned functionLocalOffset;
 extern unsigned curScopeSpace;
 
 extern std::vector<std::unordered_map<std::string, std::vector<st_entry>>> symbol_table;
+
 void print_file_identifiers() {
 	unsigned magic_num = 340200501;
 	unsigned globaloffset = programVarOffset-1;
@@ -333,7 +333,7 @@ void print_file_identifiers() {
 
 	std::cout << "userfunc_table_size: " << totalUserFuncs << std::endl;
 	for(int i = 0; i < totalUserFuncs; ++i) {
-		std::cout << userFuncs[i]->id << "->" << userFuncs[i]->address << " ";
+		std::cout << *userFuncs[i]->id << "->" << userFuncs[i]->address << " ";
 	}
 	std::cout << std::endl;
 	//instructions
@@ -349,7 +349,7 @@ void generate_binary_readable (std::string outname) {
 	unsigned magic_num = 340200501;
 	
 	fprintf(outf, "%u\n", magic_num);
-	fprintf(outf, "%u\n", programVarOffset-1);
+	fprintf(outf, "%u\n", programVarOffset);
 	for (auto map : symbol_table) {
 		for ( auto pair : map) {
 			for ( auto entry : pair.second) {
@@ -361,7 +361,7 @@ void generate_binary_readable (std::string outname) {
 	}
 	fprintf(outf, "\n%u\n", totalStringConsts);
 	for(int i = 0; i < totalStringConsts; ++i) {
-		fprintf(outf, "%lu,%s ",stringConsts[i].size()-2, stringConsts[i].c_str());
+		fprintf(outf, "%lu,%s ", stringConsts[i].size()-2, stringConsts[i].c_str());
 	}
 	fprintf(outf, "\n%u\n", totalNumConsts);
 	for(int i = 0; i < totalNumConsts; ++i) {
@@ -373,7 +373,7 @@ void generate_binary_readable (std::string outname) {
 	}
 	fprintf(outf, "\n%u\n",totalUserFuncs);
 	for(int i = 0; i < totalUserFuncs; ++i) {
-		fprintf(outf, "%s,%u ", userFuncs[i]->id.c_str(), userFuncs[i]->address);
+		fprintf(outf, "%s,%u ", userFuncs[i]->id->c_str(), userFuncs[i]->address);
 	}
 	fprintf(outf, "\n");
 
@@ -398,12 +398,12 @@ void generate_binary_readable (std::string outname) {
 }
 void generate_binary(FILE *outf) {
 	assert(outf);
-	unsigned magic_num = 340200501, globaloffset = programVarOffset-1;
+	unsigned magic_num = 340200501;
 
 	fwrite(&magic_num, sizeof(unsigned), 1, outf);
-	fwrite(&globaloffset, sizeof(unsigned), 1, outf);
-	for (auto map : symbol_table) {
-		for ( auto pair : map) {
+	fwrite(&programVarOffset, sizeof(unsigned), 1, outf);
+	for (int i = 0; i < symbol_table.size(); ++i) {
+		for ( auto pair : symbol_table[i]) {
 			for ( auto entry : pair.second) {
 				if(entry.space == programvar) {// TODO check gia to -2 oti einai to swsto
 					fwrite(entry.name.c_str(), entry.name.size()-2, 1, outf);
@@ -442,7 +442,7 @@ void generate_binary(FILE *outf) {
 	fwrite(&totalUserFuncs, sizeof(unsigned), 1, outf);
 	fwrite("\n", 1, 1, outf);
 	for(int i = 0; i < totalUserFuncs; ++i) {
-		fwrite(userFuncs[i]->id.c_str(), userFuncs[i]->id.size()-2, 1, outf);
+		fwrite(userFuncs[i]->id->c_str(), userFuncs[i]->id->size()-2, 1, outf);
 		fwrite(",", 1, 1, outf);
 		fwrite(&userFuncs[i]->address, sizeof(unsigned), 1, outf);
 		fwrite(" ", 1, 1, outf);

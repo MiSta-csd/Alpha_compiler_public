@@ -820,7 +820,6 @@ funcargs:   LPAREN idlist RPAREN  		{
                                 		}
             ;						
 funcbody    : block						{
-										    $$ = currscopeoffset();
 											if($1 && !hasError) {
 												$$ = $1->retList;
 											}
@@ -842,6 +841,7 @@ funcdef		: funcprefix funcargs funcbody
 												if(st_entry_tmp["r19"]) {
 													func_stack.pop();
 												}
+												std::cout << $1->iaddress;
 												patchlabel($1->iaddress, get_next_quad());
 											}
 										}
@@ -1133,8 +1133,8 @@ int main(int argc, char** argv) {
 		}
 		generate_binary_readable(outname);
 		generate_binary(outf);
-		print_quads(outname);
-		/* print_instructions();// for debug */
+		/* print_quads(outname); */
+		print_instructions();// for debug
 	}else {
 		yyparse();
 		if (!hasError) {
@@ -1148,8 +1148,8 @@ int main(int argc, char** argv) {
 			}
 			generate_binary_readable(outname);
 			generate_binary(outf);
-			print_quads(outname);
-			/* print_instructions(); */
+			/* print_quads(outname); */
+			print_instructions();
 		} else {
 			std::cout << "One or more errors on compilation, aborting... \n";
 			return 1;
