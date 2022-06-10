@@ -1,6 +1,7 @@
 #include "avm_table.h"
 #include "avm_mem_structs.h"
 #include <assert.h>
+#include <string>
 #include <unordered_map>
 
 avm_table::avm_table ()
@@ -66,7 +67,7 @@ avm_memcell*    avm_tablegetelem (
         case NUMBER_M:
         {
             std::unordered_map<double,avm_memcell>::const_iterator got =
-             table->numIndexed->find (index->data.numVal);
+                table->numIndexed->find (index->data.numVal);
             if (got == table->numIndexed->end())
             {
                 return new avm_memcell();
@@ -77,41 +78,171 @@ avm_memcell*    avm_tablegetelem (
         }
         case STRING_M:          
         {
-            /* code */;
-            break;
+            std::unordered_map<std::string,avm_memcell>::const_iterator got =
+                table->strIndexed->find (*(index->data.strVal));
+            if (got == table->strIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->strIndexed->at((*(index->data.strVal))));
         }
         case USERFUNC_M:
         {
-            /* code */;
-            break;
+            std::unordered_map<unsigned,avm_memcell>::const_iterator got =
+                table->funcIndexed->find (index->data.funcVal.address);
+            if (got == table->funcIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->funcIndexed->at(index->data.funcVal.address));  
         }
         case BOOL_M:
         {
-            /* code */;
-            break;
+            bool b = index->data.boolVal;
+            std::string s = (b) ? "true" : "false";
+            
+            std::unordered_map<std::string,avm_memcell>::const_iterator got =
+                table->trollIndexed->find (s);
+            if (got == table->trollIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->trollIndexed->at(s));   
         }
         case LIBFUNC_M:
         {
-            /* code */;
+            std::unordered_map<std::string,avm_memcell>::const_iterator got =
+                table->trollIndexed->find (*(index->data.libfuncVal));
+            if (got == table->trollIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->trollIndexed->at((*(index->data.libfuncVal))));
         }
         case NIL_M:
         {
-            /* code */;
-            break;
+            std::string s = "nil";
+            
+            std::unordered_map<std::string,avm_memcell>::const_iterator got =
+                table->trollIndexed->find (s);
+            if (got == table->trollIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->trollIndexed->at(s));   
         }
         case UNDEF_M:
         {
             avm_error("Element cannot be cannot have UNDEF type!");
+            return new avm_memcell();   // Added to pacify compiler :/
             break;
         }
 
         default:
+            assert(0);
+            return new avm_memcell(); // Added to pacify compiler :/
             break;
     }
 }
 
-void            avm_tablesetelem (
+/* void            avm_tablesetelem (
                                     avm_table*  table,
                                     avm_memcell* index,
                                     avm_memcell* content
-                                 );
+                                 )
+{
+    assert(table && index);
+
+    switch (index->type)
+    {
+        case NUMBER_M:
+        {
+            std::unordered_map<double,avm_memcell>::const_iterator got =
+                table->numIndexed->find (index->data.numVal);
+            if (got == table->numIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->numIndexed->at(index->data.numVal));// isodynamo fainetai                                    
+            // to allaksa se key double kai paizei profanws                                 
+        }
+        case STRING_M:          
+        {
+            std::unordered_map<std::string,avm_memcell>::const_iterator got =
+                table->strIndexed->find (*(index->data.strVal));
+            if (got == table->strIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->strIndexed->at((*(index->data.strVal))));
+        }
+        case USERFUNC_M:
+        {
+            std::unordered_map<unsigned,avm_memcell>::const_iterator got =
+                table->funcIndexed->find (index->data.funcVal.address);
+            if (got == table->funcIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->funcIndexed->at(index->data.funcVal.address));  
+        }
+        case BOOL_M:
+        {
+            bool b = index->data.boolVal;
+            std::string s = (b) ? "true" : "false";
+            
+            std::unordered_map<std::string,avm_memcell>::const_iterator got =
+                table->trollIndexed->find (s);
+            if (got == table->trollIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->trollIndexed->at(s));   
+        }
+        case LIBFUNC_M:
+        {
+            std::unordered_map<std::string,avm_memcell>::const_iterator got =
+                table->trollIndexed->find (*(index->data.libfuncVal));
+            if (got == table->trollIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->trollIndexed->at((*(index->data.libfuncVal))));
+        }
+        case NIL_M:
+        {
+            std::string s = "nil";
+            
+            std::unordered_map<std::string,avm_memcell>::const_iterator got =
+                table->trollIndexed->find (s);
+            if (got == table->trollIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->trollIndexed->at(s));   
+        }
+        case UNDEF_M:
+        {
+            avm_error("Element cannot be cannot have UNDEF type!");
+            return new avm_memcell();   // Added to pacify compiler :/
+            break;
+        }
+
+        default:
+            assert(0);
+            return new avm_memcell(); // Added to pacify compiler :/
+            break;
+    }
+}
+ */
