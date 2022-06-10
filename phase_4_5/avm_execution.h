@@ -52,42 +52,6 @@ void execute_nop (instruction*);
 
 typedef void (*execute_func_t)(instruction*);
 
-execute_func_t executeFuncs[] = {
-    execute_assign,
-    execute_add,
-    execute_sub,
-    execute_mul,
-    execute_div,
-    execute_mod,
-    execute_uminus,
-    execute_and,
-    execute_or,
-    execute_not,
-    execute_jeq,
-	execute_jne,
-    execute_jle,
-    execute_jge,
-    execute_jlt,
-    execute_jgt,
-    execute_call,
-    execute_pusharg,
-/*     execute_ret,
-    execute_getretval, */
-    execute_funcenter,
-    execute_funcexit,
-    execute_newtable,
-    execute_tablegetelem,
-    execute_tablesetelem,
-/*     execute_jump, */
-    execute_nop
-};
-
-unsigned char   executionFinished = 0;
-unsigned        pc = 0;
-unsigned        currLine = 0;
-unsigned        codeSize = 0;
-instruction*    code = (instruction*) 0;
-
 #define AVM_ENDING_PC codeSize
 
 void execute_cycle (void);
@@ -127,14 +91,6 @@ double mod_impl (double x, double y);
 #define execute_div execute_arithmetic
 #define execute_mod execute_arithmetic
 
-arithmetic_func_t arithmeticFuncs[] = {
-    add_impl,
-    sub_impl,
-    mul_impl,
-    div_impl,
-    mod_impl
-};
-
 void execute_arithmetic (instruction* inst);
 
 /* relationals */
@@ -148,15 +104,6 @@ bool avm_compare_jgt(avm_memcell* rv1,avm_memcell* rv2);
 typedef bool (*cmp_func_t) (avm_memcell* rv1,avm_memcell* rv2);
 
 /* dispatcher for comparison funcs */
-cmp_func_t comparisonFuncs[] = {
-    avm_compare_jeq,
-    avm_compare_jne,
-    avm_compare_jle,
-    avm_compare_jge,
-    avm_compare_jlt,
-    avm_compare_jgt
-};
-
 void execute_comparison (instruction* instr);
 
 

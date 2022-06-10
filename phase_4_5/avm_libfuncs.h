@@ -15,8 +15,6 @@ typedef struct libFuncHashTable
     unsigned int size;
 }libFuncHashTable;
 
-libFuncHashTable *lib_h_table;
-
 void libfunc_print (void);
 
 void avm_calllibfunc(char *id);

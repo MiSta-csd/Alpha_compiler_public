@@ -11,6 +11,7 @@ static void avm_initstack (void) {
     }  
 }
 
+extern unsigned char executionFinished;
 void avm_dec_top (void)
 {
     if (!top) {
@@ -28,6 +29,7 @@ void avm_push_envvalue (unsigned val)
     avm_dec_top();
 }
 
+extern unsigned pc;
 void avm_callsaveenvironment (void)
 {
     avm_push_envvalue(totalActuals);
@@ -104,4 +106,65 @@ avm_memcell::avm_memcell(avm_memcell_t type, void* data)
             break;
         }
     }
+}
+
+avm_memcell& avm_memcell::operator=(const avm_memcell& m)
+{
+    switch (m.type)
+    {
+        case NUMBER_M:
+        {
+            this->type = m.type;
+            this->data.numVal = m.data.numVal;
+            break;
+        }
+        case STRING_M:
+        {
+            this->type = m.type;
+            this->data.strVal = m.data.strVal;
+            break;
+        }
+        case BOOL_M:
+        {
+            this->type = m.type;
+            this->data.boolVal = m.data.boolVal;
+            break;
+        }
+        case TABLE_M:
+        {
+            this->type = m.type;
+            this->data.tableVal = m.data.tableVal;
+            break;
+        }
+        case USERFUNC_M:
+        {
+            this->type = m.type;
+            this->data.funcVal = m.data.funcVal;
+            break;
+        }
+        case LIBFUNC_M:
+        {
+            this->type = m.type;
+            this->data.libfuncVal = m.data.libfuncVal;
+            break;
+        }
+        case NIL_M:
+        {
+            this->type = m.type;
+            /*this->~data();*/ // Maycause problems
+            break;
+        }
+        case UNDEF_M:
+        {
+            this->type = m.type;
+            /*this->~data();*/ // Maycause problems
+            break;
+        }
+        default:
+        {
+            assert(0);
+            break;
+        }
+    }
+    return (*this);
 }

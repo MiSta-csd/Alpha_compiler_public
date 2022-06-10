@@ -33,6 +33,7 @@ typedef struct avm_memcell {
     avm_memcell();
     ~avm_memcell();
     avm_memcell(avm_memcell_t type, void* data);
+    avm_memcell& operator=(const avm_memcell& m);
 } avm_memcell;
 
 

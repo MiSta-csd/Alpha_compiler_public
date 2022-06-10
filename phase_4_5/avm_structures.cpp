@@ -15,7 +15,7 @@ unsigned        			totalUserFuncs = 0;
 
 unsigned userfuncs_newfunc (userfunc* f) {
 	for(int i = 0; i < userFuncs.size(); ++i) {
-		if ((*userFuncs[i]->id) == *f->id)
+		if (*(userFuncs[i]->id) == *(f->id))
 			return i;
 	}
 	userFuncs.push_back(f);
@@ -95,7 +95,8 @@ void make_operand(expr* e, vmarg *arg) {
 			uf = new struct userfunc;
 			uf->id = new std::string(e->sym->name);
 			uf->address = e->sym->iaddress + 2;
-			uf->localSize = e->sym->totalLocals;// mhpws totalLocals * size of memcell
+			uf->localSize = e->sym->totalLocals;
+			uf->argSize = e->sym->totalArgs;
 			arg->val = userfuncs_newfunc(uf);
 			break;
 		case LIBRARYFUNC_E:
@@ -346,15 +347,15 @@ void generate_binary_readable (std::string outname) {
 	}else {
 		outf = stdout;
 	}
-	unsigned magic_num = 340200501;
+	unsigned magic_num = MAGIC_NUM;
 	
 	fprintf(outf, "%u\n", magic_num);
-	fprintf(outf, "%u\n", programVarOffset);
-	for (auto map : symbol_table) {
-		for ( auto pair : map) {
+	fprintf(outf, "%u\n", programVarOffset-1);
+	for (int i =0; i < symbol_table.size(); ++i) {
+		for ( auto pair : symbol_table[i]) {
 			for ( auto entry : pair.second) {
-				if(entry.space == programvar) {
-					fprintf(outf, "%s,%u,%u ", entry.name.c_str(), entry.scope, entry.offset);
+				if(entry.space == programvar && entry.type != LIB_FUNC) {
+					fprintf(outf, "%lu,%s,%u,%u ", entry.name.size(), entry.name.c_str(), entry.scope, entry.offset);
 				}
 			}
 		}
@@ -373,7 +374,9 @@ void generate_binary_readable (std::string outname) {
 	}
 	fprintf(outf, "\n%u\n",totalUserFuncs);
 	for(int i = 0; i < totalUserFuncs; ++i) {
-		fprintf(outf, "%s,%u ", userFuncs[i]->id->c_str(), userFuncs[i]->address);
+		fprintf(outf, "%lu,%s,%u,%u,%u ", userFuncs[i]->id->size(),
+		 userFuncs[i]->id->c_str(), userFuncs[i]->address, userFuncs[i]->localSize
+		 , userFuncs[i]->argSize);
 	}
 	fprintf(outf, "\n");
 
@@ -398,56 +401,68 @@ void generate_binary_readable (std::string outname) {
 }
 void generate_binary(FILE *outf) {
 	assert(outf);
-	unsigned magic_num = 340200501;
+	unsigned magic_num = MAGIC_NUM;
 
 	fwrite(&magic_num, sizeof(unsigned), 1, outf);
-	fwrite(&programVarOffset, sizeof(unsigned), 1, outf);
+	// fwrite("\n", 1, 1, outf);
+	unsigned globalOffset = programVarOffset-1;
+	fwrite(&globalOffset, sizeof(unsigned), 1, outf);
+	// fwrite("\n", 1, 1, outf);
 	for (int i = 0; i < symbol_table.size(); ++i) {
 		for ( auto pair : symbol_table[i]) {
 			for ( auto entry : pair.second) {
-				if(entry.space == programvar) {// TODO check gia to -2 oti einai to swsto
-					fwrite(entry.name.c_str(), entry.name.size()-2, 1, outf);
-					fwrite(",", 1, 1, outf);
+				if(entry.space == programvar && entry.type != LIB_FUNC) {
+					unsigned name_sz = entry.name.size();
+					fwrite(&name_sz, sizeof(unsigned), 1, outf);
+					// fwrite(",", 1, 1, outf);
+					fwrite(entry.name.c_str(), name_sz, 1, outf);
+					// fwrite(",", 1, 1, outf);
 					fwrite(&entry.scope, sizeof(unsigned), 1, outf);
-					fwrite(",", 1, 1, outf);
+					// fwrite(",", 1, 1, outf);
 					fwrite(&entry.offset, sizeof(unsigned), 1, outf);
-					fwrite(" ", 1, 1, outf);
+					// fwrite(" ", 1, 1, outf);
 				}
 			}
 		}
 	}
 
-	fwrite("\n", 1, 1, outf);
+	// fwrite("\n", 1, 1, outf);
 	fwrite(&totalStringConsts, sizeof(unsigned), 1, outf);
-	fwrite("\n", 1, 1, outf);
+	// fwrite("\n", 1, 1, outf);
 	for(int i = 0; i < totalStringConsts; ++i) {
 		unsigned str_size = stringConsts[i].size()-2;
 		fwrite(&str_size, sizeof(unsigned), 1, outf);
-		fwrite(",", 1, 1, outf);
-		fwrite(stringConsts[i].c_str(), stringConsts[i].size()-2, 1, outf);
-		fwrite(" ", 1, 1, outf);
+		// fwrite(",", 1, 1, outf);
+		fwrite(stringConsts[i].c_str()+1, str_size, 1, outf);
+		// fwrite(" ", 1, 1, outf);
 	}
-	fwrite("\n", 1, 1, outf);
+	// fwrite("\n", 1, 1, outf);
 	fwrite(&totalNumConsts, sizeof(unsigned), 1, outf);
-	fwrite("\n", 1, 1, outf);
+	// fwrite("\n", 1, 1, outf);
 	for(int i = 0; i < totalNumConsts; ++i) {
 		fwrite(&numConsts[i], sizeof(double), 1, outf);
-		fwrite(" ", 1, 1, outf);
+		// fwrite(" ", 1, 1, outf);
 	}
-	fprintf(outf, "\n%u\n", totalNamedLibfuncs);
+	fwrite(&totalNamedLibfuncs, sizeof(unsigned), 1, outf);
 	for(int i = 0; i < totalNamedLibfuncs; ++i) {
-		fprintf(outf, "%s ", namedLibFuncs[i].c_str());
+		unsigned str_size = namedLibFuncs[i].size();
+		fwrite(&str_size, sizeof(unsigned), 1, outf);
+		fwrite(namedLibFuncs[i].c_str(), str_size, 1, outf);
 	}
-	fwrite("\n", 1, 1, outf);
+	// fwrite("\n", 1, 1, outf);
 	fwrite(&totalUserFuncs, sizeof(unsigned), 1, outf);
-	fwrite("\n", 1, 1, outf);
+	// fwrite("\n", 1, 1, outf);
 	for(int i = 0; i < totalUserFuncs; ++i) {
-		fwrite(userFuncs[i]->id->c_str(), userFuncs[i]->id->size()-2, 1, outf);
-		fwrite(",", 1, 1, outf);
+		unsigned str_size = userFuncs[i]->id->size();
+		fwrite(&str_size, sizeof(unsigned), 1, outf);
+		fwrite(userFuncs[i]->id->c_str(), str_size, 1, outf);
+		// fwrite(",", 1, 1, outf);
 		fwrite(&userFuncs[i]->address, sizeof(unsigned), 1, outf);
-		fwrite(" ", 1, 1, outf);
+		fwrite(&userFuncs[i]->localSize, sizeof(unsigned), 1, outf);
+		fwrite(&userFuncs[i]->argSize, sizeof(unsigned), 1, outf);
+		// fwrite(" ", 1, 1, outf);
 	}
-	fwrite("\n", 1, 1, outf);
+	// fwrite("\n", 1, 1, outf);
 
 	// instructions
 	for (int i = 0; i < instr_vec.size(); ++i) {
@@ -462,7 +477,7 @@ void generate_binary(FILE *outf) {
 			fwrite(&instr_vec[i]->arg2, sizeof(struct vmarg), 1, outf);
 
 		fwrite(&instr_vec[i]->srcLine, sizeof(unsigned), 1, outf);
-		fwrite("\n", 1, 1, outf);
+		// fwrite("\n", 1, 1, outf); kserw to mege8os apo ton typo tou instr
 	}
 }
 
@@ -495,16 +510,3 @@ void print_instructions () {// for debug
 	}
 	print_line();
 }
-// int main () {
-// 	// FILE  *q_inter_f;
-// 	// size_t len, read;
-// 	// char *line;
-// 	// q_inter_f = fopen("quads.txt", "r");
-// 	// if(!q_inter_f){
-// 	// 	std::cout << "File quads.txt doesn't exist .\n";
-// 	// 	return 1;
-// 	// }
-// 	// while((read = getline(&line, &len, q_inter_f)) != EOF) {
-// 	// 	line[read-1] = 0; // getting rid of newline
-// 	// }
-// }

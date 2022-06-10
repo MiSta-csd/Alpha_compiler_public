@@ -34,9 +34,11 @@ st_entry *st_insert(std::string name, enum st_entry_type type) {
 			.type = type,
 			.scope = scope,
 			.line = (unsigned)yylineno,
-			.offset = (space == programvar?sym_offset_counter++:0),
+			.offset = ((space == programvar && type != LIB_FUNC)?sym_offset_counter++:0),
 			.space = space
 	};
+	if(symbol_table.size() == scope)
+		symbol_table.push_back(std::unordered_map<std::string, std::vector<st_entry>>());
 	symbol_table[scope][name].push_back(*new_entry);// works even if bucket~key==name is empty
 	return new_entry;
 }
