@@ -1,13 +1,14 @@
 #include "avm_table.h"
+#include "avm_mem_structs.h"
 #include <assert.h>
 #include <unordered_map>
 
 avm_table::avm_table ()
 {
-	this->strIndexed = new std::unordered_map<avm_memcell,avm_memcell>();
-	this->numIndexed = new std::unordered_map<avm_memcell,avm_memcell>();
-	this->funcIndexed = new std::unordered_map<avm_memcell,avm_memcell>();
-    this->trollIndexed = new std::unordered_map<avm_memcell,avm_memcell>();
+    this->strIndexed = new std::unordered_map<std::string,avm_memcell>;
+    this->numIndexed = new std::unordered_map<double,avm_memcell>;
+    this->funcIndexed = new std::unordered_map<unsigned,avm_memcell>;
+    this->trollIndexed = new std::unordered_map<std::string,avm_memcell>;
     this->avm_table_elem_count();
 }
 
@@ -64,8 +65,15 @@ avm_memcell*    avm_tablegetelem (
     {
         case NUMBER_M:
         {
-            return &(table->numIndexed->at(*index));// isodynamo fainetai
-            break;                                    
+            std::unordered_map<double,avm_memcell>::const_iterator got =
+             table->numIndexed->find (index->data.numVal);
+            if (got == table->numIndexed->end())
+            {
+                return new avm_memcell();
+            }
+            else
+            return &(table->numIndexed->at(index->data.numVal));// isodynamo fainetai                                    
+            // to allaksa se key double kai paizei profanws                                 
         }
         case STRING_M:          
         {

@@ -1,5 +1,6 @@
 #include "avm_libfuncs.h"
 #include "avm_auxiliary.h"
+#include <cassert>
 
 extern unsigned totalActuals;
 
@@ -134,12 +135,12 @@ void libfunc_objectmemberkeys(void)
 
 library_func_t avm_getlibraryfunc(std::string id)
 {
-	assert(id);
-	assert(lib_h_table);
+	assert(id != "");// kostas manip
+	// assert(lib_h_table);// lib_h_table undeclared
 
     unsigned int index = avm_hash(id);
 	assert(index < AVM_TABLE_HASHSIZE);
-    libPair* iterator = lib_h_table->pairs[index];
+    // libPair* iterator = lib_h_table->pairs[index];
 
 	if(iterator == NULL)
 		return NULL;

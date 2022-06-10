@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include "quads.h"
+#define MAGIC_NUM 340200501
 
 enum vmopcode {
     ASSIGN_V,       ADD_V,          SUB_V,
@@ -44,6 +45,7 @@ struct instruction {
 struct userfunc {
     unsigned    address;
     unsigned    localSize;
+    unsigned    argSize;
     std::string       *id;
 };
 

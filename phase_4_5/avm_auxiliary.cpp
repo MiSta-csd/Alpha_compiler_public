@@ -1,7 +1,27 @@
 #include "avm_auxiliary.h"
 #include <stdlib.h>
 
+memclear_func_t memclearFuncs[] = {
+    0, /*  number */
+    memclear_string,
+    0,
+    memclear_table,
+    0,
+    0,
+    0,
+    0
+};
 
+std::string typeStrings[] = {"number", "string", "bool", "table", "userfunc", "libfunc", "nil", "undef"};
+
+bool number_tobool (avm_memcell* m) { return m->data.numVal != 0; }
+bool string_tobool (avm_memcell* m) { return !(m->data.strVal->empty()); }
+bool bool_tobool (avm_memcell* m) { return m->data.boolVal; }
+bool table_tobool (avm_memcell* m) { return true; }
+bool userfunc_tobool (avm_memcell* m) { return true; }
+bool libfunc_tobool (avm_memcell* m) { return true; }
+bool nil_tobool (avm_memcell* m) { return false; }
+bool undef_tobool (avm_memcell* m) { assert(0); return false; }
 
 void memclear_string (avm_memcell* m)
 {
@@ -15,6 +35,17 @@ void memclear_table (avm_memcell* m)
     assert(m->data.tableVal);
     avm_tabledecrefcounter(m->data.tableVal);
 }
+
+tobool_func_t toboolFuncs[] = {
+    number_tobool,
+    string_tobool,
+    bool_tobool,
+    table_tobool,
+    userfunc_tobool,
+    libfunc_tobool, 
+    nil_tobool,
+    undef_tobool
+};
 
 
 void avm_memcellclear (avm_memcell* m)
@@ -77,6 +108,17 @@ userfunc avm_get_funcVal(avm_memcell* m)
     assert(m->type == USERFUNC_M);
     return m->data.funcVal;
 }
+
+tostring_func_t tostringFuncs[] = {
+    number_tostring,
+    string_tostring,
+    bool_tostring,
+    table_tostring,
+    userfunc_tostring,
+    libfunc_tostring, 
+    nil_tostring,
+    undef_tostring
+};
 
 
 /* String Convertors */

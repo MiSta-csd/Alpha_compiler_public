@@ -7,7 +7,11 @@ extern std::vector<std::string> 	stringConsts;
 extern std::vector<std::string> 	namedLibFuncs;
 extern std::vector<userfunc*> 		userFuncs;
 
-
+unsigned char   executionFinished = 0;
+unsigned        pc = 0;
+unsigned        currLine = 0;
+unsigned        codeSize = 0;
+instruction*    code = (instruction*) 0;
 avm_memcell* avm_translate_operand (vmarg* arg, avm_memcell* reg)
 {
     switch (arg->type) {
@@ -70,6 +74,55 @@ std::string libfuncs_getused (unsigned index)
 {
     return namedLibFuncs[index];
 }
+
+execute_func_t executeFuncs[] = {
+    execute_assign,
+    execute_add,
+    execute_sub,
+    execute_mul,
+    execute_div,
+    execute_mod,
+    execute_uminus,
+    execute_and,
+    execute_or,
+    execute_not,
+    execute_jeq,
+	execute_jne,
+    execute_jle,
+    execute_jge,
+    execute_jlt,
+    execute_jgt,
+    execute_call,
+    execute_pusharg,
+/*     execute_ret,
+    execute_getretval, */
+    execute_funcenter,
+    execute_funcexit,
+    execute_newtable,
+    execute_tablegetelem,
+    execute_tablesetelem,
+/*     execute_jump, */
+    execute_nop
+};
+
+cmp_func_t comparisonFuncs[] = {
+    avm_compare_jeq,
+    avm_compare_jne,
+    avm_compare_jle,
+    avm_compare_jge,
+    avm_compare_jlt,
+    avm_compare_jgt
+};
+
+arithmetic_func_t arithmeticFuncs[] = {
+    add_impl,
+    sub_impl,
+    mul_impl,
+    div_impl,
+    mod_impl
+};
+
+
 
 void execute_cycle (void)
 {
@@ -352,24 +405,17 @@ void execute_comparison (instruction* instr){
 
     bool res;
 
-    if (rv1->type == UNDEF_M || rv2->type == UNDEF_M)
-    {
+    if (rv1->type == UNDEF_M || rv2->type == UNDEF_M) {
         avm_error("comparison involving UNDEF type not allowed.");
         executionFinished = 1;
     }
-    else
-    if (rv1->type == NIL_M || rv2->type == NIL_M)
-    {
-        res = (rv1->type == NIL_M && rv2->type == NIL_M);
-    }
-    else 
-    if (rv1->type == BOOL_M || rv2->type == BOOL_M)
-    {
-        res = (avm_tobool(rv1) == avm_tobool(rv2));
-    }
-    else
-    if(rv1->type != rv2->type)
-    {
+    else if (rv1->type == NIL_M || rv2->type == NIL_M) {
+		res = (rv1->type == NIL_M && rv2->type == NIL_M);
+	}
+    else if (rv1->type == BOOL_M || rv2->type == BOOL_M) {
+		res = (avm_tobool(rv1) == avm_tobool(rv2));
+	}
+    else if(rv1->type != rv2->type) {
         avm_error("comparison between different types not allowed.");
         executionFinished = 1;
     }

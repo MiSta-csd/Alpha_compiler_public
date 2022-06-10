@@ -19,13 +19,13 @@ void            avm_tablesetelem (avm_memcell* key, avm_memcell* value);
 typedef struct avm_table {
     unsigned                        refCounter;
     /* no pointers! */
-    std::unordered_map<avm_memcell,
+    std::unordered_map<std::string,
     avm_memcell>                    *strIndexed;
-    std::unordered_map<avm_memcell,
+    std::unordered_map<double,
     avm_memcell>                    *numIndexed;
-    std::unordered_map<avm_memcell,
+    std::unordered_map<unsigned,
     avm_memcell>                    *funcIndexed;
-    std::unordered_map<avm_memcell,
+    std::unordered_map<std::string,
     avm_memcell>                    *trollIndexed; /* allows keys of type : libfunc, bool, nil */
     unsigned        total; /* total no of elems. !! Use method instead*/
 	avm_table();
