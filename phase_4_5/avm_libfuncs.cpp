@@ -4,15 +4,15 @@
 
 extern unsigned totalActuals;
 
-libPair* new_libPair(char* id, library_func_t addr)
-{
-    libPair* new_pair;
-    new_pair = (libPair*)malloc(sizeof(libPair));
-    new_pair->name = id;
-    new_pair->lib_function = addr;
-    new_pair->next = NULL;
-    return new_pair;
-};
+// libPair* new_libPair(char* id, library_func_t addr)
+// {
+//     libPair* new_pair;
+//     new_pair = (libPair*)malloc(sizeof(libPair));
+//     new_pair->name = id;
+//     new_pair->lib_function = addr;
+//     new_pair->next = NULL;
+//     return new_pair;
+// };
 
 unsigned int avm_string2hash(char *key)
 {
@@ -140,44 +140,44 @@ void libfunc_objectmemberkeys(avm_table t)
     reg_RETVAL.data.tableVal = &new_t;
 }
 
-library_func_t avm_getlibraryfunc(std::string id)
-{
-	assert(id != "");// kostas manip
-	// assert(lib_h_table);// lib_h_table undeclared
+// library_func_t avm_getlibraryfunc(std::string id)
+// {
+// 	assert(id != "");// kostas manip
+// 	// assert(lib_h_table);// lib_h_table undeclared
 
-    unsigned int index = avm_hash(id);
-	assert(index < AVM_TABLE_HASHSIZE);
-    // libPair* iterator = lib_h_table->pairs[index];
+//     unsigned int index = avm_hash(id);
+// 	assert(index < AVM_TABLE_HASHSIZE);
+//     // libPair* iterator = lib_h_table->pairs[index];
 
-	if(iterator == NULL)
-		return NULL;
+// 	if(iterator == NULL)
+// 		return NULL;
 
-	while(iterator)
-	{
-		if(strcmp(iterator->name,id) == 0){
-			return iterator->lib_function;
-		}
-		iterator = iterator->next;
-	}
+// 	while(iterator)
+// 	{
+// 		if(strcmp(iterator->name,id) == 0){
+// 			return iterator->lib_function;
+// 		}
+// 		iterator = iterator->next;
+// 	}
 
-    return NULL;
-}
+//     return NULL;
+// }
 
 
-void avm_calllibfunc(std::string id){
-    library_func_t f = avm_getlibraryfunc(id);
-    if(!f){
-        avm_error("Unsupported library function " + id + " called!");
-        executionFinished = 1;
-    }
-    else{
-		topsp = top;
-		totalActuals = 0;
-		(*f)();
-		if(!executionFinished)
-			execute_funcexit((instruction * )0);
-    }
-}
+// void avm_calllibfunc(std::string id){
+//     library_func_t f = avm_getlibraryfunc(id);
+//     if(!f){
+//         avm_error("Unsupported library function " + id + " called!");
+//         executionFinished = 1;
+//     }
+//     else{
+// 		topsp = top;
+// 		totalActuals = 0;
+// 		(*f)();
+// 		if(!executionFinished)
+// 			execute_funcexit((instruction * )0);
+//     }
+// }
 
 void libfunc_typeof(void)
 {

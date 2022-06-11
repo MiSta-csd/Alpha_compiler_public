@@ -1118,6 +1118,17 @@ int main(int argc, char** argv) {
 			generate_binary(outf);
 			/* print_quads(outname); */
 			print_instructions();
+			/* avm_table* mytesttable;
+			avm_memcell* tempcell;
+			tempcell->type = STRING_M;
+			tempcell->data.strVal = new std::string("Bab");
+			avm_memcell* tempcell2;
+			tempcell->type = STRING_M;
+			tempcell->data.strVal = new std::string("Mpamphs");
+			avm_tablesetelem(mytesttable, tempcell, tempcell2);
+			libfunc_objectmemberkeys(*mytesttable); */
+			
+			
 		} else {
 			std::cout << "One or more errors on compilation, aborting... \n";
 			return 1;
