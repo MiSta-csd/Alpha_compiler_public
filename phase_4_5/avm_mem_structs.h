@@ -3,7 +3,6 @@
 #include <cstring>
 #include "avm_structures.h"
 
-
 enum avm_memcell_t {
         NUMBER_M    =0,
         STRING_M    =1,
@@ -39,20 +38,12 @@ typedef struct avm_memcell {
 
 #define AVM_STACKSIZE   4096
 #define AVM_WIPEOUT(m)  memset(&(m), 0, sizeof(m))
-avm_memcell stack[AVM_STACKSIZE];// It is what it is!
+#define AVM_STACKENV_SIZE   4// unused
 
-#define AVM_STACKENV_SIZE   4
-avm_memcell reg_AX, reg_BX, reg_CX;
-avm_memcell reg_RETVAL;
-unsigned    top,topsp;
-
-static void avm_initstack (void);
-
-unsigned totalActuals = 0;
+void avm_initstack (void);
 
 void avm_dec_top (void);
 void avm_push_envvalue (unsigned val);
 void avm_callsaveenvironment (void);
-
 
 // #pragma pack(pop)

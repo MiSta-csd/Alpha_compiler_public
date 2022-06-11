@@ -2,28 +2,31 @@
 #include "avm_auxiliary.h"
 #include "avm_mem_structs.h"
 #include "avm_table.h"
-#include "quads.h"
 
-extern avm_memcell                  stack[AVM_STACKSIZE];
+extern avm_memcell stack[AVM_STACKSIZE];
+extern avm_memcell reg_AX, reg_BX, reg_CX;
+extern avm_memcell reg_RETVAL;
+extern unsigned    top, topsp, totalActuals;
 
 extern std::vector<double>          numConsts;
 extern std::vector<std::string> 	stringConsts;
 extern std::vector<std::string> 	namedLibFuncs;
-extern std::vector<userfunc*> 		userFuncs;
+extern std::vector<userfunc> 		userFuncs;
 
-unsigned char   executionFinished = 0;
-unsigned        pc = 0;
-unsigned        currLine = 0;
-unsigned        codeSize = 0;
-instruction*    code = (instruction*) 0;
+extern unsigned char   executionFinished;
+extern unsigned        pc;
+extern unsigned        currLine;
+extern unsigned        codeSize;
+extern instruction*    code;
+
 avm_memcell* avm_translate_operand (vmarg* arg, avm_memcell* reg)
 {
     switch (arg->type) {
 
         /* Variables */
-        case GLOBAL_A:  return &stack[AVM_STACKSIZE - 1 - arg->val];
-        case LOCAL_A:   return &stack[topsp - arg->val];
-        case FORMAL_A:  return &stack[topsp + AVM_STACKENV_SIZE + 1 + arg->val];
+        case GLOBAL_A:  return &stack[AVM_STACKSIZE - 1 - arg->val];// diavazei apo global scope (prwto stack frame)
+        case LOCAL_A:   return &stack[topsp - arg->val];// diavazei apo to top stack frame
+        case FORMAL_A:  return &stack[topsp + AVM_STACKENV_SIZE + 1 + arg->val];// diavazei apo to top stac frame
 
         case RETVAL_A: return &reg_RETVAL;
 
@@ -63,7 +66,6 @@ avm_memcell* avm_translate_operand (vmarg* arg, avm_memcell* reg)
     }
 }
 
-
 double  consts_getnumber (unsigned index)
 {
     return numConsts[index];
@@ -79,6 +81,18 @@ std::string libfuncs_getused (unsigned index)
     return namedLibFuncs[index];
 }
 
+void execute_jump(instruction* instr)
+{
+	assert(instr);
+	pc = instr->result.val;
+
+}
+
+void execute_nop (instruction* i) {
+    std::cout << "!!! executed nop! !!!\n";
+    assert(0);
+}
+
 execute_func_t executeFuncs[] = {
     execute_assign,
     execute_add,
@@ -86,10 +100,10 @@ execute_func_t executeFuncs[] = {
     execute_mul,
     execute_div,
     execute_mod,
-    execute_uminus,
-    execute_and,
-    execute_or,
-    execute_not,
+    execute_nop,// uminus
+    execute_nop,// and
+    execute_nop,// or
+    execute_nop,// not
     execute_jeq,
 	execute_jne,
     execute_jle,
@@ -105,7 +119,7 @@ execute_func_t executeFuncs[] = {
     execute_newtable,
     execute_tablegetelem,
     execute_tablesetelem,
-/*     execute_jump, */
+    execute_jump,
     execute_nop
 };
 
@@ -192,7 +206,7 @@ void execute_assign (instruction* instr)
     avm_assign(lv, rv);
 }
 
-unsigned avm_totalactuals(void){
+unsigned avm_totalactuals(void) {
     return avm_get_envvalue(topsp + AVM_NUMACTUALS_OFFSET);
 }
 
@@ -226,23 +240,12 @@ void execute_call (instruction* instr)
         
         case STRING_M:
         {
-            char* cstr = new char[(*(func->data.strVal)).length() + 1];
-            strcpy(cstr, (*(func->data.strVal)).c_str());
-            avm_calllibfunc(cstr);//wraia des aftes tis grammes // 2 me8doi h .length() k h .c_str(). H 2h paragei apo std::string 
-            //ena const char* , to opoio isws sou kanei omorfa!
-            /* Des file ti anagkazomai na kanw epeidh o mhtsos 
-            den phre xabari oti den xrhsimopoioume char* */
-            delete [] cstr;
+            avm_calllibfunc(namedLibFuncs[instr->result.val]);
         }
 
         case LIBFUNC_M:
         {
-            char* cstr = new char[(*(func->data.libfuncVal)).length() + 1];
-            strcpy(cstr, (*(func->data.libfuncVal)).c_str());
-            avm_calllibfunc(cstr);
-            /* Des file ti anagkazomai na kanw epeidh o mhtsos 
-            den phre xabari oti den xrhsimopoioume char* */
-            delete [] cstr;
+            avm_calllibfunc(namedLibFuncs[instr->result.val]);
         } 
         
         default:
@@ -399,8 +402,7 @@ bool avm_compare_jgt(avm_memcell* rv1,avm_memcell* rv2)
  *  JGT , JLT
  *  JGE , JLE   except plain JMP
  */
-void execute_comparison (instruction* instr){
-    
+void execute_comparison (instruction* instr) {
     assert(instr->result.type == LABEL_A);
     avm_memcell* rv1 = avm_translate_operand(&instr->arg1, &reg_AX);
     avm_memcell* rv2 = avm_translate_operand(&instr->arg2, &reg_BX);

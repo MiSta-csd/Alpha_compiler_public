@@ -1,14 +1,24 @@
 #include "avm_mem_structs.h"
 #include "avm_auxiliary.h"
+#include "vm_elegance.h"
 
+avm_memcell stack[AVM_STACKSIZE];// It is what it is!
 
+avm_memcell reg_AX, reg_BX, reg_CX;
+avm_memcell reg_RETVAL;
+unsigned    top,topsp;
 
-static void avm_initstack (void) {
+unsigned totalActuals = 0;
+
+extern unsigned totalProgVars;
+void avm_initstack (void) {
     for (size_t i = 0; i < AVM_STACKSIZE; ++i)
     {
         AVM_WIPEOUT(stack[i]);
 		stack[i].type = UNDEF_M;
-    }  
+    }
+    topsp = (N - 1) - totalProgVars;
+    top = topsp;
 }
 
 extern unsigned char executionFinished;

@@ -51,7 +51,7 @@ unsigned consts_newused(std::string str) {
 
 void make_operand(expr* e, vmarg *arg) {
 	if(!e) {
-		arg->val = -1;
+		arg->val =(unsigned) -1;
 		return;
 	}
 	switch (e->type) {
@@ -213,28 +213,28 @@ void generate_PARAM(quad* q) {
 	instr_vec.push_back(new_instr(q, PUSHARG_V));
 	
 }
-static void new_ret_instr(quad* q) {
-	instruction *instr = new instruction;
-	instr->result.type = RETVAL_A;
-	instr->opcode = ASSIGN_V;
-	make_operand(q->arg2, &instr->arg2);
-	instr->srcLine = q->line;
-	instr_vec.push_back(instr);
-	q->taddress = get_current_instr();
-}
+
 void generate_RET(quad* q) {
-	// TODO if q has value to be returned assign it to the appropriate register
-	if(q->arg2) {
-		new_ret_instr(q);
+	if(q->arg2) { // if return returns a value.
+		instruction *instr = new instruction;
+		instr->result.type = RETVAL_A;
+		instr->opcode = ASSIGN_V;
+		// make_operand(q->result, &instr->result);// Ayto to result vmarg ginetai na apo8hkeysei kataxwrhth??
+		make_operand(q->arg2, &instr->arg1);// gia ret_instrs xrhsimopoihsame to arg2 -.-
+		instr->arg2.val = (unsigned) -1;
+		instr->srcLine = q->line;
+		instr_vec.push_back(instr);
+		q->taddress = get_current_instr();
 	}
 }
 void generate_GETRETVAL(quad* q) {
-	// TODO capture the register's value and pass it somewhere.
-	// Thought: pass it to a register that is for param call args if we are about to call func
-	// else idk
-	new_ret_instr(q);
-	
+	instruction *instr = new instruction;
+	instr->result.type = RETVAL_A;
+	instr->opcode = ASSIGN_V;
+	make_operand(q->result, &instr->result);// 8a pairnei apo ton kataxwrhth epistrofhs thn epistrefomenh timh. comple einai
+	instr->arg1.val = instr->arg2.val = (unsigned) -1;
 }
+
 void generate_FUNCSTART(quad* q) {
 	instr_vec.push_back(new_instr(q, FUNCENTER_V));
 
@@ -350,7 +350,7 @@ void generate_binary_readable (std::string outname) {
 	unsigned magic_num = MAGIC_NUM;
 	
 	fprintf(outf, "%u\n", magic_num);
-	fprintf(outf, "%u\n", programVarOffset-1);
+	fprintf(outf, "%u\n", programVarOffset);
 	for (int i =0; i < symbol_table.size(); ++i) {
 		for ( auto pair : symbol_table[i]) {
 			for ( auto entry : pair.second) {

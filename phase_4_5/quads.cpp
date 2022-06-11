@@ -56,7 +56,7 @@ void print_line(){
 	std::cout << " -------------------------------------------\n\n";
 }
 
-void print_quads(std::string outname) {
+void print_quads() {
 	std::string opcodes[] = {"ASSIGN_OP", "ADD_OP", "SUB_OP", "MUL_OP", "DIV_OP", "MOD_OP", "UMINUS_OP", "AND_OP",
 	"OR_OP", "NOT_OP", "IF_EQ_OP", "IF_NOTEQ_OP", "IF_LESSEQ_OP", "IF_GREATEREQ_OP", "IF_LESS_OP", "IF_GREATER_OP",
 	"CALL_OP", "PARAM_OP", "RET_OP", "GETRETVAL_OP", "FUNCSTART_OP", "FUNCEND_OP", "TABLECREATE_OP", "TABLEGETELEM_OP",

@@ -1,7 +1,11 @@
 #include "avm_auxiliary.h"
+#include "avm_mem_structs.h"
 #include <stdlib.h>
+// #include <stdarg.h>
 
+extern avm_memcell stack[AVM_STACKSIZE];
 extern void memclear_table (avm_memcell* m);
+extern unsigned executionFinished;
 
 memclear_func_t memclearFuncs[] = {
     0, /*  number */
@@ -54,9 +58,9 @@ tobool_func_t toboolFuncs[] = {
 
 void avm_memcellclear (avm_memcell* m)
 {
-    if (m->type)
+    if (m->type) // dhladh edw mas leei an to type einai != NUMBER_M hmmmmm
     {
-        memclear_func_t f = memclearFuncs[m->type];
+        memclear_func_t f = memclearFuncs[m->type];// kai edw exei synarthseis mono gia string kai table vals
         if (f)
             (*f) (m);
         m->type = UNDEF_M;
@@ -66,13 +70,20 @@ void avm_memcellclear (avm_memcell* m)
 
 void avm_warning (std::string s, ...)
 {
-
+    // va_list arglist;
+    // va_start(arglist, s);// to s xrhsimopoieitai gia na kserei poio einai to teleytaio arg pou 8a diavasei
     std::cout << "\033[33m" << "WARNING: " << s << "\033[37m" << std::endl;
+    // avm_memcell *arg_cell;
+    // while ((arg_cell = va_arg(arglist, avm_memcell*))) {
+    //     std:: cout << arg_cell->type << " yo!\n";// etsi gia to gmt
+    // }
+    // va_end(arglist); // DJ Kostas
 }
 
 void avm_error (std::string s, ...)
 {
     std::cout << "\033[31m" << "ERROR :" << s << "\033[37m" << std::endl;
+    executionFinished = 1;
 }
 
 /* Memcell data extraction */
@@ -99,12 +110,6 @@ bool avm_get_boolVal(avm_memcell* m)
     assert(m->type == BOOL_M);
     return m->data.boolVal;
 }
-
-/* avm_table* avm_get_tableVal(avm_memcell* m)
-{
-        // TODO or uneeded
-} */
-
 
 userfunc avm_get_funcVal(avm_memcell* m)
 {
@@ -162,14 +167,51 @@ std::string table_tostring (avm_memcell* m)
     assert(m && m->type == TABLE_M);
     return "I am a table.";
     /* TODO */
+    std::string s = "";
+    std::string pcfr="";
+    s + "[ ";
+    if (m->data.tableVal->numIndexed->size())
+    {
+        for (auto x : *(m->data.tableVal->numIndexed))
+        {
+            s + "{ "+std::to_string(x.first)+" : "+avm_tostring(&(x.second))+" }";
+        }
+    }
+    
+    if (m->data.tableVal->strIndexed->size())
+    {
+        for (auto x : *(m->data.tableVal->strIndexed))
+        {
+            s + "{ "+x.first+" : "+avm_tostring(&(x.second))+" }";
+        }
+    }
+
+    if (m->data.tableVal->funcIndexed->size())
+    {
+        for (auto x : *(m->data.tableVal->funcIndexed))
+        {
+            s + "{ f_id:"+std::to_string(x.first)+" : "+avm_tostring(&(x.second))+" }";
+        }
+    }
+
+    if (m->data.tableVal->trollIndexed->size())
+    {
+        for (auto x : *(m->data.tableVal->trollIndexed))
+        {
+            s + "{ "+x.first+" : "+avm_tostring(&(x.second))+" }";
+        }
+    }
+
+    s + " ]";
+
+    return s;   
 }
 
 std::string userfunc_tostring (avm_memcell* m)
-
 {
     assert(m && m->type == USERFUNC_M);
-    return "Function: " + *(m->data.funcVal.id);
-    /* May need to elaborate. */
+    return "Function: " + *(m->data.funcVal.id); /* + " | Address: " 
+        + std::to_string(m->data.funcVal.address); */
 }
 
 

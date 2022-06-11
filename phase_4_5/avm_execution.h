@@ -14,7 +14,7 @@ std::string libfuncs_getused (unsigned index);
 avm_memcell* avm_translate_operand (vmarg* arg, avm_memcell* reg);
 
 #define N 4096
-#define AVM_MAX_INSTRUCTIONS (unsigned) NOP_V
+#define AVM_MAX_INSTRUCTIONS  NOP_V
 #define AVM_NUMACTUALS_OFFSET   +4
 #define AVM_SAVEDPC_OFFSET      +3
 #define AVM_SAVEDTOP_OFFSET     +2
@@ -48,6 +48,7 @@ void execute_funcexit (instruction*);
 void execute_newtable (instruction*);
 void execute_tablegetelem (instruction*);
 void execute_tablesetelem (instruction*);
+void execute_jump(instruction*);
 void execute_nop (instruction*);
 
 typedef void (*execute_func_t)(instruction*);
@@ -106,6 +107,12 @@ typedef bool (*cmp_func_t) (avm_memcell* rv1,avm_memcell* rv2);
 /* dispatcher for comparison funcs */
 void execute_comparison (instruction* instr);
 
+#define execute_jeq execute_comparison
+#define execute_jne execute_comparison
+#define execute_jle execute_comparison
+#define execute_jge execute_comparison
+#define execute_jlt execute_comparison
+#define execute_jgt execute_comparison
 
 /* tables execution instrs */
 

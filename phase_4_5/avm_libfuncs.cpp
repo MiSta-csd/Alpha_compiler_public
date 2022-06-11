@@ -1,56 +1,22 @@
 #include "avm_libfuncs.h"
 #include "avm_auxiliary.h"
+#include "avm_mem_structs.h"
 #include <cassert>
+#include <cmath>
 
 extern unsigned totalActuals;
+extern avm_memcell reg_RETVAL;
+extern unsigned topsp;
+extern avm_memcell stack[AVM_STACKSIZE];
+extern unsigned char   executionFinished;
+extern unsigned        pc;
+extern unsigned        currLine;
+extern unsigned        codeSize;
+extern instruction*    code;
+extern unsigned    top, topsp;
 
-// libPair* new_libPair(char* id, library_func_t addr)
-// {
-//     libPair* new_pair;
-//     new_pair = (libPair*)malloc(sizeof(libPair));
-//     new_pair->name = id;
-//     new_pair->lib_function = addr;
-//     new_pair->next = NULL;
-//     return new_pair;
-// };
-
-unsigned int avm_string2hash(char *key)
-{
-    assert(key != NULL);
-
-    int i;
-    int string_len = strlen(key);
-
-    int g = 31;
-    unsigned int hash = 0;
-    for(i = 0; i < string_len; i++)
-    {
-        hash = g * hash + key[i];
-    }
-
-    return hash;
-}
-
-int avm_hash2index(unsigned int hash)
-{
-    int index;
-
-    index = hash % AVM_TABLE_HASHSIZE;
-    if(index >= AVM_TABLE_HASHSIZE)
-    {
-        index = avm_hash2index(index);
-    }
-
-    assert(index >= 0 && index < AVM_TABLE_HASHSIZE);
-
-    return index;
-}
-
-int avm_hash(char *key)
-{
-    int hash = avm_string2hash(key);
-    return avm_hash2index(hash);
-}
+//                 <          libPair          >
+std::unordered_map <std::string, library_func_t> libFuncHashTable;
 
 void libfunc_print (void){
     unsigned n = avm_totalactuals();
@@ -83,6 +49,22 @@ void handleString(std::string input){
     reg_RETVAL.data.strVal = new std::string(input);
 }
 
+bool errorTable(avm_memcell t){
+    if(t.type != TABLE_M){
+		avm_error("Error, expected table type argument.");
+        return true;
+    }
+    return false;
+}
+
+bool errorArg(std::string funcname){
+    if(avm_totalactuals() != 1){
+		avm_error("Error: one argument, (not "+ std::to_string(avm_totalactuals()) +") expected in '"+ funcname +"'!\n");
+        return true;
+    }
+    return false;
+}
+
 void libfunc_input(void)
 {
     std::string input;
@@ -111,102 +93,204 @@ void libfunc_input(void)
 
 void avm_tablesetelem(avm_table *table, avm_memcell* index, avm_memcell* content);
 
-void libfunc_objectmemberkeys(avm_table t)
+void libfunc_objectmemberkeys(void)
 {
-    avm_table new_t;
-    double i=0;
+    avm_memcell *actual = avm_getactual(0);
+	avm_table *actual_table = actual->data.tableVal;
+    if (!errorTable(*actual)){
+        avm_table new_t;
+        double i=0;
+        for (auto x : *actual_table->strIndexed){
+            new_t.numIndexed->insert(std::make_pair(i, x.second));
+            i++;
+        }
 
-    for (auto x : *t.strIndexed){
-        new_t.numIndexed->insert(std::make_pair(i, x.second));
-        i++;
+        for (auto x : *actual_table->numIndexed){
+            new_t.numIndexed->insert(std::make_pair(i, x.second));
+            i++;
+        }
+        
+        for (auto x : *actual_table->funcIndexed){
+            new_t.numIndexed->insert(std::make_pair(i, x.second));
+            i++;
+        }
+        for (auto x : *actual_table->trollIndexed){
+            new_t.numIndexed->insert(std::make_pair(i, x.second));
+            i++;
+        }
+        avm_memcellclear(&reg_RETVAL);
+        reg_RETVAL.type = TABLE_M;
+        reg_RETVAL.data.tableVal = &new_t;
     }
-
-    for (auto x : *t.numIndexed){
-        new_t.numIndexed->insert(std::make_pair(i, x.second));
-        i++;
-    }
-    
-    for (auto x : *t.funcIndexed){
-        new_t.numIndexed->insert(std::make_pair(i, x.second));
-        i++;
-    }
-    for (auto x : *t.trollIndexed){
-        new_t.numIndexed->insert(std::make_pair(i, x.second));
-        i++;
-    }
-
-	avm_memcellclear(&reg_RETVAL);
-	reg_RETVAL.type = TABLE_M;
-    reg_RETVAL.data.tableVal = &new_t;
 }
 
-// library_func_t avm_getlibraryfunc(std::string id)
-// {
-// 	assert(id != "");// kostas manip
-// 	// assert(lib_h_table);// lib_h_table undeclared
+void libfunc_objecttotalmembers(void){
+    if(!errorArg("objecttotalmembers")){
+        avm_memcell *actual = avm_getactual(0);
+		avm_table *actual_table = actual->data.tableVal;
+        if (!errorTable(*actual)){
+            avm_memcellclear(&reg_RETVAL);
+		    reg_RETVAL.type = NUMBER_M;
+		    reg_RETVAL.data.numVal = actual_table->avm_table_elem_count();
+        }
+    }
+}
 
-//     unsigned int index = avm_hash(id);
-// 	assert(index < AVM_TABLE_HASHSIZE);
-//     // libPair* iterator = lib_h_table->pairs[index];
+void libfunc_objectcopy(void){
+    avm_memcell *actual = avm_getactual(0);
+	avm_table *actual_table = actual->data.tableVal;
+    if (!errorTable(*actual)){
+        avm_memcellclear(&reg_RETVAL);
+	    reg_RETVAL.type = TABLE_M;
+        reg_RETVAL.data.tableVal = actual_table;
+    }
+}   
 
-// 	if(iterator == NULL)
-// 		return NULL;
+void libfunc_totalarguments(void){
+    unsigned int p_topsp = avm_get_envvalue(topsp + AVM_SAVEDTOPSP_OFFSET);
+    avm_memcellclear(&reg_RETVAL);
+    if(!p_topsp)
+    {
+        avm_error("'totalarguments' called outside a function.\n");
+        reg_RETVAL.type = NIL_M;
+    }
+    else{
+        reg_RETVAL.type = NUMBER_M;
+        reg_RETVAL.data.numVal = avm_totalactuals();
+    }
+}
 
-// 	while(iterator)
-// 	{
-// 		if(strcmp(iterator->name,id) == 0){
-// 			return iterator->lib_function;
-// 		}
-// 		iterator = iterator->next;
-// 	}
-
-//     return NULL;
-// }
-
-
-// void avm_calllibfunc(std::string id){
-//     library_func_t f = avm_getlibraryfunc(id);
-//     if(!f){
-//         avm_error("Unsupported library function " + id + " called!");
-//         executionFinished = 1;
-//     }
-//     else{
-// 		topsp = top;
-// 		totalActuals = 0;
-// 		(*f)();
-// 		if(!executionFinished)
-// 			execute_funcexit((instruction * )0);
-//     }
-// }
+void libfunc_argument(void) {
+    if (!errorArg("argument")) {
+        unsigned int p_topsp = avm_get_envvalue(topsp + AVM_SAVEDTOPSP_OFFSET);
+        avm_memcellclear(&reg_RETVAL);
+        if(!p_topsp)
+        {
+            avm_error("'argument' called outside a function.\n");
+            reg_RETVAL.type = NIL_M;
+        }
+        else {
+            if (avm_getactual(0)->type != NUMBER_M){
+                if ((int)avm_getactual(0)->data.numVal <= avm_totalactuals()){
+                    avm_assign(&reg_RETVAL, &stack[p_topsp + AVM_STACKENV_SIZE + (int)avm_getactual(0)->data.numVal]);
+                }else{
+                    avm_error("Argument index exceeds total arguments in 'argument' library function call.\n");
+                }
+            }else{
+                avm_error("Argument of library function 'argument' is not a valid number, thus cannot be used as index.\n");
+            }
+        }
+    } 
+}
 
 void libfunc_typeof(void)
 {
-    unsigned n = avm_totalactuals();
-
-    if(n != 1)
-        avm_error("Error: one argument, (not "+ std::to_string(n) +") expected in 'typeof'!\n");
-    else
-	{
-		avm_memcellclear(&reg_RETVAL);
+   if(!errorArg("typeof")){
+    	avm_memcellclear(&reg_RETVAL);
 		reg_RETVAL.type = STRING_M;
 		reg_RETVAL.data.strVal = new std::string(typeStrings[avm_getactual(0)->type]);
-	}
+   }
 }
 
-void libfunc_totalarguments(void)
+void libfunc_strtonum(void){
+    if (!errorArg("strtonum")){
+        if(avm_getactual(0)->type != STRING_M){
+			avm_error("Error: strtonum argument '" + avm_tostring(avm_getactual(0)) + "'is not a string.");
+		}else{
+            avm_memcellclear(&reg_RETVAL);
+            if (isNumber(*avm_getactual(0)->data.strVal) == 0){
+                reg_RETVAL.type = NIL_M;
+            }else{
+                reg_RETVAL.type = NUMBER_M;
+                reg_RETVAL.data.numVal = stod(*avm_getactual(0)->data.strVal);
+            }
+        }
+    }
+}
+
+void libfunc_sqrt(void)
 {
-    unsigned int p_topsp = avm_get_envvalue(topsp + AVM_SAVEDTOPSP_OFFSET);
-    avm_memcellclear(&reg_RETVAL);
-
-	if(!p_topsp)
-	{
-		avm_error("'totalarguments' called outside a function!\n");
-		reg_RETVAL.type = NIL_M;
-	}
-	else
-	{
-		reg_RETVAL.type = NUMBER_M;
-		reg_RETVAL.data.numVal = avm_get_envvalue(p_topsp + AVM_NUMACTUALS_OFFSET);
+	if (!errorArg("sqrt")){
+        if (avm_getactual(0)->type == NUMBER_M){
+            avm_memcellclear(&reg_RETVAL);
+            double sqrtv = std::sqrt(avm_getactual(0)->data.numVal);
+            if(std::isnan(sqrtv)){
+                reg_RETVAL.type = NIL_M;
+            }else{
+                reg_RETVAL.type = NUMBER_M;
+                reg_RETVAL.data.numVal = sqrtv;
+            }
+        }else{
+            avm_error("Error: sqrt argument '" + avm_tostring(avm_getactual(0)) + "'is not a number.");
+        }
 	}
 }
 
+void libfunc_cos(void)
+{
+	if (!errorArg("cos")){
+        if (avm_getactual(0)->type == NUMBER_M){
+            avm_memcellclear(&reg_RETVAL);
+            double cosv = std::cos(avm_getactual(0)->data.numVal);
+            if(std::isnan(cosv)){
+                reg_RETVAL.type = NIL_M;
+            }else{
+                reg_RETVAL.type = NUMBER_M;
+                reg_RETVAL.data.numVal = cosv;
+            }
+        }else{
+            avm_error("Error: sqrt argument '" + avm_tostring(avm_getactual(0)) + "'is not a number.");
+        }
+	}
+}
+
+void libfunc_sin(void)
+{
+	if (!errorArg("sin")){
+        if (avm_getactual(0)->type == NUMBER_M){
+            avm_memcellclear(&reg_RETVAL);
+            double sinv = std::sin(avm_getactual(0)->data.numVal);
+            if(std::isnan(sinv)){
+                reg_RETVAL.type = NIL_M;
+            }else{
+                reg_RETVAL.type = NUMBER_M;
+                reg_RETVAL.data.numVal = sinv;
+            }
+        }else{
+            avm_error("Error: sqrt argument '" + avm_tostring(avm_getactual(0)) + "'is not a number.");
+        }
+	}
+}
+
+
+library_func_t avm_getlibraryfunc(std::string id)
+{
+	if (libFuncHashTable.find(id) == libFuncHashTable.end()) {// not found
+        return NULL;
+    }
+    return libFuncHashTable[id];
+}
+
+void avm_calllibfunc(std::string id) {
+    library_func_t f = avm_getlibraryfunc(id);
+    if(!f) {
+        avm_error("Unsupported library function " + id + " called!");
+        executionFinished = 1;
+    }
+    else {
+		(*f)();
+		if(!executionFinished)
+			execute_funcexit((instruction * )0);
+        topsp = top;
+		totalActuals = 0;
+    }
+}
+
+void avm_init_libfuncs (void) {
+    libFuncHashTable["print"] = libfunc_print;
+    libFuncHashTable["input"] = libfunc_input;
+    libFuncHashTable["objectmemberkeys"] = libfunc_objectmemberkeys;
+    libFuncHashTable["objecttotalmembers"] = libfunc_objecttotalmembers;
+    libFuncHashTable["objectcopy"] = libfunc_objectcopy;
+    libFuncHashTable["totalarguments"] = libfunc_objectcopy;
+}

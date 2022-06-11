@@ -4,7 +4,7 @@
 						  Computer Science Department
 					CS340 - Compilers ~ Project Spring 2022
 					   Constantine Damaskinakis - csd3755
-						  Minos Stavrakakis - csd4120
+						  Minoas Stavrakakis - csd4120
 						Demetrious Grammenidis - csd3933
 
  */
@@ -1034,7 +1034,7 @@ returnstmt 	: RETURN SEMICOLON 			{
 
 extern void validate_comments();
 
-int yyerror(std:: string err){
+int yyerror(std:: string err) {
 	std::cout << "\033[31m" << "ERROR " << "\033[37m" <<
 	"in line " << yylineno << " : " << err << "\n";
 	hasError = true;
@@ -1046,7 +1046,7 @@ int yyerror(std:: string err){
 
 int main(int argc, char** argv) {
 	std::cout << "\033[37m";// output is colored white
-	std::string outname = "alpha.bin";
+	std::string outname = "alpha.abc";
 	int opt, num_files;
 	FILE **files = NULL;
 
@@ -1101,7 +1101,7 @@ int main(int argc, char** argv) {
 		}
 		generate_binary_readable(outname);
 		generate_binary(outf);
-		/* print_quads(outname); */
+		/* print_quads(); */
 		print_instructions();// for debug
 	}else {
 		yyparse();
@@ -1116,7 +1116,7 @@ int main(int argc, char** argv) {
 			}
 			generate_binary_readable(outname);
 			generate_binary(outf);
-			/* print_quads(outname); */
+			/* print_quads(); */
 			print_instructions();
 			/* avm_table* mytesttable;
 			avm_memcell* tempcell;
@@ -1127,8 +1127,7 @@ int main(int argc, char** argv) {
 			tempcell->data.strVal = new std::string("Mpamphs");
 			avm_tablesetelem(mytesttable, tempcell, tempcell2);
 			libfunc_objectmemberkeys(*mytesttable); */
-			
-			
+					
 		} else {
 			std::cout << "One or more errors on compilation, aborting... \n";
 			return 1;
