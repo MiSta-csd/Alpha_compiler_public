@@ -109,15 +109,16 @@ void execute_comparison (instruction* instr);
 
 /* tables execution instrs */
 
-avm_memcell*    avm_tablegetelem (
+extern avm_memcell*    avm_tablegetelem (
                                     avm_table* table,
                                     avm_memcell* index
                                  );
-void            avm_tablesetelem (
+extern void            avm_tablesetelem (
                                     avm_table*  table,
                                     avm_memcell* index,
                                     avm_memcell* content
                                  );
-void            execute_newtable (instruction* instr);
+/* already declared above ^ */                                
+/* void            execute_newtable (instruction* instr);
 void            execute_tablegetelem (instruction* instr);
-void            execute_tablesetelem (instruction* instr);
+void            execute_tablesetelem (instruction* instr); */

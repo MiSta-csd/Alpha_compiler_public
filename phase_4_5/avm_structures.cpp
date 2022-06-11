@@ -303,7 +303,7 @@ extern std::vector<std::unordered_map<std::string, std::vector<st_entry>>> symbo
 
 void print_file_identifiers() {
 	unsigned magic_num = 340200501;
-	unsigned globaloffset = programVarOffset-1;
+	unsigned globaloffset = programVarOffset;
 	print_line();
 	std::cout << "magic_num: " << magic_num << std::endl << "globaloffset: " <<  globaloffset << std::endl;
 	for (auto map : symbol_table) {
@@ -381,6 +381,7 @@ void generate_binary_readable (std::string outname) {
 	fprintf(outf, "\n");
 
 	// instructions
+	fprintf(outf, "%lu\n", instr_vec.size());
 	for (int i = 0; i < instr_vec.size(); ++i) {
 		fprintf(outf, "%d", instr_vec[i]->opcode);
 		if(instr_vec[i]->result.val != (unsigned)-1) {
@@ -405,7 +406,7 @@ void generate_binary(FILE *outf) {
 
 	fwrite(&magic_num, sizeof(unsigned), 1, outf);
 	// fwrite("\n", 1, 1, outf);
-	unsigned globalOffset = programVarOffset-1;
+	unsigned globalOffset = programVarOffset;
 	fwrite(&globalOffset, sizeof(unsigned), 1, outf);
 	// fwrite("\n", 1, 1, outf);
 	for (int i = 0; i < symbol_table.size(); ++i) {
@@ -465,6 +466,8 @@ void generate_binary(FILE *outf) {
 	// fwrite("\n", 1, 1, outf);
 
 	// instructions
+	unsigned long sz = instr_vec.size();
+	fwrite(&sz, sizeof(unsigned long), 1, outf);
 	for (int i = 0; i < instr_vec.size(); ++i) {
 		fwrite(&instr_vec[i]->opcode, sizeof(enum vmopcode), 1, outf);
 		if(instr_vec[i]->result.val != (unsigned)-1)

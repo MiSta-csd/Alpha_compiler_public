@@ -504,11 +504,6 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 											st_entry_tmp["r8"] = st_lookup(*$1);
 											if(!st_entry_tmp["r8"]) {
 												$$ = lvalue_expr (st_insert(*$1, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR));
-												if (returncurrentspace() == 0){
-															incprogramVarOffset();
-												}else if(returncurrentspace() == 2){
-															incfunctionLocalOffset();
-												}
 											}else if( (st_entry_tmp["r8"]->type == LOCAL_VAR || (st_entry_tmp["r8"]->type == FORMAL_ARG
 												&& st_entry_tmp["r8"]->scope != st_get_scope()))
 													&& !func_stack.empty() && 
@@ -532,11 +527,9 @@ lvalue		: ID						{	print_rules("8.1 lvalue -> ID");
 											}
 											else{
 												$$ = lvalue_expr (st_insert(*$2, (st_get_scope() == 0) ? GLOBAL_VAR : LOCAL_VAR));
-												if (returncurrentspace() == 0){
-															incprogramVarOffset();
-												}else if(returncurrentspace() == 2){
-															incfunctionLocalOffset();
-												}
+												// if(!func_stack.empty()) {
+												// 	++func_stack.top()->totalLocals;													
+												// }
 											}
 										}
 			| COLONCOLON ID				{
@@ -740,19 +733,11 @@ funcname    : ID						{
 											$$ = $1;
 											st_entry_tmp["r19"] = st_lookup(*$$);
 											if((!st_entry_tmp["r19"]) ||
-												( (st_entry_tmp["r19"]->scope < st_get_scope())
-												&& (st_entry_tmp["r19"]->type != LIB_FUNC) ) )
-											{
+													( (st_entry_tmp["r19"]->scope < st_get_scope())
+													&& (st_entry_tmp["r19"]->type != LIB_FUNC) ) ) {
 												st_entry_tmp["r19"] = st_insert(*$$, USER_FUNC);
-												if (returncurrentspace() == 0){
-															incprogramVarOffset();
-												}else if(returncurrentspace() == 2){
-															incfunctionLocalOffset();
-												} // modified 
-												// func_stack.push(st_entry_tmp["r19"]);// kaneis push sto funcprefix
 											}
-											else
-											{
+											else {
 												if(st_entry_tmp["r19"]->type == USER_FUNC) {// kseroume oti einai locally defined
 													yyerror("redefinition of user function defined in line "
 													+ std::to_string(st_entry_tmp["r19"]->line));
@@ -770,9 +755,6 @@ funcname    : ID						{
 													/* $$ = NULL; */
 												}
 												else {
-													yyerror("UNHANDLED CASE ?\nonoma: " + st_entry_tmp["r19"]->name +
-													" typos: " + std::to_string(st_entry_tmp["r19"]->type) + 
-													" grammh: " + std::to_string(st_entry_tmp["r19"]->line));
 													assert(0);
 												}
 												st_entry_tmp["r19"] = NULL;
@@ -782,11 +764,6 @@ funcname    : ID						{
 											$$ = new std::string();
 											*$$ = st_godfather();
 											st_insert(*$$, USER_FUNC);
-											if (returncurrentspace() == 0){
-															incprogramVarOffset();
-												}else if(returncurrentspace() == 2){
-															incfunctionLocalOffset();
-											}
 										}
 			;
 
@@ -811,12 +788,9 @@ funcprefix  : FUNCTION funcname			{
 			;
 
 funcargs:   LPAREN idlist RPAREN  		{
-											$$ = $2;										
-											// if(st_entry_tmp["r19"]){
-											// 	offload_arglist(st_entry_tmp["r19"]);
-											// }
+											$$ = $2;
 											st_decrease_scope();
-											enterscopespace();			
+											enterscopespace();	
                                 		}
             ;						
 funcbody    : block						{
@@ -830,7 +804,7 @@ funcdef		: funcprefix funcargs funcbody
 		 								{	
 											if(!hasError) {
 												$1->totalLocals = getTotalLocals();
-
+												$1->totalArgs = getTotalArgs();
 												exitscopespace();
 												popscopeoffsetstack();
 												patchlist($3, get_next_quad());
@@ -841,7 +815,6 @@ funcdef		: funcprefix funcargs funcbody
 												if(st_entry_tmp["r19"]) {
 													func_stack.pop();
 												}
-												std::cout << $1->iaddress;
 												patchlabel($1->iaddress, get_next_quad());
 											}
 										}
@@ -875,14 +848,11 @@ idlist		: ID 						{
 											}
 											else {
 												st_entry_tmp["r21"] = st_insert(*$1, FORMAL_ARG);
-												// load_2_arglist(st_entry_tmp["r21"]);
+												// ++st_entry_tmp["r21"]->totalArgs;
+												incformalArgOffset();
 											}
-											incformalArgOffset();
-											$$ = currscopeoffset();
-											$$ = st_get_scope();// kostas autosxediasmos gia na epistrefoume kati
-											/* Afto pou egrapse aftos den doulevei? Oxi to afairese
-											ok
-											 */ //kia sthn 902 to idio // :()
+											
+											// $$ = poop
 										}
 			| idlist COMMA ID 			{
 											print_rules("21.2 idlist -> idlist , ID");
@@ -896,16 +866,14 @@ idlist		: ID 						{
 											}
 											else{
 												st_entry_tmp["r21"] = st_insert(*$3, FORMAL_ARG);
-												// load_2_arglist(st_entry_tmp["r21"]);
+												// ++st_entry_tmp["r21"]->totalArgs;
+												incformalArgOffset();
 											}
-											incformalArgOffset();
-											$$ = currscopeoffset();
-											$$ = st_get_scope();
+											// $$ = poop
 										}
 			|							{
 											print_rules("21.3 empty id_list");
-											$$ = currscopeoffset();
-											$$ = st_get_scope(); // aytosxediasmos epishs
+											// $$ = poop
 										}
 			;
 

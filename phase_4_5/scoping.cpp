@@ -108,3 +108,7 @@ bool scopeOffsetStackEmpty(){
 unsigned getTotalLocals(){
     return functionLocalOffset;
 }
+
+unsigned getTotalArgs(){
+    return formalArgOffset;
+}

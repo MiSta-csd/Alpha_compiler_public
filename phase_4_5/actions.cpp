@@ -18,7 +18,7 @@ st_entry* newtemp() {
 	st_tmp_entry = st_lookup(tmp_name, st_get_scope());
 	if(st_tmp_entry)
 		return st_tmp_entry;
-	incprogramVarOffset();
+	
 	return (st_tmp_entry = st_insert(tmp_name, LOCAL_VAR));
 }
 

@@ -111,26 +111,33 @@ void libfunc_input(void)
 
 void avm_tablesetelem(avm_table *table, avm_memcell* index, avm_memcell* content);
 
-void libfunc_objectmemberkeys(void)
+void libfunc_objectmemberkeys(avm_table t)
 {
-    avm_memcell *actual = avm_getactual(0);
-	avm_table *actual_table = actual->data.tableVal;
+    avm_table new_t;
+    double i=0;
 
-	if(actual->type != TABLE_M)
-		avm_error("s", "Error: Expected table type argument");
+    for (auto x : *t.strIndexed){
+        new_t.numIndexed->insert(std::make_pair(i, x.second));
+        i++;
+    }
+
+    for (auto x : *t.numIndexed){
+        new_t.numIndexed->insert(std::make_pair(i, x.second));
+        i++;
+    }
+    
+    for (auto x : *t.funcIndexed){
+        new_t.numIndexed->insert(std::make_pair(i, x.second));
+        i++;
+    }
+    for (auto x : *t.trollIndexed){
+        new_t.numIndexed->insert(std::make_pair(i, x.second));
+        i++;
+    }
 
 	avm_memcellclear(&reg_RETVAL);
-	avm_memcellclear(&reg_AX); //maybe dont do this?
 	reg_RETVAL.type = TABLE_M;
-	reg_RETVAL.data.tableVal = avm_tablenew();
-	avm_table *ret_table = reg_RETVAL.data.tableVal;
-
-	int i;
-	reg_AX.type = NUMBER_M;
-	for(i = 0; i < actual_table->total; i++){
-		reg_AX.data.numVal = i;
-		avm_tablesetelem(ret_table, &reg_AX, actual_table->keys[i]);
-	}
+    reg_RETVAL.data.tableVal = &new_t;
 }
 
 library_func_t avm_getlibraryfunc(std::string id)
@@ -160,7 +167,7 @@ library_func_t avm_getlibraryfunc(std::string id)
 void avm_calllibfunc(std::string id){
     library_func_t f = avm_getlibraryfunc(id);
     if(!f){
-        avm_error("Unsupported library function %s called!", id);
+        avm_error("Unsupported library function " + id + " called!");
         executionFinished = 1;
     }
     else{
@@ -177,7 +184,7 @@ void libfunc_typeof(void)
     unsigned n = avm_totalactuals();
 
     if(n != 1)
-        avm_error("Error: one argument, (not %d) expected in 'typeof'!\n", n);
+        avm_error("Error: one argument, (not "+ std::to_string(n) +") expected in 'typeof'!\n");
     else
 	{
 		avm_memcellclear(&reg_RETVAL);

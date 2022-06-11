@@ -1,8 +1,10 @@
 #include "avm_table.h"
+#include "avm_auxiliary.h"
+#include "avm_execution.h"
 #include "avm_mem_structs.h"
 #include <assert.h>
 #include <string>
-#include <unordered_map>
+#include <unordered_map>    /// NAi comple f
 
 avm_table::avm_table ()
 {
@@ -55,6 +57,12 @@ unsigned avm_table::avm_table_elem_count()
     return res;
 }
 
+void memclear_table (avm_memcell* m)
+{
+    assert(m->data.tableVal);
+    avm_tabledecrefcounter(m->data.tableVal);
+}
+
 avm_memcell*    avm_tablegetelem (
                                     avm_table* table,
                                     avm_memcell* index
@@ -73,8 +81,7 @@ avm_memcell*    avm_tablegetelem (
                 return new avm_memcell();
             }
             else
-            return &(table->numIndexed->at(index->data.numVal));// isodynamo fainetai                                    
-            // to allaksa se key double kai paizei profanws                                 
+            return &(table->numIndexed->at(index->data.numVal));
         }
         case STRING_M:          
         {
@@ -150,99 +157,114 @@ avm_memcell*    avm_tablegetelem (
     }
 }
 
-/* void            avm_tablesetelem (
+void            avm_tablesetelem (
                                     avm_table*  table,
                                     avm_memcell* index,
                                     avm_memcell* content
                                  )
 {
-    assert(table && index);
+    assert(table && index && content);
+    assert(content->type != UNDEF_M);
 
     switch (index->type)
     {
         case NUMBER_M:
         {
+            // Following check happens in execute assign so unneeded!
+            /* if ((*(table->numIndexed))[index->data.numVal].type == TABLE_M) 
+            {
+                avm_tabledecrefcounter((*(table->numIndexed))[index->data.numVal].data.tableVal);
+            } */
+                
+            /* check if exists and if it does clear memcell */
             std::unordered_map<double,avm_memcell>::const_iterator got =
                 table->numIndexed->find (index->data.numVal);
-            if (got == table->numIndexed->end())
+            if (!(got == table->numIndexed->end()))
+                avm_memcellclear(&(table->numIndexed->at(index->data.numVal)));
+
+            /* then procced with assignment */
+            avm_memcell* m = new avm_memcell();
+            avm_assign(m, content); 
+            (*(table->numIndexed))[index->data.numVal] = *m;
+            table->avm_table_elem_count();
+            // Following check happens in execute assign so unneeded!
+            /* if (content->type == TABLE_M)
             {
-                return new avm_memcell();
-            }
-            else
-            return &(table->numIndexed->at(index->data.numVal));// isodynamo fainetai                                    
-            // to allaksa se key double kai paizei profanws                                 
+                avm_tableincrefcounter(content->data.tableVal);
+            } */
+            break;
         }
         case STRING_M:          
         {
             std::unordered_map<std::string,avm_memcell>::const_iterator got =
                 table->strIndexed->find (*(index->data.strVal));
             if (got == table->strIndexed->end())
-            {
-                return new avm_memcell();
-            }
-            else
-            return &(table->strIndexed->at((*(index->data.strVal))));
+                avm_memcellclear(&(table->strIndexed->at((*(index->data.strVal)))));
+
+            avm_memcell* m = new avm_memcell();
+            avm_assign(m, content);
+            (*(table->strIndexed))[*(index->data.strVal)] = *m;
+            table->avm_table_elem_count();
+            break;
         }
         case USERFUNC_M:
         {
             std::unordered_map<unsigned,avm_memcell>::const_iterator got =
                 table->funcIndexed->find (index->data.funcVal.address);
             if (got == table->funcIndexed->end())
-            {
-                return new avm_memcell();
-            }
-            else
-            return &(table->funcIndexed->at(index->data.funcVal.address));  
+                avm_memcellclear(&(table->funcIndexed->at(index->data.funcVal.address)));  
+
+            avm_memcell* m = new avm_memcell();
+            avm_assign(m, content);
+            (*(table->funcIndexed))[index->data.funcVal.address] = *m;
+            table->avm_table_elem_count();
+            break;
         }
         case BOOL_M:
         {
             bool b = index->data.boolVal;
             std::string s = (b) ? "true" : "false";
-            
+
             std::unordered_map<std::string,avm_memcell>::const_iterator got =
                 table->trollIndexed->find (s);
             if (got == table->trollIndexed->end())
-            {
-                return new avm_memcell();
-            }
-            else
-            return &(table->trollIndexed->at(s));   
+                avm_memcellclear(&(table->trollIndexed->at(s)));
+            
+            avm_memcell* m = new avm_memcell();
+            avm_assign(m, content);
+            (*(table->trollIndexed))[s] = *m;
+            table->avm_table_elem_count();
+            break;
         }
         case LIBFUNC_M:
         {
             std::unordered_map<std::string,avm_memcell>::const_iterator got =
                 table->trollIndexed->find (*(index->data.libfuncVal));
             if (got == table->trollIndexed->end())
-            {
-                return new avm_memcell();
-            }
-            else
-            return &(table->trollIndexed->at((*(index->data.libfuncVal))));
+                avm_memcellclear(&(table->trollIndexed->at((*(index->data.libfuncVal)))));
+            
+            avm_memcell* m = new avm_memcell();
+            avm_assign(m, content);
+            (*(table->trollIndexed))[*(index->data.libfuncVal)] = *m;
+            table->avm_table_elem_count();
+            break;
         }
         case NIL_M:
         {
-            std::string s = "nil";
-            
-            std::unordered_map<std::string,avm_memcell>::const_iterator got =
-                table->trollIndexed->find (s);
-            if (got == table->trollIndexed->end())
-            {
-                return new avm_memcell();
-            }
-            else
-            return &(table->trollIndexed->at(s));   
+            // We just ignore insertion!
+            /* std::string s = "nil";
+            (*(table->trollIndexed))[s] = *content;
+            table->avm_table_elem_count(); */
+            break;
         }
         case UNDEF_M:
         {
-            avm_error("Element cannot be cannot have UNDEF type!");
-            return new avm_memcell();   // Added to pacify compiler :/
+            avm_error("Cannot hash UNDEF type to table element!");
             break;
         }
 
         default:
             assert(0);
-            return new avm_memcell(); // Added to pacify compiler :/
             break;
     }
 }
- */

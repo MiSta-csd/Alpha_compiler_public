@@ -1,6 +1,9 @@
 hashmap_parser: parser.cpp lex.yy.cpp kostas_sym.cpp quads.cpp actions.cpp scoping.cpp avm_structures.cpp #avm_table.cpp
 	g++ lex.yy.cpp parser.cpp kostas_sym.cpp quads.cpp actions.cpp scoping.cpp avm_structures.cpp -o $@ -g
 
+vm: vm.cpp vm_elegance.cpp
+	g++ vm.cpp vm_elegance.cpp -o alpha_vm
+
 parser: parser.cpp lex.yy.cpp symtable.cpp quads.cpp actions.cpp
 	g++ lex.yy.cpp parser.cpp symtable.cpp quads.cpp actions.cpp scoping.cpp -o $@ -g
 

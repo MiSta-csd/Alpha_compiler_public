@@ -1,6 +1,8 @@
 #include "avm_auxiliary.h"
 #include <stdlib.h>
 
+extern void memclear_table (avm_memcell* m);
+
 memclear_func_t memclearFuncs[] = {
     0, /*  number */
     memclear_string,
@@ -12,7 +14,16 @@ memclear_func_t memclearFuncs[] = {
     0
 };
 
-std::string typeStrings[] = {"number", "string", "bool", "table", "userfunc", "libfunc", "nil", "undef"};
+std::string typeStrings[] = {
+    "number", 
+    "string", 
+    "bool", 
+    "table", 
+    "userfunc", 
+    "libfunc", 
+    "nil", 
+    "undef"
+};
 
 bool number_tobool (avm_memcell* m) { return m->data.numVal != 0; }
 bool string_tobool (avm_memcell* m) { return !(m->data.strVal->empty()); }
@@ -27,13 +38,6 @@ void memclear_string (avm_memcell* m)
 {
     assert(m->data.strVal);
     delete m->data.strVal;
-}
-
-
-void memclear_table (avm_memcell* m)
-{
-    assert(m->data.tableVal);
-    avm_tabledecrefcounter(m->data.tableVal);
 }
 
 tobool_func_t toboolFuncs[] = {
@@ -164,7 +168,7 @@ std::string userfunc_tostring (avm_memcell* m)
 
 {
     assert(m && m->type == USERFUNC_M);
-    return "Function: " + m->data.funcVal.id;
+    return "Function: " + *(m->data.funcVal.id);
     /* May need to elaborate. */
 }
 

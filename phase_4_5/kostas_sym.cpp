@@ -37,9 +37,16 @@ st_entry *st_insert(std::string name, enum st_entry_type type) {
 			.offset = ((space == programvar && type != LIB_FUNC)?sym_offset_counter++:0),
 			.space = space
 	};
+
 	if(symbol_table.size() == scope)
 		symbol_table.push_back(std::unordered_map<std::string, std::vector<st_entry>>());
+	
 	symbol_table[scope][name].push_back(*new_entry);// works even if bucket~key==name is empty
+	if (returncurrentspace() == 0 && type != LIB_FUNC){
+		incprogramVarOffset();
+	}else if(returncurrentspace() == 2){
+		incfunctionLocalOffset();
+	}
 	return new_entry;
 }
 
@@ -103,8 +110,8 @@ st_entry *st_lookup(std::string name_input, unsigned int scope_input) {
 
 int st_hide(unsigned int scope_input) {
 	assert(scope_input > 0);
-	for (auto map_pair : symbol_table[scope_input]) {
-		map_pair.second.end()->active = false;// putania??Only last entry of vec is to be checked
+	for (auto &pair : symbol_table[scope_input]) {
+		pair.second.back().active = false;
 	}
 	return 0;
 }
@@ -150,7 +157,9 @@ void st_print_table() {
 		for (auto pair : symbol_table[i]) {
 			for (int j = 0; j < pair.second.size(); ++j) {
 				std::cout << "\"" << pair.first << "\" [" << st_type_print[pair.second[j].type] << "] "
-				<< "(line " << pair.second[j].line << ") (scope " << pair.second[j].scope << ")\n";
+				<< "(line " << pair.second[j].line << ") (scope " << pair.second[j].scope << ")" <<
+				(pair.second[j].type == USER_FUNC? pair.second[j].totalArgs : 0) << " " <<
+				(pair.second[j].type == USER_FUNC? pair.second[j].totalLocals: 0) << " " << std::endl;
 			}
 		}
 		print_line();

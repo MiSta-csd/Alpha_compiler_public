@@ -37,6 +37,8 @@ void            avm_tableincrefcounter (avm_table* t);
 void            avm_tabledecrefcounter (avm_table* t);
 /* void            avm_tablebucketsinit (avm_table_bucket** p); // Savvidis impl */
 
+void memclear_table (avm_memcell* m);
+
 /* could have been class methods but choose to do it savvidis way */
 avm_memcell*    avm_tablegetelem (
                                     avm_table* table,

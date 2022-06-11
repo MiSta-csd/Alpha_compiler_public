@@ -19,8 +19,6 @@ struct function_offsets
     unsigned curScopeSpace = 0;
 } typedef function_offsets;
 
-
-
 void resetformalargsoffset(void);
 
 void resetfunctionlocalsoffset(void);
@@ -50,3 +48,5 @@ void incfunctionLocalOffset();
 bool scopeOffsetStackEmpty();
 
 unsigned returncurrentspace();
+
+unsigned getTotalArgs();

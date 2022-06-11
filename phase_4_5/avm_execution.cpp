@@ -1,4 +1,8 @@
 #include "avm_execution.h"
+#include "avm_auxiliary.h"
+#include "avm_mem_structs.h"
+#include "avm_table.h"
+#include "quads.h"
 
 extern avm_memcell                  stack[AVM_STACKSIZE];
 
@@ -429,6 +433,59 @@ void execute_comparison (instruction* instr){
 
 /* table instrs */
 
-void            execute_newtable (instruction* instr);
-void            execute_tablegetelem (instruction* instr);
-void            execute_tablesetelem (instruction* instr);
+void            execute_newtable (instruction* instr)
+{
+    avm_memcell* lv = avm_translate_operand(&instr->result, (avm_memcell* ) 0);
+    assert(lv && (&stack[N - 1] >= lv && lv > &stack[top] || lv==&reg_RETVAL));
+
+    avm_memcellclear(lv);
+
+    lv->type        = TABLE_M;
+    lv->data.tableVal       = avm_tablenew();
+    avm_tableincrefcounter(lv->data.tableVal);
+}
+
+void            execute_tablegetelem (instruction* instr)
+{
+    avm_memcell* lv = avm_translate_operand(&instr->result, (avm_memcell* ) 0);
+    avm_memcell* t = avm_translate_operand(&instr->arg1, (avm_memcell* ) 0);
+    avm_memcell* i = avm_translate_operand(&instr->arg2, &reg_AX);
+
+    assert(lv && &stack[N-1] >= lv && lv > &stack[top] || lv==&reg_RETVAL);
+    assert(t && &stack[N-1] >= t && t > &stack[top]);
+    assert(i);
+
+    avm_memcellclear(lv);
+    lv->type = NIL_M;   /* Default value */
+
+    if (t->type != TABLE_M) 
+        avm_error("Illegal use of type "+ typeStrings[t->type] +" as table!");
+    else
+    {
+        avm_memcell* content = avm_tablegetelem(t->data.tableVal, i);
+        if (content->type != UNDEF_M)   /* Difference from Savvidis */
+            avm_assign(lv, content);
+        else
+        {
+            std::string ts = avm_tostring(t);
+            std::string is = avm_tostring(i);
+            avm_warning(ts+"["+is+"]"+" not found!");
+        }
+    }
+    
+
+}
+void            execute_tablesetelem (instruction* instr)
+{
+    avm_memcell* t  = avm_translate_operand(&instr->result, (avm_memcell*) 0);    
+    avm_memcell* i  = avm_translate_operand(&instr->arg1, &reg_AX);
+    avm_memcell* c  = avm_translate_operand(&instr->arg2, &reg_BX);
+
+    assert(t && &stack[N-1] >= t && t > &stack[top]);
+    assert(i && c);
+
+    if (t->type != TABLE_M)
+        avm_error("Illegal use of type "+ typeStrings[t->type] +" as table!");
+    else
+        avm_tablesetelem(t->data.tableVal, i, c);
+}
