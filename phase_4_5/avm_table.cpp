@@ -132,7 +132,8 @@ avm_memcell*    avm_tablegetelem (
         }
         case NIL_M:
         {
-            std::string s = "nil";
+            // We ignore this
+            /* std::string s = "nil";
             
             std::unordered_map<std::string,avm_memcell>::const_iterator got =
                 table->trollIndexed->find (s);
@@ -141,7 +142,8 @@ avm_memcell*    avm_tablegetelem (
                 return new avm_memcell();
             }
             else
-            return &(table->trollIndexed->at(s));   
+            return &(table->trollIndexed->at(s));  */
+            return new avm_memcell();
         }
         case UNDEF_M:
         {
