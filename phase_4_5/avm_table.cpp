@@ -34,7 +34,7 @@ void avm_tabledecrefcounter (avm_table* t) {
 }
 
 
-avm_table*      avm_tablenew (void) {
+avm_table* avm_tablenew (void) {
     avm_table* t = new avm_table();
     t->refCounter = 0; /* total becomes set inside ctor */   
     // AVM_WIPEOUT(*t);
@@ -43,7 +43,7 @@ avm_table*      avm_tablenew (void) {
 }
 
 
-void            avm_tabledestroy (avm_table* t)
+void avm_tabledestroy (avm_table* t)
 {
     t->~avm_table();
     

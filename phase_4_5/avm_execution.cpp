@@ -149,6 +149,7 @@ void execute_cycle (void) {
     }
     else {
         assert(pc < AVM_ENDING_PC);
+
         instruction* instr = code + pc;
         assert(
             instr->opcode >= 0 &&
@@ -218,7 +219,7 @@ unsigned avm_get_envvalue(unsigned i) {
 void execute_call (instruction* instr) {
     avm_memcell* func = avm_translate_operand(&instr->result, &reg_AX);
     assert(func);
-	func->data.funcVal.address = instr->result.val;
+	// func->data.funcVal.address = instr->result.val;// svhsimo
     avm_callsaveenvironment();
 
     switch (func->type) {

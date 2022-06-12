@@ -14,6 +14,7 @@ extern unsigned        currLine;
 extern unsigned        codeSize;
 extern instruction*    code;
 extern unsigned    top, topsp;
+extern unsigned totalProgVars;
 
 //                 <          libPair          >
 std::unordered_map <std::string, library_func_t> libFuncHashTable;
@@ -91,36 +92,37 @@ void libfunc_input(void)
     }
 }
 
-void avm_tablesetelem(avm_table *table, avm_memcell* index, avm_memcell* content);
+//void avm_tablesetelem(avm_table *table, avm_memcell* index, avm_memcell* content);
 
 void libfunc_objectmemberkeys(void)
 {
     avm_memcell *actual = avm_getactual(0);
 	avm_table *actual_table = actual->data.tableVal;
     if (!errorTable(*actual)){
-        avm_table new_t;
+
+        avm_table* t = avm_tablenew();
         double i=0;
         for (auto x : *actual_table->strIndexed){
-            new_t.numIndexed->insert(std::make_pair(i, x.second));
+            t->numIndexed->insert(std::make_pair(i, x.second));
             i++;
         }
 
         for (auto x : *actual_table->numIndexed){
-            new_t.numIndexed->insert(std::make_pair(i, x.second));
+            t->numIndexed->insert(std::make_pair(i, x.second));
             i++;
         }
         
         for (auto x : *actual_table->funcIndexed){
-            new_t.numIndexed->insert(std::make_pair(i, x.second));
+            t->numIndexed->insert(std::make_pair(i, x.second));
             i++;
         }
         for (auto x : *actual_table->trollIndexed){
-            new_t.numIndexed->insert(std::make_pair(i, x.second));
+            t->numIndexed->insert(std::make_pair(i, x.second));
             i++;
         }
         avm_memcellclear(&reg_RETVAL);
         reg_RETVAL.type = TABLE_M;
-        reg_RETVAL.data.tableVal = &new_t;
+        reg_RETVAL.data.tableVal = t;
     }
 }
 
@@ -149,7 +151,7 @@ void libfunc_objectcopy(void){
 void libfunc_totalarguments(void){
     unsigned int p_topsp = avm_get_envvalue(topsp + AVM_SAVEDTOPSP_OFFSET);
     avm_memcellclear(&reg_RETVAL);
-    if(!p_topsp)
+    if(p_topsp + totalProgVars + 1 == AVM_STACKSIZE)
     {
         avm_error("'totalarguments' called outside a function.\n");
         reg_RETVAL.type = NIL_M;
@@ -292,5 +294,10 @@ void avm_init_libfuncs (void) {
     libFuncHashTable["objectmemberkeys"] = libfunc_objectmemberkeys;
     libFuncHashTable["objecttotalmembers"] = libfunc_objecttotalmembers;
     libFuncHashTable["objectcopy"] = libfunc_objectcopy;
-    libFuncHashTable["totalarguments"] = libfunc_objectcopy;
+    libFuncHashTable["totalarguments"] = libfunc_totalarguments;
+    libFuncHashTable["typeof"] = libfunc_typeof;
+    libFuncHashTable["strtonum"] = libfunc_strtonum;
+    libFuncHashTable["sqrt"] = libfunc_sqrt;
+    libFuncHashTable["cos"] = libfunc_cos;
+    libFuncHashTable["sin"] = libfunc_sin;
 }

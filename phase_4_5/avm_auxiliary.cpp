@@ -1,6 +1,7 @@
 #include "avm_auxiliary.h"
 #include "avm_mem_structs.h"
 #include <stdlib.h>
+#include <cmath>
 // #include <stdarg.h>
 
 extern avm_memcell stack[AVM_STACKSIZE];
@@ -117,6 +118,13 @@ tostring_func_t tostringFuncs[] = {
 
 /* String Convertors */
 
+std::string getintfromdouble(double d){
+    if(std::floor(d) == std::ceil(d)){
+        return std::to_string(int(d));
+    }
+    return std::to_string(d);
+}
+
 std::string avm_tostring (avm_memcell* m){
     assert(m->type >= 0 && m->type <= UNDEF_M);
     return (*tostringFuncs[m->type]) (m);
@@ -125,7 +133,10 @@ std::string avm_tostring (avm_memcell* m){
 
 std::string number_tostring (avm_memcell* m) {
     assert(m && m->type == NUMBER_M);
-    double d = m->data.numVal;
+    double d = m->data.numVal;   
+    if(std::floor(d) == std::ceil(d)){
+        return std::to_string(int(d));
+    }
     return std::to_string(d);
 }
 
@@ -145,16 +156,14 @@ std::string bool_tostring (avm_memcell* m) {
 
 std::string table_tostring (avm_memcell* m) {
     assert(m && m->type == TABLE_M);
-    return "I am a table.";
-    /* TODO */
-    std::string s = "";
+    std::string s ="";
     std::string pcfr="";
-    s + "[ ";
+     s += "[ ";
     if (m->data.tableVal->numIndexed->size())
     {
         for (auto x : *(m->data.tableVal->numIndexed))
         {
-            s + "{ "+std::to_string(x.first)+" : "+avm_tostring(&(x.second))+" }";
+            s += "{ "+getintfromdouble(x.first)+" : "+avm_tostring(&(x.second))+" }";
         }
     }
     
@@ -162,7 +171,7 @@ std::string table_tostring (avm_memcell* m) {
     {
         for (auto x : *(m->data.tableVal->strIndexed))
         {
-            s + "{ "+x.first+" : "+avm_tostring(&(x.second))+" }";
+            s += "{ "+x.first+" : "+avm_tostring(&(x.second))+" }";
         }
     }
 
@@ -170,7 +179,7 @@ std::string table_tostring (avm_memcell* m) {
     {
         for (auto x : *(m->data.tableVal->funcIndexed))
         {
-            s + "{ f_id:"+std::to_string(x.first)+" : "+avm_tostring(&(x.second))+" }";
+            s += "{ f_id:"+std::to_string(x.first)+" : "+avm_tostring(&(x.second))+" }";
         }
     }
 
@@ -178,11 +187,11 @@ std::string table_tostring (avm_memcell* m) {
     {
         for (auto x : *(m->data.tableVal->trollIndexed))
         {
-            s + "{ "+x.first+" : "+avm_tostring(&(x.second))+" }";
+            s += "{ "+x.first+" : "+avm_tostring(&(x.second))+" }";
         }
     }
 
-    s + " ]";
+    s += " ]";
 
     return s;   
 }
