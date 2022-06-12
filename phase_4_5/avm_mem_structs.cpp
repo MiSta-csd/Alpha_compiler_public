@@ -2,7 +2,7 @@
 #include "avm_auxiliary.h"
 #include "vm_elegance.h"
 
-avm_memcell stack[AVM_STACKSIZE];// It is what it is!
+avm_memcell stack[AVM_STACKSIZE];
 
 unsigned char   executionFinished = 0;
 unsigned        pc = 0;

@@ -3,6 +3,7 @@
 #include "avm_structures.h"
 #include "actions.h"
 #include "quads.h"
+#include "avm_mem_structs.h"
 
 std::vector<double>			numConsts;
 unsigned        			totalNumConsts = 0;
@@ -94,7 +95,7 @@ void make_operand(expr* e, vmarg *arg) {
 			struct userfunc *uf;
 			uf = new struct userfunc;
 			uf->id = new std::string(e->sym->name);
-			uf->address = e->sym->iaddress + 2;
+			uf->address = e->sym->iaddress + 1;
 			uf->localSize = e->sym->totalLocals;
 			uf->argSize = e->sym->totalArgs;
 			arg->val = userfuncs_newfunc(uf);
@@ -129,7 +130,7 @@ instruction* new_instr(quad *q, vmopcode op) {
 
 instruction* new_reljump(quad *q, vmopcode op) {
 	instruction *instr = new_instr(q, op);
-	instr->result.val = q->label;
+	instr->result.val = q->label - 1;
 	instr->result.type = LABEL_A;// it was anyway
 	return instr;
 }
@@ -308,44 +309,44 @@ extern unsigned curScopeSpace;
 
 extern std::vector<std::unordered_map<std::string, std::vector<st_entry>>> symbol_table;
 
-void print_file_identifiers() {
-	unsigned magic_num = 340200501;
-	unsigned globaloffset = programVarOffset;
-	print_line();
-	std::cout << "magic_num: " << magic_num << std::endl << "globaloffset: " <<  globaloffset << std::endl;
-	for (auto map : symbol_table) {
-		for ( auto pair : map) {
-			for ( auto entry : pair.second) {
-				if(entry.space == programvar) {
-					std::cout << entry.name << "," << entry.scope << "," << entry.offset << " ";
-				}
-			}
-		}
-	}
-	std::cout << "\n";
-	std::cout << "string_table_size: " << totalStringConsts << std::endl;
-	for(int i = 0; i < totalStringConsts; ++i) {
-		std::cout <<  stringConsts[i].size() << "," << stringConsts[i] << " ";
-	}
-	std::cout << std::endl;
-	std::cout << "num_table_size: " << totalNumConsts << std::endl;
-	for(int i = 0; i < totalNumConsts; ++i) {
-		std::cout << numConsts[i] << " ";
-	}
-	std::cout << std::endl;
-	std::cout << "libfunc_table_size: " << totalNamedLibfuncs << std::endl;
-	for(int i = 0; i < totalNamedLibfuncs; ++i) {
-		std::cout << namedLibFuncs[i] << " ";// names
-	}
-	std::cout << std::endl;
+// void print_file_identifiers() {
+// 	unsigned magic_num = 340200501;
+// 	unsigned globaloffset = programVarOffset;
+// 	print_line();
+// 	std::cout << "magic_num: " << magic_num << std::endl << "globaloffset: " <<  globaloffset << std::endl;
+// 	for (auto map : symbol_table) {
+// 		for ( auto pair : map) {
+// 			for ( auto entry : pair.second) {
+// 				if(entry.space == programvar) {
+// 					std::cout << entry.name << "," << entry.scope << "," << entry.offset << " ";
+// 				}
+// 			}
+// 		}
+// 	}
+// 	std::cout << "\n";
+// 	std::cout << "string_table_size: " << totalStringConsts << std::endl;
+// 	for(int i = 0; i < totalStringConsts; ++i) {
+// 		std::cout <<  stringConsts[i].size() << "," << stringConsts[i] << " ";
+// 	}
+// 	std::cout << std::endl;
+// 	std::cout << "num_table_size: " << totalNumConsts << std::endl;
+// 	for(int i = 0; i < totalNumConsts; ++i) {
+// 		std::cout << numConsts[i] << " ";
+// 	}
+// 	std::cout << std::endl;
+// 	std::cout << "libfunc_table_size: " << totalNamedLibfuncs << std::endl;
+// 	for(int i = 0; i < totalNamedLibfuncs; ++i) {
+// 		std::cout << namedLibFuncs[i] << " ";// names
+// 	}
+// 	std::cout << std::endl;
 
-	std::cout << "userfunc_table_size: " << totalUserFuncs << std::endl;
-	for(int i = 0; i < totalUserFuncs; ++i) {
-		std::cout << *userFuncs[i]->id << "->" << userFuncs[i]->address << " ";
-	}
-	std::cout << std::endl;
-	//instructions
-}
+// 	std::cout << "userfunc_table_size: " << totalUserFuncs << std::endl;
+// 	for(int i = 0; i < totalUserFuncs; ++i) {
+// 		std::cout << *userFuncs[i]->id << "->" << userFuncs[i]->address << " ";
+// 	}
+// 	std::cout << std::endl;
+// 	//instructions
+// }
 
 void generate_binary_readable (std::string outname) {
 	FILE *outf;
@@ -407,49 +408,46 @@ void generate_binary_readable (std::string outname) {
 		fprintf(outf, "%u\n", instr_vec[i]->srcLine);
 	}
 }
+
+extern avm_memcell::avm_memcell(){memset( this, 0, sizeof(avm_memcell));}
+extern avm_memcell::~avm_memcell(){memset( this, 0, sizeof(avm_memcell));}
+
 void generate_binary(FILE *outf) {
 	assert(outf);
 	unsigned magic_num = MAGIC_NUM;
 
 	fwrite(&magic_num, sizeof(unsigned), 1, outf);
-	// fwrite("\n", 1, 1, outf);
+	
 	unsigned globalOffset = programVarOffset;
 	fwrite(&globalOffset, sizeof(unsigned), 1, outf);
-	// fwrite("\n", 1, 1, outf);
+	
+	avm_memcell tmp_mem;
+	
 	for (int i = 0; i < symbol_table.size(); ++i) {
 		for ( auto pair : symbol_table[i]) {
 			for ( auto entry : pair.second) {
 				if(entry.space == programvar && entry.type != LIB_FUNC) {
-					unsigned name_sz = entry.name.size();
-					fwrite(&name_sz, sizeof(unsigned), 1, outf);
-					// fwrite(",", 1, 1, outf);
-					fwrite(entry.name.c_str(), name_sz, 1, outf);
-					// fwrite(",", 1, 1, outf);
-					fwrite(&entry.scope, sizeof(unsigned), 1, outf);
-					// fwrite(",", 1, 1, outf);
-					fwrite(&entry.offset, sizeof(unsigned), 1, outf);
-					// fwrite(" ", 1, 1, outf);
+					fwrite(&tmp_mem, sizeof(avm_memcell), 1, outf);
 				}
 			}
 		}
 	}
 
-	// fwrite("\n", 1, 1, outf);
 	fwrite(&totalStringConsts, sizeof(unsigned), 1, outf);
-	// fwrite("\n", 1, 1, outf);
+
 	for(int i = 0; i < totalStringConsts; ++i) {
 		unsigned str_size = stringConsts[i].size()-2;
 		fwrite(&str_size, sizeof(unsigned), 1, outf);
-		// fwrite(",", 1, 1, outf);
+
 		fwrite(stringConsts[i].c_str()+1, str_size, 1, outf);
-		// fwrite(" ", 1, 1, outf);
+
 	}
-	// fwrite("\n", 1, 1, outf);
+
 	fwrite(&totalNumConsts, sizeof(unsigned), 1, outf);
-	// fwrite("\n", 1, 1, outf);
+
 	for(int i = 0; i < totalNumConsts; ++i) {
 		fwrite(&numConsts[i], sizeof(double), 1, outf);
-		// fwrite(" ", 1, 1, outf);
+
 	}
 	fwrite(&totalNamedLibfuncs, sizeof(unsigned), 1, outf);
 	for(int i = 0; i < totalNamedLibfuncs; ++i) {
@@ -457,20 +455,19 @@ void generate_binary(FILE *outf) {
 		fwrite(&str_size, sizeof(unsigned), 1, outf);
 		fwrite(namedLibFuncs[i].c_str(), str_size, 1, outf);
 	}
-	// fwrite("\n", 1, 1, outf);
+
 	fwrite(&totalUserFuncs, sizeof(unsigned), 1, outf);
-	// fwrite("\n", 1, 1, outf);
+
 	for(int i = 0; i < totalUserFuncs; ++i) {
 		unsigned str_size = userFuncs[i]->id->size();
 		fwrite(&str_size, sizeof(unsigned), 1, outf);
 		fwrite(userFuncs[i]->id->c_str(), str_size, 1, outf);
-		// fwrite(",", 1, 1, outf);
+
 		fwrite(&userFuncs[i]->address, sizeof(unsigned), 1, outf);
 		fwrite(&userFuncs[i]->localSize, sizeof(unsigned), 1, outf);
 		fwrite(&userFuncs[i]->argSize, sizeof(unsigned), 1, outf);
-		// fwrite(" ", 1, 1, outf);
 	}
-	// fwrite("\n", 1, 1, outf);
+
 
 	// instructions
 	unsigned long sz = instr_vec.size();
@@ -502,7 +499,7 @@ void print_instructions () {// for debug
 	// print_file_identifiers();
 
 	for (int i = 0; i < instr_vec.size(); ++i) {
-		std::cout << i+1 << ": " << instrCodes[instr_vec[i]->opcode] << " ";
+		std::cout << i << ": " << instrCodes[instr_vec[i]->opcode] << " ";
 		if(instr_vec[i]->result.val != (unsigned)-1)
 			std::cout << argCodes[instr_vec[i]->result.type] << (instr_vec[i]->opcode == JUMP_V?
 						"->" + std::to_string(instr_vec[i]->result.val) + " ":

@@ -2,8 +2,10 @@
 #include <vector>
 #include "avm_structures.h"
 #include "scoping.h"
+#include "avm_mem_structs.h"
 
-programVar *ProgVarSegment;// TODO metatroph se avm memcell
+extern avm_memcell stack[AVM_STACKSIZE];
+
 extern unsigned        codeSize;
 
 std::vector<double>         numConsts;
@@ -16,6 +18,8 @@ instruction*    code = (instruction*) 0;
 
 void tmp_print_instructions ();
 
+// extern void avm_assign(avm_memcell*, avm_memcell*);
+
 void decode_binary_init_vm(FILE *bin_f) {
     unsigned magic, len;
     fread(&magic, sizeof(unsigned), 1, bin_f);
@@ -27,21 +31,15 @@ void decode_binary_init_vm(FILE *bin_f) {
 	
 	fread(&totalProgVars, sizeof(unsigned), 1, bin_f);// progVar len
 	std::cout << totalProgVars << std::endl;
-	ProgVarSegment = (programVar*) malloc(totalProgVars*sizeof(programVar));
+
 	for(int i = 0; i < totalProgVars; ++i) {// ProgVars
-		unsigned name_sz, scope, offset;
-		char name_buf[256]; // megalytera onomata apo 256? tou pousth!
-		fread(&name_sz, sizeof(unsigned), 1, bin_f);
-		
-		fread(name_buf, name_sz, 1, bin_f);
-		name_buf[name_sz] = 0;
-		fread(&scope, sizeof(unsigned), 1, bin_f);
-		fread(&offset, sizeof(unsigned), 1, bin_f);
-		ProgVarSegment[offset].name = new std::string(name_buf);
-		ProgVarSegment[offset].scope = scope;
-		std::cout << name_sz << "," << *ProgVarSegment[offset].name <<","<<ProgVarSegment[offset].scope<<" ";
+		avm_memcell prog_var_memcell;
+
+		fread(&prog_var_memcell, sizeof(avm_memcell), 1, bin_f);
+		prog_var_memcell.type = UNDEF_M;
+		stack[AVM_STACKSIZE - 1 - i] = prog_var_memcell;
 	}
-	std::cout << std::endl;
+	
 	fread(&len, sizeof(unsigned), 1, bin_f);// constStr len
 	std::cout << len << std::endl;
 	for(int i = 0; i < len; ++i) {// strings
@@ -53,7 +51,7 @@ void decode_binary_init_vm(FILE *bin_f) {
 			char c;
 			fread(&c, 1, 1, bin_f);
 			tmp_str->at(j) = c;
-		}// TODO check case where string is ""
+		}
 		stringConsts.push_back(*tmp_str);
 		delete tmp_str;
 		std::cout << str_size << "," << stringConsts.back() << " ";
@@ -119,6 +117,7 @@ void decode_binary_init_vm(FILE *bin_f) {
                 fread(&tmp_arg, sizeof(vmarg), 1, bin_f);
                 tmp_instr.arg1 =  tmp_arg;
 				tmp_instr.arg2.val = (unsigned)-1;
+				tmp_instr.arg2.type = UNDEF_A;
 				fread(&srcLine, sizeof(unsigned), 1, bin_f);
                 tmp_instr.srcLine =  srcLine;
                 code[i] = tmp_instr;
@@ -154,16 +153,20 @@ void decode_binary_init_vm(FILE *bin_f) {
                 fread(&tmp_arg, sizeof(vmarg), 1, bin_f);
                 tmp_instr.result =  tmp_arg;
                 tmp_instr.arg1.val = (unsigned)-1;
+				tmp_instr.arg1.type = UNDEF_A;
                 tmp_instr.arg2.val = (unsigned)-1;
+				tmp_instr.arg2.type = UNDEF_A;
                 fread(&srcLine, sizeof(unsigned), 1, bin_f);
                 tmp_instr.srcLine =  srcLine;
                 code[i] = tmp_instr;
                 break;
             case PUSHARG_V:
                 tmp_instr.result.val = (unsigned)-1;
+				tmp_instr.result.type = UNDEF_A;
                 fread(&tmp_arg, sizeof(vmarg), 1, bin_f);
                 tmp_instr.arg1 = tmp_arg;
                 tmp_instr.arg2.val = (unsigned)-1;
+				tmp_instr.arg2.type = UNDEF_A;
                 fread(&srcLine, sizeof(unsigned), 1, bin_f);
                 tmp_instr.srcLine =  srcLine;
                 code[i] = tmp_instr;
@@ -187,10 +190,12 @@ void tmp_print_instructions () {// for debug
 	// print_file_identifiers();
 
 	for (int i = 0; i < codeSize; ++i) {
-		std::cout << i+1 << ": " << instrCodes[code[i].opcode] << " ";
+		std::cout << i << ": " << instrCodes[code[i].opcode] << " ";
 		if(code[i].result.val != (unsigned)-1)
 			std::cout << argCodes[code[i].result.type] << (code[i].opcode == JUMP_V?
-						"->" + std::to_string(code[i].result.val) + " ":  " ");
+						"->" + std::to_string(code[i].result.val) + " ":
+						(code[i].result.type == USERFUNC_A?"->"+
+						 std::to_string(userFuncs[code[i].result.val].address) + " ":" "));
 		else
 			std::cout << "unused_result" << " ";
 		if(code[i].arg1.val != (unsigned)-1)
