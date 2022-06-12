@@ -3,7 +3,7 @@
 #include "avm_structures.h"
 #include "scoping.h"
 
-programVar *ProgVarSegment;
+programVar *ProgVarSegment;// TODO metatroph se avm memcell
 extern unsigned        codeSize;
 
 std::vector<double>         numConsts;
@@ -17,7 +17,7 @@ instruction*    code = (instruction*) 0;
 void tmp_print_instructions ();
 
 void decode_binary_init_vm(FILE *bin_f) {
-    unsigned magic, len, num_ch;
+    unsigned magic, len;
     fread(&magic, sizeof(unsigned), 1, bin_f);
 	if(magic != MAGIC_NUM) {
 		std::cout << "\033[31mERROR\033[37m: This binary file is not produced by alpha lang!\n";
@@ -104,6 +104,7 @@ void decode_binary_init_vm(FILE *bin_f) {
 	// instructions opcode [vmarg] [vmarg] [vmarg] [srcLine]
     fread(&codeSize, sizeof(unsigned long), 1, bin_f);
 	code = (instruction*) malloc (codeSize*sizeof(instruction));
+	std::cout << codeSize << std::endl;
     for(int i = 0; i < codeSize; ++i) {
         enum vmopcode op;
         fread(&op, sizeof(enum vmopcode), 1, bin_f);

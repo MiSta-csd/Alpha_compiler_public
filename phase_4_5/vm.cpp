@@ -6,22 +6,7 @@
 #include "avm_structures.h"
 #include "vm_elegance.h"
 
-unsigned char   executionFinished = 0;
-unsigned        pc = 0;
-unsigned        currLine = 0;
-unsigned        codeSize = 0;
-
-
-extern programVar *ProgVarSegment;
-extern unsigned totalProgVars;
-
-extern std::vector<double>          numConsts;
-extern std::vector<std::string> 	stringConsts;
-extern std::vector<std::string> 	namedLibFuncs;
-extern std::vector<userfunc> 		userFuncs;
-
-extern instruction*    code;
-extern unsigned long totalInstructions;
+extern unsigned char   executionFinished;
 
 int main (int argc, char **argv) {
 	FILE  *bin_f;
@@ -39,8 +24,7 @@ int main (int argc, char **argv) {
 	decode_binary_init_vm(bin_f);
 	avm_initstack();
 	avm_init_libfuncs();
-
-	while(!executionFinished){
+	while(!executionFinished) {
         execute_cycle();
     }
 	

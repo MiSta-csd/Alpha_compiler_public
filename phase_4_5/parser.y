@@ -1116,7 +1116,7 @@ int main(int argc, char** argv) {
 			}
 			generate_binary_readable(outname);
 			generate_binary(outf);
-			/* print_quads(); */
+			print_quads();
 			print_instructions();
 			/* avm_table* mytesttable;
 			avm_memcell* tempcell;

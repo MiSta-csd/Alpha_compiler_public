@@ -208,7 +208,7 @@ void generate_IF_GREATER(quad* q) {
 void generate_CALL(quad* q) {
 	instr_vec.push_back(new_instr(q, CALL_V));
 
-	}
+}
 void generate_PARAM(quad* q) {
 	instr_vec.push_back(new_instr(q, PUSHARG_V));
 	
@@ -219,7 +219,6 @@ void generate_RET(quad* q) {
 		instruction *instr = new instruction;
 		instr->result.type = RETVAL_A;
 		instr->opcode = ASSIGN_V;
-		// make_operand(q->result, &instr->result);// Ayto to result vmarg ginetai na apo8hkeysei kataxwrhth??
 		make_operand(q->arg2, &instr->arg1);// gia ret_instrs xrhsimopoihsame to arg2 -.-
 		instr->arg2.val = (unsigned) -1;
 		instr->srcLine = q->line;
@@ -229,10 +228,14 @@ void generate_RET(quad* q) {
 }
 void generate_GETRETVAL(quad* q) {
 	instruction *instr = new instruction;
-	instr->result.type = RETVAL_A;
+	instr->result.type = GLOBAL_A;
 	instr->opcode = ASSIGN_V;
-	make_operand(q->result, &instr->result);// 8a pairnei apo ton kataxwrhth epistrofhs thn epistrefomenh timh. comple einai
-	instr->arg1.val = instr->arg2.val = (unsigned) -1;
+	make_operand(q->result, &instr->result);
+	instr->arg1.type = RETVAL_A;// 8a einai se register an epistrefei kati
+	instr->arg2.val = (unsigned) -1;
+	instr->srcLine = q->line;
+	instr_vec.push_back(instr);
+	q->taddress = get_current_instr();
 }
 
 void generate_FUNCSTART(quad* q) {
@@ -256,7 +259,10 @@ void generate_TABLESETELEM(quad* q) {
 
 }
 void generate_JUMP(quad* q) {
-	instr_vec.push_back(new_reljump(q, JUMP_V));
+	instruction *instr = new_reljump(q, JUMP_V);
+	instr->arg1.val = (unsigned) -1;
+	instr->arg2.val = (unsigned) -1;
+	instr_vec.push_back(instr);
 }
 
 generator_func_t generators[] {
@@ -285,7 +291,8 @@ generator_func_t generators[] {
 	generate_TABLECREATE,
 	generate_TABLEGETELEM,
 	generate_TABLESETELEM,
-	generate_JUMP
+	generate_JUMP,
+	generate_NOP	
 };
 
 void generate() {
@@ -498,7 +505,9 @@ void print_instructions () {// for debug
 		std::cout << i+1 << ": " << instrCodes[instr_vec[i]->opcode] << " ";
 		if(instr_vec[i]->result.val != (unsigned)-1)
 			std::cout << argCodes[instr_vec[i]->result.type] << (instr_vec[i]->opcode == JUMP_V?
-						"->" + std::to_string(instr_vec[i]->result.val) + " ":  " ");
+						"->" + std::to_string(instr_vec[i]->result.val) + " ":
+						(instr_vec[i]->result.type == USERFUNC_A?"->"+
+						 std::to_string(userFuncs[instr_vec[i]->result.val]->address) + " ":" "));
 		else
 			std::cout << "unused_result" << " ";
 		if(instr_vec[i]->arg1.val != (unsigned)-1)
