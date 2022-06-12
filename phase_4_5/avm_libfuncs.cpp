@@ -15,6 +15,7 @@ extern unsigned        codeSize;
 extern instruction*    code;
 extern unsigned    top, topsp;
 extern unsigned totalProgVars;
+extern int voidfuncstack;
 
 //                 <          libPair          >
 std::unordered_map <std::string, library_func_t> libFuncHashTable;
@@ -25,8 +26,9 @@ void libfunc_print (void){
     for(unsigned i = 0; i < n; ++i)
     {
         std::string s = avm_tostring(avm_getactual(i));
-        std::cout << s;
+        std::cout << s << std::endl;
     }
+    voidfuncstack++;
 }
 
 int isNumber(const std::string& str)
@@ -61,6 +63,14 @@ bool errorTable(avm_memcell t){
 bool errorArg(std::string funcname){
     if(avm_totalactuals() != 1){
 		avm_error("Error: one argument, (not "+ std::to_string(avm_totalactuals()) +") expected in '"+ funcname +"'!\n");
+        return true;
+    }
+    return false;
+}
+
+bool errorArg2(std::string funcname){
+    if(avm_totalactuals() != 0){
+		avm_error("Error: zero arguments expected!\n");
         return true;
     }
     return false;
@@ -280,12 +290,14 @@ void avm_calllibfunc(std::string id) {
         executionFinished = 1;
     }
     else {
-		(*f)();
-		if(!executionFinished)
-			execute_funcexit((instruction * )0);
         topsp = top;
-		totalActuals = 0;
+		(*f)();
+		if(!executionFinished){
+			execute_funcexit((instruction * )0);
+        }
+        totalActuals = 0;
     }
+    
 }
 
 void avm_init_libfuncs (void) {

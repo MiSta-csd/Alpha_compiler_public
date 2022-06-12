@@ -7,6 +7,7 @@
 extern avm_memcell stack[AVM_STACKSIZE];
 extern void memclear_table (avm_memcell* m);
 extern unsigned executionFinished;
+int	voidfuncstack = 0;
 
 memclear_func_t memclearFuncs[] = {
     0, /*  number */

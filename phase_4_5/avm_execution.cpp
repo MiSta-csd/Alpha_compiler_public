@@ -18,6 +18,7 @@ extern unsigned        pc;
 extern unsigned        currLine;
 extern unsigned        codeSize;
 extern instruction*    code;
+extern int voidfuncstack;
 
 avm_memcell* avm_translate_operand (vmarg* arg, avm_memcell* reg) {
     switch (arg->type) {
@@ -165,6 +166,10 @@ void execute_cycle (void) {
 }
 
 void avm_assign (avm_memcell* lv, avm_memcell* rv) {
+    if (voidfuncstack){
+        rv->type = NIL_M;
+        voidfuncstack--;
+    }
     if (lv == rv)       /* Same cells? destructive tro assign! */
         return;
 
@@ -260,7 +265,9 @@ void execute_funcenter (instruction* instr) {
     assert(pc == func->data.funcVal.address); /* Func addr should match PC */
 
     /* Callee actions here. */
-    totalActuals = 0;
+    if (namedLibFuncs[(code[pc].result.val)] != "totalarguments"){
+        totalActuals = 0;
+    }
     // userfunc* funcInfo = &func->data.funcVal;
     topsp = top;
     top = top - func->data.funcVal.localSize;
@@ -272,7 +279,7 @@ void execute_funcexit (instruction* unused) {
     top     = avm_get_envvalue(topsp + AVM_SAVEDTOP_OFFSET);
     pc      = avm_get_envvalue(topsp + AVM_SAVEDPC_OFFSET);
     topsp   = avm_get_envvalue(topsp + AVM_SAVEDTOPSP_OFFSET);
-    
+    totalActuals = (top == topsp) ? 0 : avm_get_envvalue(topsp + AVM_NUMACTUALS_OFFSET);
     while (++oldTop <= top) /* Intentionally ignering first. */
         avm_memcellclear(&stack[oldTop]);
 }

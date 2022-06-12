@@ -5,8 +5,6 @@
 
 avm_table*      avm_tablenew (void);
 void            avm_tabledestroy (avm_table* t);
-avm_memcell*    avm_tablegetelem (avm_memcell* key);
-void            avm_tablesetelem (avm_memcell* key, avm_memcell* value);
 
 /* typedef struct avm_table_bucket {
     avm_memcell         key;
