@@ -18,8 +18,6 @@ instruction*    code = (instruction*) 0;
 
 void tmp_print_instructions ();
 
-// extern void avm_assign(avm_memcell*, avm_memcell*);
-
 void decode_binary_init_vm(FILE *bin_f) {
     unsigned magic, len;
     fread(&magic, sizeof(unsigned), 1, bin_f);
@@ -94,7 +92,7 @@ void decode_binary_init_vm(FILE *bin_f) {
 			local_size,
 			arg_size,
 			tmp_str});
-	std::cout << name_len << "," << *(userFuncs[i].id) << ","
+	std::cout << *(userFuncs[i].id) << ","
 	<< userFuncs[i].address << "," << userFuncs[i].localSize << "," << userFuncs[i].argSize << " ";
 	}
 	std::cout << std::endl;

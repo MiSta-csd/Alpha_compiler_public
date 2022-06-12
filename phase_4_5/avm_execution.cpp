@@ -52,6 +52,8 @@ avm_memcell* avm_translate_operand (vmarg* arg, avm_memcell* reg) {
         case USERFUNC_A: {
             reg->type = USERFUNC_M;
             reg->data.funcVal.address = userFuncs[arg->val].address;
+            reg->data.funcVal.localSize = userFuncs[arg->val].localSize;
+            reg->data.funcVal.argSize = userFuncs[arg->val].argSize;
             return reg;
         }
 
@@ -281,7 +283,6 @@ void execute_pusharg (instruction* instr) {
     /*  This is actually stack[top] = arg, but we have to
         use avm_assign
      */
-
     avm_assign(&stack[top], arg);
     ++totalActuals;
     avm_dec_top();

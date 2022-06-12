@@ -50,6 +50,7 @@ unsigned consts_newused(std::string str) {
 	return totalNamedLibfuncs++;
 }
 
+static unsigned formalOffset = 0;
 void make_operand(expr* e, vmarg *arg) {
 	if(!e) {
 		arg->val =(unsigned) -1;
@@ -65,7 +66,7 @@ void make_operand(expr* e, vmarg *arg) {
 			switch (e->sym->space) {
 				case programvar:	arg->type = GLOBAL_A; break;
 				case functionlocal:	arg->type = LOCAL_A; break;
-				case formalarg: 	arg->type = FORMAL_A; break;
+				case formalarg: 	arg->type = FORMAL_A;arg->val = formalOffset++; break;
 				default:
 					assert(0);
 			}
@@ -91,6 +92,7 @@ void make_operand(expr* e, vmarg *arg) {
 			arg->type = NIL_A;
 			break;
 		case PROGRAMFUNC_E:
+			formalOffset = 0;
 			arg->type = USERFUNC_A;
 			struct userfunc *uf;
 			uf = new struct userfunc;
@@ -101,6 +103,7 @@ void make_operand(expr* e, vmarg *arg) {
 			arg->val = userfuncs_newfunc(uf);
 			break;
 		case LIBRARYFUNC_E:
+			formalOffset = 0;
 			arg->type = LIBFUNC_A;
 			arg->val = consts_newused(e->sym->name);
 			break;
