@@ -209,16 +209,6 @@ std::string undef_tostring (avm_memcell* m) {
     return "undef";
 }
 
-userfunc* avm_get_funcinfo (unsigned address) {       
-    
-    assert(stack[address].type == USERFUNC_M ||
-           stack[address].type == LIBFUNC_M
-           );
-
-    return &(stack[address].data.funcVal);
-
-}
-
 bool avm_tobool (avm_memcell* m) {
     assert(m->type >= 0 && m->type < UNDEF_M);
     return (*toboolFuncs[m->type]) (m);

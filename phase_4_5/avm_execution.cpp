@@ -51,7 +51,7 @@ avm_memcell* avm_translate_operand (vmarg* arg, avm_memcell* reg) {
 
         case USERFUNC_A: {
             reg->type = USERFUNC_M;
-            reg->data.funcVal.address = arg->val; /* Address already stored */
+            reg->data.funcVal.address = userFuncs[arg->val].address;
             return reg;
         }
 
@@ -216,6 +216,7 @@ unsigned avm_get_envvalue(unsigned i) {
 void execute_call (instruction* instr) {
     avm_memcell* func = avm_translate_operand(&instr->result, &reg_AX);
     assert(func);
+	func->data.funcVal.address = instr->result.val;
     avm_callsaveenvironment();
 
     switch (func->type) {
@@ -246,6 +247,10 @@ void execute_call (instruction* instr) {
     }
 }
 
+// userfunc* avm_get_funcinfo (unsigned address) {       
+//      return &userFuncs[code[address].result.val];
+// }
+
 void execute_funcenter (instruction* instr) {
     avm_memcell* func = avm_translate_operand(&instr->result, &reg_AX);
     assert(func);
@@ -253,9 +258,9 @@ void execute_funcenter (instruction* instr) {
 
     /* Callee actions here. */
     totalActuals = 0;
-    userfunc* funcInfo = avm_get_funcinfo(pc);
+    // userfunc* funcInfo = &func->data.funcVal;
     topsp = top;
-    top = top - funcInfo->localSize;
+    top = top - func->data.funcVal.localSize;
 
 }
 

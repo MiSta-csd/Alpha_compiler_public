@@ -309,45 +309,6 @@ extern unsigned curScopeSpace;
 
 extern std::vector<std::unordered_map<std::string, std::vector<st_entry>>> symbol_table;
 
-// void print_file_identifiers() {
-// 	unsigned magic_num = 340200501;
-// 	unsigned globaloffset = programVarOffset;
-// 	print_line();
-// 	std::cout << "magic_num: " << magic_num << std::endl << "globaloffset: " <<  globaloffset << std::endl;
-// 	for (auto map : symbol_table) {
-// 		for ( auto pair : map) {
-// 			for ( auto entry : pair.second) {
-// 				if(entry.space == programvar) {
-// 					std::cout << entry.name << "," << entry.scope << "," << entry.offset << " ";
-// 				}
-// 			}
-// 		}
-// 	}
-// 	std::cout << "\n";
-// 	std::cout << "string_table_size: " << totalStringConsts << std::endl;
-// 	for(int i = 0; i < totalStringConsts; ++i) {
-// 		std::cout <<  stringConsts[i].size() << "," << stringConsts[i] << " ";
-// 	}
-// 	std::cout << std::endl;
-// 	std::cout << "num_table_size: " << totalNumConsts << std::endl;
-// 	for(int i = 0; i < totalNumConsts; ++i) {
-// 		std::cout << numConsts[i] << " ";
-// 	}
-// 	std::cout << std::endl;
-// 	std::cout << "libfunc_table_size: " << totalNamedLibfuncs << std::endl;
-// 	for(int i = 0; i < totalNamedLibfuncs; ++i) {
-// 		std::cout << namedLibFuncs[i] << " ";// names
-// 	}
-// 	std::cout << std::endl;
-
-// 	std::cout << "userfunc_table_size: " << totalUserFuncs << std::endl;
-// 	for(int i = 0; i < totalUserFuncs; ++i) {
-// 		std::cout << *userFuncs[i]->id << "->" << userFuncs[i]->address << " ";
-// 	}
-// 	std::cout << std::endl;
-// 	//instructions
-// }
-
 void generate_binary_readable (std::string outname) {
 	FILE *outf;
 	if(outname != ""){
