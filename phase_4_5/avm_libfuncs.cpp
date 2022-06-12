@@ -16,8 +16,6 @@ extern instruction*    code;
 extern unsigned    top, topsp;
 extern unsigned totalProgVars;
 extern int voidfuncstack;
-
-//                 <          libPair          >
 std::unordered_map <std::string, library_func_t> libFuncHashTable;
 
 void libfunc_print (void){
@@ -113,21 +111,33 @@ void libfunc_objectmemberkeys(void)
         avm_table* t = avm_tablenew();
         double i=0;
         for (auto x : *actual_table->strIndexed){
-            t->numIndexed->insert(std::make_pair(i, x.second));
+            avm_memcell *m = new avm_memcell();
+            m->type = STRING_M;
+            m->data.strVal = new std::string(x.first);
+            t->numIndexed->insert(std::make_pair(i, *m));
             i++;
         }
 
         for (auto x : *actual_table->numIndexed){
-            t->numIndexed->insert(std::make_pair(i, x.second));
+            avm_memcell *m = new avm_memcell();
+            m->type = NUMBER_M;
+            m->data.numVal = x.first;
+            t->numIndexed->insert(std::make_pair(i, *m));
             i++;
         }
         
         for (auto x : *actual_table->funcIndexed){
-            t->numIndexed->insert(std::make_pair(i, x.second));
+            avm_memcell *m = new avm_memcell();
+            m->type = NUMBER_M;
+            m->data.numVal = x.first;
+            t->numIndexed->insert(std::make_pair(i, *m));
             i++;
         }
         for (auto x : *actual_table->trollIndexed){
-            t->numIndexed->insert(std::make_pair(i, x.second));
+            avm_memcell *m = new avm_memcell();
+            m->type = STRING_M;
+            m->data.strVal = new std::string(x.first);
+            t->numIndexed->insert(std::make_pair(i, *m));
             i++;
         }
         avm_memcellclear(&reg_RETVAL);
@@ -135,6 +145,92 @@ void libfunc_objectmemberkeys(void)
         reg_RETVAL.data.tableVal = t;
     }
 }
+
+// void libfunc_objectmemberkeys(void)
+// {
+//     avm_memcell *actual = avm_getactual(0);
+// 	avm_table *actual_table = actual->data.tableVal;
+//     if (!errorTable(*actual)){
+ 
+//         avm_table* t = avm_tablenew();
+//         double i=0;
+ 
+//         if (actual_table->numIndexed->size())
+//         {
+//             for (auto x : *(actual_table->numIndexed))
+//             {
+//                 std::string* s = new std::string(std::to_string(x.first));
+//                 avm_memcell* content = new avm_memcell(STRING_M, s);
+//                 delete s;
+ 
+//                 double *cnt = new double(i);
+//                 avm_memcell* index = new avm_memcell(NUMBER_M, cnt);
+//                 delete cnt;
+ 
+//                 avm_tablesetelem(t, index, content);
+//                 ++i;
+//             }
+//         }
+ 
+//         if (actual_table->strIndexed->size())
+//         {
+//             for (auto x : *(actual_table->strIndexed))
+//             {
+//                 std::string* s = new std::string(x.first);
+//                 avm_memcell* content = new avm_memcell(STRING_M, s);
+//                 delete s;
+ 
+//                 double *cnt = new double(i);
+//                 avm_memcell* index = new avm_memcell(NUMBER_M, cnt);
+//                 delete cnt;
+ 
+//                 avm_tablesetelem(t, index, content);
+//                 ++i;
+//             }
+//         }
+ 
+//         if (actual_table->funcIndexed->size())
+//         {
+//             for (auto x : *(actual_table->funcIndexed))
+//             {
+//                 std::string* s = new std::string(std::to_string(x.first));
+//                 avm_memcell* content = new avm_memcell(STRING_M, s);
+//                 delete s;
+ 
+//                 double *cnt = new double(i);
+//                 avm_memcell* index = new avm_memcell(NUMBER_M, cnt);
+//                 delete cnt;
+ 
+//                 avm_tablesetelem(t, index, content);
+//                 ++i;
+//             }
+//         }
+ 
+//         if (actual_table->trollIndexed->size())
+//         {
+//             for (auto x : *(actual_table->trollIndexed))
+//             {
+//                 std::string* s = new std::string(x.first);
+//                 avm_memcell* content = new avm_memcell(STRING_M, s);
+//                 delete s;
+ 
+//                 double *cnt = new double(i);
+//                 avm_memcell* index = new avm_memcell(NUMBER_M, cnt);
+//                 delete cnt;
+ 
+//                 avm_tablesetelem(t, index, content);
+//                 ++i;
+//             }
+//         }
+ 
+//         avm_memcellclear(&reg_RETVAL);
+ 
+//         //reg_RETVAL.type = TABLE_M;
+//         //reg_RETVAL.data.tableVal = t;
+//         avm_memcell* ptr = new avm_memcell(TABLE_M, t);
+//         avm_assign(&reg_RETVAL, ptr);
+//     }
+// }
 
 void libfunc_objecttotalmembers(void){
     if(!errorArg("objecttotalmembers")){
