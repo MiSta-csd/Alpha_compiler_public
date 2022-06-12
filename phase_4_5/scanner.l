@@ -24,9 +24,10 @@ std::string* handle_string(){
 	str->resize(yyleng);
 	int i = 0, j = 0;
 	while(yytext[i] != 0) {
-		if(yytext[i] == '\\') {
+		if(yytext[i] == '\\') {// metatrepw 2 char se ena
 			++i;
-			switch(yytext[i]){
+			str->resize(str->size()-1);
+			switch(yytext[i]) {
 				case 'n':
 					str->at(j) = '\n';
 					break;
@@ -52,10 +53,8 @@ std::string* handle_string(){
 					str->at(j) = '\0';
 					break;
 				default :
-					std::cout << "\033[33m" << "WARNING " << "\033[37m"
-					<< "invalid escape character detected\n"
-					<< "in line: " << line_count
-					<< " string = " << yytext << std::endl;
+					std::cout << "\033[33mWARNING\033[37m : invalid escape character detected "
+					"in line: " << line_count << " string = " << yytext << std::endl;
 					str->at(j) = yytext[i];
 			}
 		}
@@ -65,6 +64,7 @@ std::string* handle_string(){
 		++i;
 		++j;
 	}
+	
 	return str;
 }
 
