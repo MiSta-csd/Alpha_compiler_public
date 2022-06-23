@@ -24,7 +24,7 @@ void libfunc_print (void){
     for(unsigned i = 0; i < n; ++i)
     {
         std::string s = avm_tostring(avm_getactual(i));
-        std::cout << s << std::endl;
+        std::cout << s /* << std::endl */;
     }
     voidfuncstack++;
 }

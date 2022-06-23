@@ -985,7 +985,7 @@ forstmt		: forprefix N elist RPAREN N stmt N
 											patchlabel($7, $2 + 2);
 											if($6){
 												patchlist($6->breakList, get_next_quad());
-												patchlist($6->contList, $2 + 1);
+												patchlist($6->contList, $2 + 2);
 												$$ = $6;
 											}else{
 												$$ = NULL;
