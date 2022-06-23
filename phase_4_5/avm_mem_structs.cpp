@@ -24,8 +24,6 @@ void avm_initstack (void) {
     }
     topsp = (N - 1) - totalProgVars;
     top = topsp;
-	//TODO 
-	// stack[AVM_STACKSIZE] = ;
 }
 
 extern unsigned char executionFinished;

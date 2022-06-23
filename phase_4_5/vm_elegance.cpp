@@ -22,13 +22,13 @@ void decode_binary_init_vm(FILE *bin_f) {
     unsigned magic, len;
     fread(&magic, sizeof(unsigned), 1, bin_f);
 	if(magic != MAGIC_NUM) {
-		std::cout << "\033[31mERROR\033[37m: This binary file is not produced by alpha lang!\n";
+		// std::cout << "\033[31mERROR\033[37m: This binary file is not produced by alpha lang!\n";
 		exit(1);
 	}
-	std::cout << magic << std::endl;
+	// std::cout << magic << std::endl;
 	
 	fread(&totalProgVars, sizeof(unsigned), 1, bin_f);// progVar len
-	std::cout << totalProgVars << std::endl;
+	// std::cout << totalProgVars << std::endl;
 
 	for(int i = 0; i < totalProgVars; ++i) {// ProgVars
 		avm_memcell prog_var_memcell;
@@ -39,7 +39,7 @@ void decode_binary_init_vm(FILE *bin_f) {
 	}
 	
 	fread(&len, sizeof(unsigned), 1, bin_f);// constStr len
-	std::cout << len << std::endl;
+	// std::cout << len << std::endl;
 	for(int i = 0; i < len; ++i) {// strings
 		unsigned str_size;
 		fread(&str_size, sizeof(unsigned), 1, bin_f);
@@ -52,18 +52,18 @@ void decode_binary_init_vm(FILE *bin_f) {
 		}
 		stringConsts.push_back(*tmp_str);
 		delete tmp_str;
-		std::cout << str_size << "," << stringConsts.back() << " ";
+		// std::cout << str_size << "," << stringConsts.back() << " ";
 	}
 	fread(&len, sizeof(unsigned), 1, bin_f);// constNum len
-	std::cout << std::endl << len << std::endl;
+	// std::cout << std::endl << len << std::endl;
 	for(int i = 0; i < len; ++i) {
 		double n;
 		fread(&n, sizeof(double), 1, bin_f);
 		numConsts.push_back(n);
-		std::cout << numConsts.back() << " ";
+		// std::cout << numConsts.back() << " ";
 	}
 	fread(&len, sizeof(unsigned), 1, bin_f);// libFuncs len
-	std::cout << std::endl << len << std::endl;
+	// std::cout << std::endl << len << std::endl;
 	for(int i = 0; i < len; ++i) {
 		unsigned name_len;
 		fread(&name_len, sizeof(unsigned), 1, bin_f);
@@ -71,10 +71,10 @@ void decode_binary_init_vm(FILE *bin_f) {
 		fread(&buffer, name_len, 1, bin_f);
 		buffer[name_len] = 0;
 		namedLibFuncs.push_back(std::string(buffer));
-		std::cout << namedLibFuncs.back() << " ";
+		// std::cout << namedLibFuncs.back() << " ";
 	}
 	fread(&len, sizeof(unsigned), 1, bin_f);// UserFuncs len
-	std::cout << std::endl << len << std::endl;
+	// std::cout << std::endl << len << std::endl;
 	for(int i = 0; i < len; ++i) {
 		unsigned name_len, address, local_size, arg_size;
 		fread(&name_len, sizeof(unsigned), 1, bin_f);
@@ -95,12 +95,12 @@ void decode_binary_init_vm(FILE *bin_f) {
 	std::cout << *(userFuncs[i].id) << ","
 	<< userFuncs[i].address << "," << userFuncs[i].localSize << "," << userFuncs[i].argSize << " ";
 	}
-	std::cout << std::endl;
+	// std::cout << std::endl;
 
 	// instructions opcode [vmarg] [vmarg] [vmarg] [srcLine]
     fread(&codeSize, sizeof(unsigned long), 1, bin_f);
 	code = (instruction*) malloc (codeSize*sizeof(instruction));
-	std::cout << codeSize << std::endl;
+	// std::cout << codeSize << std::endl;
     for(int i = 0; i < codeSize; ++i) {
         enum vmopcode op;
         fread(&op, sizeof(enum vmopcode), 1, bin_f);
@@ -173,7 +173,7 @@ void decode_binary_init_vm(FILE *bin_f) {
                 assert(0);
         }
     }
-    tmp_print_instructions();
+    // tmp_print_instructions();
 }
 
 
@@ -185,12 +185,10 @@ void tmp_print_instructions () {// for debug
 	std::string argCodes[] = {"LABEL_A", "GLOBAL_A", "FORMAL_A", "LOCAL_A", "NUMBER_A", "STRING_A", "BOOL_A",
 	"NIL_A", "USERFUNC_A", "LIBFUNC_A", "RETVAL_A"};
 
-	// print_file_identifiers();
-
 	for (int i = 0; i < codeSize; ++i) {
 		std::cout << i << ": " << instrCodes[code[i].opcode] << " ";
 		if(code[i].result.val != (unsigned)-1)
-			std::cout << argCodes[code[i].result.type] << (code[i].opcode == JUMP_V?
+			std::cout << argCodes[code[i].result.type] << (code[i].result.type == LABEL_A?
 						"->" + std::to_string(code[i].result.val) + " ":
 						(code[i].result.type == USERFUNC_A?"->"+
 						 std::to_string(userFuncs[code[i].result.val].address) + " ":" "));

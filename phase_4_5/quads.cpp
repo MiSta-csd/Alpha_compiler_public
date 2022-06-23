@@ -47,7 +47,7 @@ call::call(std::string *name, unsigned char method, std::vector<expr*> *elist) {
 
 static bool can_jump(iopcode op) {
 	if(op == JUMP_OP || op == IF_EQ_OP || op == IF_LESS_OP || op == IF_GREATER_OP
-			|| op == IF_LESS_OP || op == IF_GREATEREQ_OP || op == IF_LESSEQ_OP)
+			|| op == IF_GREATEREQ_OP || op == IF_LESSEQ_OP)
 		return true;
 	return false;
 }

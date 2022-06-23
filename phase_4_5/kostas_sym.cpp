@@ -157,9 +157,7 @@ void st_print_table() {
 		for (auto pair : symbol_table[i]) {
 			for (int j = 0; j < pair.second.size(); ++j) {
 				std::cout << "\"" << pair.first << "\" [" << st_type_print[pair.second[j].type] << "] "
-				<< "(line " << pair.second[j].line << ") (scope " << pair.second[j].scope << ")" <<
-				(pair.second[j].type == USER_FUNC? pair.second[j].totalArgs : 0) << " " <<
-				(pair.second[j].type == USER_FUNC? pair.second[j].totalLocals: 0) << " " << std::endl;
+				<< "(line " << pair.second[j].line << ") (scope " << pair.second[j].scope << ")" << std::endl;
 			}
 		}
 		print_line();

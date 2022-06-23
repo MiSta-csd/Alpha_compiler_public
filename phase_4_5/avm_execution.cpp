@@ -265,7 +265,7 @@ void execute_funcenter (instruction* instr) {
     assert(pc == func->data.funcVal.address); /* Func addr should match PC */
 
     /* Callee actions here. */
-    if (namedLibFuncs[(code[pc].result.val)] != "totalarguments"){
+	if (func->type == LIBFUNC_M && namedLibFuncs[(code[pc].result.val)] != "totalarguments"){
         totalActuals = 0;
     }
     // userfunc* funcInfo = &func->data.funcVal;
@@ -416,7 +416,7 @@ void execute_comparison (instruction* instr) {
         executionFinished = 1;
     }
     else
-        res = comparisonFuncs[instr->opcode - JEQ_V];
+        res = comparisonFuncs[instr->opcode - JEQ_V](rv1, rv2);
 
     if(res && !executionFinished)
         pc = instr->result.val;

@@ -178,7 +178,7 @@ expr* handle_bool_e(expr *arg_e)
     expr *e = arg_e;
     if(arg_e->type == BOOLEXPR_E){
         e->sym = newtemp();
-
+		e->type = BOOLEXPR_E;
         backpatch(arg_e->truelist, get_next_quad());
         backpatch(arg_e->falselist, get_next_quad() + 2);
 

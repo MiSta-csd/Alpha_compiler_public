@@ -465,7 +465,7 @@ void print_instructions () {// for debug
 	for (int i = 0; i < instr_vec.size(); ++i) {
 		std::cout << i << ": " << instrCodes[instr_vec[i]->opcode] << " ";
 		if(instr_vec[i]->result.val != (unsigned)-1)
-			std::cout << argCodes[instr_vec[i]->result.type] << (instr_vec[i]->opcode == JUMP_V?
+			std::cout << argCodes[instr_vec[i]->result.type] << (instr_vec[i]->result.type == LABEL_A?
 						"->" + std::to_string(instr_vec[i]->result.val) + " ":
 						(instr_vec[i]->result.type == USERFUNC_A?"->"+
 						 std::to_string(userFuncs[instr_vec[i]->result.val]->address) + " ":" "));

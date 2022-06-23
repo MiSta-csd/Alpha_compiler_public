@@ -143,7 +143,7 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 			;
 
 // Rule 2.
-stmts		: stmts stmt 				{	
+stmts		: stmts stmt 				{	resettemp();
 											print_rules("2.1 stmts -> stmts stmt");
 											if(!hasError) {
 												if(!$1 && !$2)
@@ -160,12 +160,11 @@ stmts		: stmts stmt 				{
 												}
 											}
 										}
-			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
+			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;resettemp();}
 			
 			;
 // Rule 3.
-stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
-											resettemp();
+stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");resettemp();
 											if($1 && $1->type == BOOLEXPR_E) {
 												backpatch($1->truelist, get_next_quad());
         										backpatch($1->falselist, get_next_quad() + 2);
