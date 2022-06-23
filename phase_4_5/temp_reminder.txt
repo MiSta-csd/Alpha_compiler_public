@@ -1,3 +1,0 @@
-Gia na doulepsoun oi loupes	: execution 419
-							: actions.cpp 219 (borei kai 151)
-							: parser.y 988 (+1 se +2)
