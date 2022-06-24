@@ -146,12 +146,8 @@ program		: stmts						{	/* std::cout << "Finished reading statements\n"; */}
 stmts		: stmts stmt 				{	resettemp();
 											print_rules("2.1 stmts -> stmts stmt");
 											if(!hasError) {
-												if(!$1 && !$2)
+												if(!$2)
 													$$ = NULL;
-												else if(!$1) {
-													$$ = $2;
-												}else if(!$2)
-													$$ = $1;
 												else {
 													$$ = new stmt_t();
 													if(!loopcounter) {// solves some backpatch bug
@@ -364,6 +360,12 @@ term		: LPAREN expr RPAREN		{
 												$$->truelist = $$->falselist;
 												$$->falselist = tmp;
 												$$->type = BOOLEXPR_E;// if not boolexpr it won't be patched
+
+													backpatch($$->truelist, get_next_quad());
+													backpatch($$->falselist, get_next_quad() + 2);
+													expr *e = newexpr(VAR_E);
+													e->sym = newtemp();
+													emit_branch_assign_quads(e);
 												/* if($$->type != BOOLEXPR_E) { */
 												/* 	backpatch($$->truelist, get_next_quad()); */
 												/* 	backpatch($$->falselist, get_next_quad() + 2); */
@@ -1108,7 +1110,7 @@ int main(int argc, char** argv) {
 		}
 		generate_binary_readable(outname);
 		generate_binary(outf);
-		/* print_quads(); */
+		print_quads();
 		print_instructions();// for debug
 	}else {
 		yyparse();
