@@ -154,24 +154,32 @@ stmts		: stmts stmt 				{	resettemp();
 													$$ = $1;
 												else {
 													$$ = new stmt_t();
-													$$->breakList = mergelist($1->breakList, $2->breakList);
-													$$->contList = mergelist($1->contList,  $2->contList);
-													$$->retList = mergelist($1->retList, $2->retList);
+													if(!loopcounter) {// solves some backpatch bug
+														$$->breakList = mergelist($1->breakList, $2->breakList);
+														$$->contList = mergelist($1->contList,  $2->contList);
+													}else {
+														patchlist($2->breakList, get_next_quad()+1);
+														/* patchlist($2->contList,  arxh_tou_loop_pou_pi8anwn_ginetai_allou); */
+													}
+													if(func_stack.empty())
+														$$->retList = mergelist($1->retList, $2->retList);
 												}
 											}
 										}
-			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;resettemp();}
+			| stmt						{	print_rules("2.2 stmts -> ε");	$$ = $1;}
 			
 			;
 // Rule 3.
-stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");resettemp();
-											if($1 && $1->type == BOOLEXPR_E) {
+stmt		: expr SEMICOLON			{	print_rules("3.1 stmt -> expr ;");
+											$$ = new stmt_t();// new stmt_t calls make_stmt
+	  										if( !$1 ) {
+												$$ = NULL;
+											}
+											else if($1->type == BOOLEXPR_E) {
 												backpatch($1->truelist, get_next_quad());
         										backpatch($1->falselist, get_next_quad() + 2);
 												emit_branch_assign_quads($1);
-												$$ = new stmt_t();// new stmt_t calls make_stmt
-											}else
-												$$ = NULL;
+											}
 	  									}
 			| ifstmt					{	print_rules("3.2 stmt -> ifstmt");
 											$$ = $1;
