@@ -360,12 +360,11 @@ term		: LPAREN expr RPAREN		{
 												$$->truelist = $$->falselist;
 												$$->falselist = tmp;
 												$$->type = BOOLEXPR_E;// if not boolexpr it won't be patched
-
 													backpatch($$->truelist, get_next_quad());
 													backpatch($$->falselist, get_next_quad() + 2);
-													expr *e = newexpr(VAR_E);
-													e->sym = newtemp();
-													emit_branch_assign_quads(e);
+													/* expr *e = newexpr(BOOLEXPR_E); */
+													/* e->sym = newtemp(); */
+													/* emit_branch_assign_quads(e); */
 												/* if($$->type != BOOLEXPR_E) { */
 												/* 	backpatch($$->truelist, get_next_quad()); */
 												/* 	backpatch($$->falselist, get_next_quad() + 2); */
